@@ -644,44 +644,60 @@ details.group>summary::-webkit-details-marker{display:none}
     <!-- ============ DAILY ENTRY ============ -->
     <section id="view-daily" class="view active">
       <div class="entry-hero" id="entryHero">
-        <div class="hero-left">
-          <div class="hero-mark">SGM</div>
-          <div class="hero-text">
-            <h3>Daily Operations Entry</h3>
-            <p>All fields are compulsory. Fill every box, then press Submit.</p>
-          </div>
-        </div>
-        <div class="hero-right">
-  <div class="entry-store-chip">
-    <small>Store</small>
-    <span id="entryStoreLabel">—</span>
+  <div class="hero-left">
+    <div class="hero-mark">SGM</div>
+    <div class="hero-text">
+      <h3>Daily Operations Entry</h3>
+      <p>All fields are compulsory. Fill every box, then press Submit.</p>
+    </div>
   </div>
+  <div class="hero-right">
+    <div class="entry-store-chip">
+      <small>Store</small>
+      <span id="entryStoreLabel">—</span>
+    </div>
 
-  <!-- C2 → Selected date display -->
-  <div class="entry-date-chip" title="Currently selected date">
-    <small>Selected Date</small>
-    <span id="entryDateLabel">—</span>
+    <!-- C2 → Selected date display -->
+    <div class="entry-date-chip" title="Currently selected date">
+      <small>Selected Date</small>
+      <span id="entryDateLabel">—</span>
+    </div>
+    <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
+
+    <button class="entry-icon-btn" id="loadTodayBtn" type="button" title="Jump to today">📅 Today</button>
+    <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
+
+    <!-- C1 → Submit button in the header -->
+    <button class="entry-submit-btn" id="topSubmitBtn" type="button" disabled>
+      ✓ Submit
+      <span class="entry-submit-pill" id="topSubmitPill">0 / 0</span>
+    </button>
+
+    <span class="entry-status new" id="entryStatus">
+      <span class="dot"></span><span id="entryStatusText">New entry</span>
+    </span>
   </div>
-  <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
-
-  <button class="entry-icon-btn" id="loadTodayBtn" type="button" title="Jump to today">📅 Today</button>
-  <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
-
-  <!-- C1 → Submit button in the header -->
-  <button class="entry-submit-btn" id="topSubmitBtn" type="button" disabled>
-    ✓ Submit
-    <span class="entry-submit-pill" id="topSubmitPill">0 / 0</span>
-  </button>
-
-  <span class="entry-status new" id="entryStatus">
-    <span class="dot"></span><span id="entryStatusText">New entry</span>
-  </span>
 </div>
-           <div class="form-stack" id="formStack"></div>
-
-    </section>
+<div class="form-stack" id="formStack"></div>
+            <div class="submit-bar">
+        <div class="submit-bar-inner">
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Entry completeness</span>
+              <strong id="progText">Filled 0 / 0</strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill partial" id="progFill" style="width:0%"></div>
+            </div>
+            <div style="margin-top:6px;font-size:11px;color:#66787e" id="progHint">0 still empty</div>
+          </div>
+          <button class="btn reset" id="resetFormBtn" type="button">Reset form</button>
+          <button class="btn submit" id="submitDayBtn" type="button" disabled>✓ Submit Entry</button>
+        </div>
+      </div>
 
     <!-- ============ DAILY REPORT ============ -->
+      
     <section id="view-dailyreport" class="view">
       <div class="page-head">
         <div>
@@ -1209,14 +1225,15 @@ var MERCH_SKUS = [
   ["keyChain","Key Chain"],["mugs","Mugs"],["toteBag","Tote Bag"],["tumbler","Tumbler"]
 ];
 
-var GROUPS = [
+  var GROUPS = [
   { id:"dateTarget", label:"Entry Date & Revenue Targets", hint:"Target first, then actual", accent:true, fields:[
     { key:"date", label:"Date", type:"date", cls:"input-date" },
     { key:"targetSales", label:"Target Sales (SAR)" },
     { key:"targetAdt", label:"Target ADT" },
     { key:"targetAt", label:"Target AT (SAR)" }
   ]},
-  { id:"salesMix", label:"Sales & Mix Actuals", hint:"Gross, discounts, transactions", fields:[
+
+  { id:"salesMix", label:"Sales & Mix Actuals (INPUT)", hint:"Gross, discounts, transactions", fields:[
     { key:"grossSales", label:"Gross Sales (SAR)" },
     { key:"voidAmount", label:"Void Amount (SAR)" },
     { key:"taxAmount", label:"Tax Amount (SAR)" },
@@ -1228,21 +1245,36 @@ var GROUPS = [
     { key:"waterSales", label:"Water Sales Amount (SAR)" },
     { key:"modifierSales", label:"Modifier Sales Amount (SAR)" }
   ]},
-  { id:"foodMix", label:"Food Product Mix (enter sales amount per SKU)", hint:"Subtotal auto-computed", fields: FOOD_SKUS.map(function(s){
+
+  /* NEW — locked calculated fields for Sales & Mix */
+  { id:"salesMixCalc", label:"Sales & Mix — Calculated (LOCKED)", hint:"Auto-computed from inputs above", special:"calc", calcKeys:[
+    "salesWithoutTax","totalDiscount","netSales","adt","at",
+    "salesVsTargetPct","adtVsTargetPct","atVsTargetPct","totalDiscountPct"
+  ]},
+
+  { id:"foodMix", label:"Food Product Mix (INPUT — sales amount per SKU)", hint:"Subtotal auto-computed", fields: FOOD_SKUS.map(function(s){
     return { key:"food_"+s[0], label:s[1] };
   })},
-  { id:"grabGoMix", label:"Grab & Go Product Mix", hint:"Subtotal auto-computed", fields: GG_SKUS.map(function(s){
+  { id:"foodMixCalc", label:"Food Mix — Calculated (LOCKED)", hint:"Subtotal and %", special:"calc", calcKeys:["foodSales","foodMix"] },
+
+  { id:"grabGoMix", label:"Grab & Go Product Mix (INPUT)", hint:"Subtotal auto-computed", fields: GG_SKUS.map(function(s){
     return { key:"gg_"+s[0], label:s[1] };
   })},
-  { id:"merchMix", label:"Merchandise Product Mix", hint:"Subtotal auto-computed", fields: MERCH_SKUS.map(function(s){
+  { id:"grabGoMixCalc", label:"Grab & Go — Calculated (LOCKED)", hint:"Subtotal and %", special:"calc", calcKeys:["grabGoSales","grabGoMix"] },
+
+  { id:"merchMix", label:"Merchandise Product Mix (INPUT)", hint:"Subtotal auto-computed", fields: MERCH_SKUS.map(function(s){
     return { key:"merch_"+s[0], label:s[1] };
   })},
-  { id:"cupMix", label:"Cup Size Mix (sold qty)", hint:"Tall / Grande / Jumbo", fields:[
+  { id:"merchMixCalc", label:"Merchandise — Calculated (LOCKED)", hint:"Subtotal and %", special:"calc", calcKeys:["merchSales","merchandiseMix"] },
+
+  { id:"cupMix", label:"Cup Size Mix (INPUT — sold qty)", hint:"Tall / Grande / Jumbo", fields:[
     { key:"cupsTall", label:"Tall Qty (Hot & Cold)", step:"1" },
     { key:"cupsGrande", label:"Grande Qty (Hot & Cold)", step:"1" },
     { key:"cupsJumbo", label:"Jumbo Qty (Hot & Cold)", step:"1" }
   ]},
-  { id:"dcApp", label:"DC App Payment & Analytics", hint:"POS vs App, orders, delivery", fields:[
+  { id:"cupMixCalc", label:"Cup Size — Calculated (LOCKED)", hint:"Totals and upsize %", special:"calc", calcKeys:["cupsTotal","upsizeQty","upsizePct"] },
+
+  { id:"dcApp", label:"DC App Payment (INPUT)", hint:"POS vs App entries", fields:[
     { key:"dcAppOnlinePos", label:"DC App Online — POS (SAR)" },
     { key:"dcPayPos", label:"DC Pay — POS (SAR)" },
     { key:"dcAppOnlineApp", label:"DC App Online — App (SAR)" },
@@ -1256,13 +1288,22 @@ var GROUPS = [
     { key:"cashDeposited", label:"Cash Deposited (SAR)" },
     { key:"actualCashCollected", label:"Actual Cash Collected (SAR)" }
   ]},
-  { id:"controls", label:"Control Actuals", hint:"Cancelled bills, unpunched sales", fields:[
+  { id:"dcAppCalc", label:"DC App — Calculated (LOCKED)", hint:"POS/App totals, variance, %", special:"calc", calcKeys:[
+    "dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct","dcAppOrderMix","dcAppDeliveryPct","dcAppAt"
+  ]},
+  { id:"cashCalc", label:"Cash — Calculated (LOCKED)", hint:"Cash variance", special:"calc", calcKeys:["cashVariance"] },
+
+  { id:"controls", label:"Control Actuals (INPUT)", hint:"Cancelled bills, unpunched sales", fields:[
     { key:"cancelledBillAmount", label:"Cancelled Bill Amount (SAR)" },
     { key:"unpunchedIncidents", label:"Unpunched Sale Incidents", step:"1" },
     { key:"unpunchedValue", label:"Unpunched Sales Value (SAR)" },
     { key:"cashVarianceAbsolute", label:"Cash Variance — Absolute (SAR)" }
   ]},
-  { id:"costEmployee", label:"Cost Efficiency & Employee Cost", hint:"COGS, wastage, headcounts, OT", fields:[
+  { id:"controlsCalc", label:"Control — Calculated (LOCKED)", hint:"Percentages", special:"calc", calcKeys:[
+    "cancelledBillPct","unpunchedPct","cashVariancePct"
+  ]},
+
+  { id:"costEmployee", label:"Cost Efficiency & Employee Cost (INPUT)", hint:"COGS, wastage, headcounts, OT", fields:[
     { key:"cogs", label:"COGS Value (SAR)" },
     { key:"wastage", label:"Wastage Amount (SAR)" },
     { key:"closingSoh", label:"Closing SOH Book Value (SAR)" },
@@ -1276,7 +1317,11 @@ var GROUPS = [
     { key:"baristaOt", label:"Barista Overtime Hours" },
     { key:"cleanerOt", label:"Cleaner Overtime Hours" }
   ])},
-  { id:"performance", label:"Smart Brew, QA & Guest Feedback", hint:"Percentages and ratings", fields:[
+  { id:"costCalc", label:"Cost — Calculated (LOCKED)", hint:"COGS %, Wastage %, Employee Cost", special:"calc", calcKeys:[
+    "cogsPct","wastagePct","employeeCost","employeePct","inventoryVariancePct"
+  ]},
+
+  { id:"performance", label:"Smart Brew, QA & Guest Feedback (INPUT)", hint:"Percentages and ratings", fields:[
     { key:"smartCompletedPct", label:"Smart Brew Completed (%)", max:"100" },
     { key:"smartOnTimePct", label:"Smart Brew On-Time (%)", max:"100" },
     { key:"checklistPlanned", label:"Checklist Planned Qty", step:"1" },
@@ -1290,7 +1335,11 @@ var GROUPS = [
     { key:"complaints", label:"Guest Complaints", step:"1" },
     { key:"complaintsClosed", label:"Complaints Closed On Time", step:"1" }
   ]},
-  { id:"availability", label:"Availability & Sold-Out", hint:"Product checks and sold-out SKUs", fields:[
+  { id:"performanceCalc", label:"Performance — Calculated (LOCKED)", hint:"Review %, closure %, availability", special:"calc", calcKeys:[
+    "checklistPct","positiveReviewPct","negativeReviewPct","complaintClosurePct"
+  ]},
+
+  { id:"availability", label:"Availability & Sold-Out (INPUT)", hint:"Product checks and sold-out SKUs", fields:[
     { key:"productChecks", label:"Product Checks", step:"1" },
     { key:"productsAvailable", label:"Products Available", step:"1" },
     { key:"beverageSoldOutSku", label:"Beverage Sold-Out SKU Count", step:"1" },
@@ -1298,12 +1347,16 @@ var GROUPS = [
     { key:"nonBeverageSoldOutSku", label:"Non-Beverage Sold-Out SKU Count", step:"1" },
     { key:"nonBeverageSoldOutHours", label:"Non-Beverage Sold-Out Hours" }
   ]},
-  { id:"maintenance", label:"Maintenance", hint:"Tickets, downtime, critical equipment", fields:[
+  { id:"availabilityCalc", label:"Availability — Calculated (LOCKED)", hint:"Product availability %", special:"calc", calcKeys:["productAvailabilityPct"] },
+
+  { id:"maintenance", label:"Maintenance (INPUT)", hint:"Tickets, downtime, critical equipment", fields:[
     { key:"openMaintenanceTickets", label:"Open Maintenance Tickets", step:"1" },
     { key:"overdueMaintenanceTickets", label:"Overdue Maintenance Tickets", step:"1" },
     { key:"equipmentDowntimeHours", label:"Equipment Downtime Hours" },
     { key:"criticalEquipmentOut", label:"Critical Equipment Out of Service", step:"1" }
   ]},
+  { id:"maintenanceCalc", label:"Maintenance & Breakdown — Calculated (LOCKED)", hint:"Breakdown hours and lost sales", special:"calc", calcKeys:["breakdownHours","estimatedLostSales"] },
+
   { id:"breakdowns", label:"Breakdowns", hint:"Add one row per breakdown event", special:"breakdowns", fields:[] }
 ];
 
@@ -1610,13 +1663,12 @@ function applyRoleUi(){
 /* ============================================================
    DAILY FORM
    ============================================================ */
-function renderForm(){
+  function renderForm(){
   var host = q("formStack");
   host.innerHTML = "";
-  GROUPS.forEach(function(g,idx){
+  GROUPS.forEach(function(g, idx){
     var details = document.createElement("details");
-    details.className = "card form-card group" + (g.accent ? " accent" : "");
-    /* Only the first section (date + targets) opens by default */
+    details.className = "card form-card group" + (g.accent ? " accent" : "") + (g.special === "calc" ? " calc-card" : "");
     details.open = (idx === 0);
     details.dataset.groupId = g.id;
     details.id = "sec-" + g.id;
@@ -1624,9 +1676,14 @@ function renderForm(){
     var summary = document.createElement("summary");
     summary.className = "form-card-head";
 
-    var pillHtml = g.special === "breakdowns"
-      ? '<span class="progress-pill" data-pill="'+g.id+'">0 events</span>'
-      : '<span class="progress-pill" data-pill="'+g.id+'">0 / '+g.fields.length+'</span>';
+    var pillHtml = "";
+    if(g.special === "breakdowns"){
+      pillHtml = '<span class="progress-pill" data-pill="'+g.id+'">0 events</span>';
+    } else if(g.special === "calc"){
+      pillHtml = '<span class="progress-pill locked-pill">🔒 LOCKED</span>';
+    } else {
+      pillHtml = '<span class="progress-pill" data-pill="'+g.id+'">0 / '+g.fields.length+'</span>';
+    }
 
     summary.innerHTML =
       '<h3><span class="chev">▶</span>'+escapeHtml(g.label)+'</h3>' +
@@ -1655,6 +1712,28 @@ function renderForm(){
         renderBreakdowns();
       });
       body.appendChild(addBtn);
+    } else if(g.special === "calc"){
+      /* Locked calculated fields grid */
+      var cgrid = document.createElement("div");
+      cgrid.className = "field-grid calc-grid";
+      g.calcKeys.forEach(function(k){
+        var wrap = document.createElement("div");
+        wrap.className = "field calc-field";
+        var lbl = document.createElement("label");
+        lbl.textContent = calcLabelFor(k);
+        var ro = document.createElement("input");
+        ro.type = "text";
+        ro.id = "calc-"+k;
+        ro.readOnly = true;
+        ro.tabIndex = -1;
+        ro.dataset.calcKey = k;
+        ro.className = "calc-input";
+        ro.value = "—";
+        wrap.appendChild(lbl);
+        wrap.appendChild(ro);
+        cgrid.appendChild(wrap);
+      });
+      body.appendChild(cgrid);
     } else {
       var grid = document.createElement("div");
       grid.className = "field-grid";
@@ -1663,17 +1742,93 @@ function renderForm(){
     }
 
     details.appendChild(body);
-    details.addEventListener("toggle", function(){});
     host.appendChild(details);
   });
+
+  /* Recalculate all locked calc fields whenever any input changes */
+  host.addEventListener("input", function(){ recalcAllCalcFields(); });
+  host.addEventListener("change", function(){ recalcAllCalcFields(); });
+
   var dateInput = q("f-date");
   if(dateInput) dateInput.addEventListener("change", function(){
     q("f-date-hero").value = dateInput.value;
     loadDailyRecord();
   });
+
   renderBreakdowns();
   refreshGroupPills();
   refreshProgress();
+  recalcAllCalcFields();
+}
+  function calcLabelFor(key){
+  var map = {
+    salesWithoutTax:"Sales Without Tax (SAR)",
+    totalDiscount:"Total Discount Amount (SAR)",
+    totalDiscountPct:"Total Discount %",
+    netSales:"Net Sales (SAR)",
+    adt:"ADT (Average Daily Transactions)",
+    at:"AT (Average Transaction) SAR",
+    salesVsTargetPct:"Sales vs Target %",
+    adtVsTargetPct:"ADT vs Target %",
+    atVsTargetPct:"AT vs Target %",
+    foodSales:"Food Sales Amount (SAR)",
+    foodMix:"Food Mix % (Tgt 15.0%)",
+    grabGoSales:"Grab & Go Sales Amount (SAR)",
+    grabGoMix:"Grab & Go Mix % (Tgt 5.0%)",
+    merchSales:"Merchandise Sales Amount (SAR)",
+    merchandiseMix:"Merchandise Mix % (Tgt 1.0%)",
+    cupsTotal:"Total Hot & Cold Sold Qty",
+    upsizeQty:"Upsize Sold Qty (Grande + Jumbo)",
+    upsizePct:"Upsize Conversion %",
+    dcPosTotal:"DC App Total Payment — POS (SAR)",
+    dcAppTotal:"DC App Total Payment — App (SAR)",
+    dcVariance:"DC App Payment Excess / (Short) (SAR)",
+    dcAppSalesPct:"DC App Sales %",
+    dcAppOrderMix:"DC App Order Mix %",
+    dcAppDeliveryPct:"DC App Delivery Orders %",
+    dcAppAt:"DC App AT (SAR)",
+    cashVariance:"Cash Short / (Excess) (SAR)",
+    cancelledBillPct:"Cancelled Bill Value % (Tgt 0.0%)",
+    unpunchedPct:"Unpunched Sales Value % (Tgt 0.0%)",
+    cashVariancePct:"Cash Variance % (Tgt 0.0%)",
+    cogsPct:"COGS % (Tgt 25.2%)",
+    wastagePct:"Wastage % (Tgt 1.0%)",
+    inventoryVariancePct:"Inventory Variance % (Tgt 0.0%)",
+    employeeCost:"Employee Cost (SAR)",
+    employeePct:"Employee Cost % (Tgt 17.0%)",
+    checklistPct:"Checklist Completion %",
+    positiveReviewPct:"Google Positive Review %",
+    negativeReviewPct:"Google Negative Review %",
+    complaintClosurePct:"Complaint Closure % (Tgt 90.0%)",
+    productAvailabilityPct:"Product Availability % (Tgt 95.0%)",
+    breakdownHours:"Breakdown Hours",
+    estimatedLostSales:"Estimated Lost Sales (SAR)"
+  };
+  return map[key] || key;
+}
+function fmtCalcValue(v, key){
+  if(v === null || v === undefined || isNaN(v)) return "—";
+  if(/Pct|Mix|Closure|Availability|DiscountPct/.test(key)) return pct(v);
+  if(/Sales|Discount$|Cost$|Loss|Variance|At$|AT$/.test(key) && !/Pct/.test(key)) {
+    if(/Variance|Loss|Cost|Discount|Sales|At$|AT$/.test(key)) return money(v);
+  }
+  if(/adt$|Qty|Reviews|Complaints|Checks|Tickets|Incidents/.test(key)) return integer(v);
+  if(/Hours/.test(key)) return round(v, 2) + " h";
+  return round(v, 2);
+}
+function recalcAllCalcFields(){
+  var rec = getFormRecord();
+  var c = calculate(rec);
+  document.querySelectorAll("input[data-calc-key]").forEach(function(inp){
+    var key = inp.dataset.calcKey;
+    var v = c[key];
+    if(v === null || v === undefined || isNaN(v)){ inp.value = "—"; return; }
+    if(/Pct|Mix|Closure|Availability|DiscountPct/.test(key)) inp.value = pct(v);
+    else if(/Hours/.test(key)) inp.value = round(v,2) + " h";
+    else if(/Qty|Reviews|Complaints|Checks|Tickets|Incidents|adt$/.test(key)) inp.value = integer(v);
+    else if(/Variance|Loss|Cost|Discount|Sales|At$|AT$|NetSales|WithoutTax/.test(key)) inp.value = money(v);
+    else inp.value = round(v, 2);
+  });
 }
 function makeField(def, groupId){
   var wrap = document.createElement("div");
@@ -1816,6 +1971,7 @@ function calculate(record){
   });
   return {
     salesWithoutTax: salesWoTax, totalDiscount: totalDiscount, netSales: netSales,
+    totalDiscountPct: safeDiv(totalDiscount, salesWoTax) * 100,
     foodSales: foodSales, grabGoSales: grabGoSales, merchSales: merchSales,
     cupsTotal: cupsTotal, upsizeQty: upsizeQty,
     adt: safeDiv(record.transactions, record.openingDays),
@@ -4014,7 +4170,7 @@ function switchView(name){
 function refreshCurrentView(){
   var active = document.querySelector(".nav-btn.active");
   var name = active ? active.dataset.view : "daily";
-  if(name==="daily"){ updateEntryHero(); updateEntryStatus(); refreshProgress();  }
+  if(name==="daily"){ updateEntryHero(); updateEntryStatus(); refreshProgress(); updateEntryDateLabel(); recalcAllCalcFields(); }
   if(name==="dailyreport") renderTransactions();
   if(name==="weekly") renderWeekly();
   if(name==="monthly") renderMonthly();
