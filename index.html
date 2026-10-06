@@ -119,7 +119,25 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.12);
   font-weight:800;font-size:10.5px;letter-spacing:.2px;
 }
-
+/* Locked calculated group (red header + read-only fields) */
+.form-card.calc-card .form-card-head{
+  background:linear-gradient(90deg,#6b1f1f,#a13131) !important;
+}
+.form-card.calc-card .form-card-head:hover{background:linear-gradient(90deg,#7a2424,#b23535) !important}
+.form-card.calc-card .form-card-head .chev{opacity:.5}
+.form-card.calc-card .form-card-head .locked-pill{
+  background:rgba(255,255,255,.22);color:#fff;font-weight:900;letter-spacing:.5px;
+}
+.calc-grid .field label{
+  color:#7a1e1e;font-weight:800;font-size:11px;
+}
+.calc-input{
+  width:100%;border:1px solid #e6bcbc;border-left:4px solid #bf4a49;
+  border-radius:9px;background:#fff6f6;color:#7a1e1e;
+  font-weight:800;padding:8px 10px;font-size:13px;
+  cursor:not-allowed;font-variant-numeric:tabular-nums;
+}
+.calc-input:focus{outline:none;box-shadow:none}
 
 
 
@@ -691,10 +709,12 @@ details.group>summary::-webkit-details-marker{display:none}
             </div>
             <div style="margin-top:6px;font-size:11px;color:#66787e" id="progHint">0 still empty</div>
           </div>
-          <button class="btn reset" id="resetFormBtn" type="button">Reset form</button>
+                    <button class="btn reset" id="resetFormBtn" type="button">Reset form</button>
           <button class="btn submit" id="submitDayBtn" type="button" disabled>✓ Submit Entry</button>
         </div>
       </div>
+    </section>
+
 
     <!-- ============ DAILY REPORT ============ -->
       
@@ -1873,8 +1893,9 @@ function updateFieldClass(el){
   el.classList.toggle("filled", v !== "");
   el.classList.toggle("missing", v === "");
 }
-function refreshGroupPills(){
+  function refreshGroupPills(){
   GROUPS.forEach(function(g){
+    if(g.special === "calc") return;   // calculated groups don't need a pill update
     if(g.special === "breakdowns"){
       var pillB = document.querySelector('[data-pill="'+g.id+'"]');
       if(pillB){
@@ -1931,10 +1952,12 @@ function refreshProgress(){
     if(filled === total) hint.textContent = "Ready to submit ✓";
     else hint.textContent = (total - filled) + " still empty";
   }
-  if(btn){
+   if(btn){
     if(filled === total) btn.removeAttribute("disabled");
     else btn.setAttribute("disabled","disabled");
   }
+  updateTopSubmitBtn();
+  updateEntryDateLabel();
 }
 
 
@@ -2109,8 +2132,11 @@ function loadDailyRecord(){
   refreshGroupPills();
   refreshProgress();
 
-  dirty = false;
+   dirty = false;
   updateEntryStatus(found ? "saved" : "new");
+  updateEntryDateLabel();
+  recalcAllCalcFields();
+  updateTopSubmitBtn();
 }
 function updateEntryStatus(mode){
   var chip = q("entryStatus");
@@ -2213,11 +2239,14 @@ function commitDailyRecord(){
       var el = q("f-"+f.key);
       if(el){ el.value=""; el.classList.remove("filled","missing"); }
     });
-    currentBreakdowns = [];
+        currentBreakdowns = [];
     renderBreakdowns();
     refreshGroupPills();
     refreshProgress();
-        dirty = false;
+    recalcAllCalcFields();
+    updateEntryDateLabel();
+    updateTopSubmitBtn();
+    dirty = false;
     updateEntryStatus("new");
     window.scrollTo({ top:0, behavior:"smooth" });
   }
@@ -2241,7 +2270,8 @@ function blankDailyRecord(){
   renderBreakdowns();
   refreshGroupPills();
   refreshProgress();
-
+  recalcAllCalcFields();
+  updateTopSubmitBtn();
 }
 function clearDailyRecord(){
   var date = q("f-date").value;
@@ -4205,6 +4235,8 @@ function bindEvents(){
   q("logoutBtn").addEventListener("click", logout);
 
   q("submitDayBtn").addEventListener("click", submitDailyRecord);
+    var topBtn = q("topSubmitBtn");
+  if(topBtn) topBtn.addEventListener("click", submitDailyRecord);
   q("resetFormBtn").addEventListener("click", function(){
     if(!window.confirm("Clear all fields on this form?")) return;
     blankDailyRecord();
@@ -4224,11 +4256,12 @@ function bindEvents(){
     q("f-date-hero").value = todayIso();
     loadDailyRecord();
   });
-  q("f-date-hero").addEventListener("change", function(){
+   q("f-date-hero").addEventListener("change", function(){
     q("f-date").value = q("f-date-hero").value;
     loadDailyRecord();
+    updateEntryDateLabel();
+    recalcAllCalcFields();
   });
-
    q("weekDate").addEventListener("change", renderWeekly);
   q("weekDate2").addEventListener("change", renderWeekly);
   q("weekDate3").addEventListener("change", renderWeekly);
