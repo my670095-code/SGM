@@ -666,7 +666,7 @@ details.group>summary::-webkit-details-marker{display:none}
     <div class="hero-mark">SGM</div>
     <div class="hero-text">
       <h3>Daily Operations Entry</h3>
-      <p>All fields are compulsory. Fill every box, then press Submit.</p>
+      <p>Fill in what you have. Blank fields are treated as zero.</p>
     </div>
   </div>
   <div class="hero-right">
@@ -1849,7 +1849,7 @@ function makeField(def, groupId){
   wrap.className = "field";
   var label = document.createElement("label");
   label.htmlFor = "f-"+def.key;
-  label.innerHTML = escapeHtml(def.label) + '<span class="req">*</span>';
+  label.innerHTML = escapeHtml(def.label);
   var input = document.createElement("input");
   input.id = "f-"+def.key;
   input.name = def.key;
@@ -1885,7 +1885,7 @@ function updateFieldClass(el){
   if(!el) return;
   var v = String(el.value||"").trim();
   el.classList.toggle("filled", v !== "");
-  el.classList.toggle("missing", v === "");
+  el.classList.remove("missing");
 }
   function refreshGroupPills(){
   GROUPS.forEach(function(g){
@@ -1943,13 +1943,10 @@ function refreshProgress(){
   }
   if(txt) txt.textContent = "Filled " + filled + " / " + total;
   if(hint){
-    if(filled === total) hint.textContent = "Ready to submit ✓";
-    else hint.textContent = (total - filled) + " still empty";
+    if(filled === total) hint.textContent = "All filled — ready to submit ✓";
+    else hint.textContent = (total - filled) + " left blank (optional)";
   }
-   if(btn){
-    if(filled === total) btn.removeAttribute("disabled");
-    else btn.setAttribute("disabled","disabled");
-  }
+   if(btn) btn.removeAttribute("disabled");
   updateTopSubmitBtn();
   updateEntryDateLabel();
 }
@@ -2164,8 +2161,7 @@ function updateTopSubmitBtn(){
   var total  = REQUIRED_FIELDS.length;
   var filled = countRequiredFilled();
   if(pill) pill.textContent = filled + " / " + total;
-  if(filled === total) btn.removeAttribute("disabled");
-  else btn.setAttribute("disabled","disabled");
+  btn.removeAttribute("disabled");
 }
 function updateEntryHero(){
   var label = q("entryStoreLabel");
@@ -2175,19 +2171,12 @@ function updateEntryHero(){
 }
 function submitDailyRecord(){
   syncBreakdownsFromDom();
-  var missing = getMissingFields();
-  if(missing.length){
-    REQUIRED_FIELDS.forEach(function(f){ updateFieldClass(q("f-"+f.key)); });
-    document.querySelectorAll("details.group").forEach(function(d){ d.open = true; });
-    showToast("Cannot submit — "+missing.length+" required field"+(missing.length>1?"s":"")+" still empty.");
-    refreshProgress();
-    return;
-  }
   var badBd = false;
   currentBreakdowns.forEach(function(b){
-    if(!b.asset || !b.start || !b.end) badBd = true;
+    var any = b.asset || b.start || b.end;
+    if(any && (!b.asset || !b.start || !b.end)) badBd = true;
   });
-  if(badBd){ showToast("Complete every breakdown row (equipment + start + end) or remove it."); return; }
+  if(badBd){ showToast("A breakdown row was started — finish it or remove it."); return; }
 
   var rec = getFormRecord();
   var c = calculate(rec);
