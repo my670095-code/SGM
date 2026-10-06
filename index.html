@@ -4370,9 +4370,11 @@ function init(){
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
   bindEvents();
-
   // Always hide the app shell first — login screen is shown by default in HTML
   q("appShell").style.display = "none";
+
+  // TEMPORARY: clear any stale session so login always appears fresh
+  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
 
   if(restoreSession()){
     computeVisibleStores();
