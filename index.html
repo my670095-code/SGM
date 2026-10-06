@@ -4392,7 +4392,32 @@ function init(){
     q("loginScreen").classList.add("show");
   }
 }
-init();
+try {
+  init();
+} catch (err) {
+  console.error("INIT FAILED:", err);
+  // Force login screen visible even if init crashed
+  var ls = document.getElementById("loginScreen");
+  if(ls) ls.classList.add("show");
+  var as = document.getElementById("appShell");
+  if(as) as.style.display = "none";
+  // Wire up a minimal login handler so the user can still log in
+  try {
+    var sBtn = document.getElementById("loginStoreBtn");
+    if(sBtn) sBtn.addEventListener("click", function(){ 
+      try { tryStoreLogin(); } catch(e2){ alert("Login error: " + e2.message); }
+    });
+    var mBtn = document.getElementById("loginManagerBtn");
+    if(mBtn) mBtn.addEventListener("click", function(){
+      try { tryManagerLogin(); } catch(e2){ alert("Login error: " + e2.message); }
+    });
+  } catch(e3) {}
+  // Show the error visibly
+  var box = document.createElement("div");
+  box.style.cssText = "position:fixed;bottom:10px;left:10px;right:10px;background:#7a1e1e;color:#fff;padding:12px;font:13px monospace;z-index:9999;border-radius:8px;white-space:pre-wrap;";
+  box.textContent = "Init error: " + (err && err.message ? err.message : String(err));
+  document.body.appendChild(box);
+}
 }());
 </script>
 </body>
