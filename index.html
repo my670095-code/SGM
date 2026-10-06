@@ -4353,67 +4353,52 @@ function bindEvents(){
     }
   });
 }
-function step(label, fn){
-  try {
-    fn();
-    console.log("✓ " + label);
-  } catch (err) {
-    console.error("✗ " + label + " — FAILED:", err);
-    throw err;
+ function init(){
+  renderForm();
+  q("f-date").value = todayIso();
+  q("f-date-hero").value = todayIso();
+  q("weekDate").value = todayIso();
+  q("weekDate2").value = addDays(todayIso(), -7);
+  q("weekDate3").value = addDays(todayIso(), -14);
+  q("weekDate4").value = addDays(todayIso(), -21);
+  q("monthDate").value = currentMonthIso();
+  q("monthDate2").value = shiftMonth(currentMonthIso(), -1);
+  q("monthDate3").value = shiftMonth(currentMonthIso(), -2);
+  q("dashMonth").value = currentMonthIso();
+  q("plannedHours").value = state.settings.plannedHours || 24;
+  q("defaultStorePin").value = state.defaultStorePin || "0000";
+  renderSalaryTable();
+  bindEvents();
+  q("appShell").style.display = "none";
+  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+  if(restoreSession()){
+    computeVisibleStores();
+    setupStores();
+    fillTxStoreFilter();
+    loadDailyRecord();
+    updateStorageStat();
+    renderStoreFilters();
+    renderStores();
+    renderUsers();
+    renderTransactions();
+    applyRoleUi();
+    switchView("daily");
+  } else {
+    q("loginScreen").classList.add("show");
   }
 }
 
-function init(){
-  step("renderForm", function(){ renderForm(); });
-  step("set f-date", function(){ q("f-date").value = todayIso(); });
-  step("set f-date-hero", function(){ q("f-date-hero").value = todayIso(); });
-  step("set weekDate", function(){ q("weekDate").value = todayIso(); });
-  step("set weekDate2", function(){ q("weekDate2").value = addDays(todayIso(), -7); });
-  step("set weekDate3", function(){ q("weekDate3").value = addDays(todayIso(), -14); });
-  step("set weekDate4", function(){ q("weekDate4").value = addDays(todayIso(), -21); });
-  step("set monthDate", function(){ q("monthDate").value = currentMonthIso(); });
-  step("set monthDate2", function(){ q("monthDate2").value = shiftMonth(currentMonthIso(), -1); });
-  step("set monthDate3", function(){ q("monthDate3").value = shiftMonth(currentMonthIso(), -2); });
-  step("set dashMonth", function(){ q("dashMonth").value = currentMonthIso(); });
-  step("set plannedHours", function(){ q("plannedHours").value = state.settings.plannedHours || 24; });
-  step("set defaultStorePin", function(){ q("defaultStorePin").value = state.defaultStorePin || "0000"; });
-  step("renderSalaryTable", function(){ renderSalaryTable(); });
-  step("bindEvents", function(){ bindEvents(); });
-  step("hide appShell", function(){ q("appShell").style.display = "none"; });
-  step("clear session", function(){ try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){} });
-
-  step("restore/init", function(){
-    if(restoreSession()){
-      computeVisibleStores();
-      setupStores();
-      fillTxStoreFilter();
-      loadDailyRecord();
-      updateStorageStat();
-      renderStoreFilters();
-      renderStores();
-      renderUsers();
-      renderTransactions();
-      applyRoleUi();
-      switchView("daily");
-    } else {
-      q("loginScreen").classList.add("show");
-    }
-  });
-
-  console.log("=== INIT COMPLETE ===");
-}
-init();
+try {
+  init();
 } catch (err) {
   console.error("INIT FAILED:", err);
-  // Force login screen visible even if init crashed
   var ls = document.getElementById("loginScreen");
   if(ls) ls.classList.add("show");
   var as = document.getElementById("appShell");
   if(as) as.style.display = "none";
-  // Wire up a minimal login handler so the user can still log in
   try {
     var sBtn = document.getElementById("loginStoreBtn");
-    if(sBtn) sBtn.addEventListener("click", function(){ 
+    if(sBtn) sBtn.addEventListener("click", function(){
       try { tryStoreLogin(); } catch(e2){ alert("Login error: " + e2.message); }
     });
     var mBtn = document.getElementById("loginManagerBtn");
@@ -4421,7 +4406,6 @@ init();
       try { tryManagerLogin(); } catch(e2){ alert("Login error: " + e2.message); }
     });
   } catch(e3) {}
-  // Show the error visibly
   var box = document.createElement("div");
   box.style.cssText = "position:fixed;bottom:10px;left:10px;right:10px;background:#7a1e1e;color:#fff;padding:12px;font:13px monospace;z-index:9999;border-radius:8px;white-space:pre-wrap;";
   box.textContent = "Init error: " + (err && err.message ? err.message : String(err));
