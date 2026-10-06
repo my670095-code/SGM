@@ -56,11 +56,11 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .btn.small{padding:6px 9px;font-size:12px}
 .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
 .card{background:var(--paper);border:1px solid #e0e8e6;border-radius:var(--radius);box-shadow:var(--shadow)}
-
-/* ============ DAILY ENTRY (cleaned) ============ */
+}
+  /* ============ DAILY ENTRY (simplified) ============ */
 .entry-hero{
   display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;
-  padding:16px 20px;margin-bottom:12px;
+  padding:16px 20px;margin-bottom:14px;
   background:linear-gradient(110deg,#082c37,#0f4958);color:#fff;
   border-radius:var(--radius);box-shadow:0 10px 28px rgba(11,51,64,.18);
 }
@@ -77,6 +77,12 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   border:1px solid rgba(255,255,255,.2);font-weight:800;font-size:13px;letter-spacing:.3px;
 }
 .entry-store-chip small{display:block;font-weight:600;opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.entry-date-chip{
+  padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.2);min-width:140px;
+}
+.entry-date-chip small{display:block;font-weight:600;opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.entry-date-chip span{font-weight:800;font-size:13px;letter-spacing:.3px}
 .entry-date-input{
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;
   border-radius:10px;padding:9px 12px;font-weight:800;font-size:13px;outline:none;
@@ -96,128 +102,130 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .entry-status.new{background:rgba(213,156,58,.25);color:#ffe1a8;border:1px solid rgba(213,156,58,.5)}
 .entry-status.saved{background:rgba(35,130,100,.3);color:#c8f5e3;border:1px solid rgba(193,241,225,.35)}
 .entry-status.dirty{background:rgba(191,74,73,.28);color:#ffd4d3;border:1px solid rgba(255,180,180,.4)}
-.entry-date-chip{
-  padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.1);
-  border:1px solid rgba(255,255,255,.2);min-width:140px;
-}
-.entry-date-chip small{
-  display:block;font-weight:600;opacity:.7;font-size:10px;
-  text-transform:uppercase;letter-spacing:.5px;
-}
-.entry-date-chip span{font-weight:800;font-size:13px;letter-spacing:.3px}
 
-.entry-submit-btn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:10px 18px;border-radius:10px;border:1px solid #c58c2c;
-  background:var(--gold);color:#2d2b22;font-weight:900;font-size:13px;
-  box-shadow:0 4px 12px rgba(213,156,58,.35);
-  transition:transform .12s,background .12s;
+/* -------- Flat section card -------- */
+.section{
+  background:#fff;border:1px solid #e0e8e6;border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;
 }
-.entry-submit-btn:hover:not([disabled]){transform:translateY(-1px);background:#e0a948}
-.entry-submit-btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
-.entry-submit-pill{
-  padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.12);
-  font-weight:800;font-size:10.5px;letter-spacing:.2px;
+.section-head{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 18px;background:#f4f8f7;border-bottom:1px solid #e5ecea;
 }
-/* Locked calculated group (red header + read-only fields) */
-.form-card.calc-card .form-card-head{
-  background:linear-gradient(90deg,#6b1f1f,#a13131) !important;
+.section-head .num{
+  width:26px;height:26px;border-radius:8px;background:var(--navy);color:#fff;
+  display:grid;place-items:center;font-weight:900;font-size:12px;flex-shrink:0;
 }
-.form-card.calc-card .form-card-head:hover{background:linear-gradient(90deg,#7a2424,#b23535) !important}
-.form-card.calc-card .form-card-head .chev{opacity:.5}
-.form-card.calc-card .form-card-head .locked-pill{
-  background:rgba(255,255,255,.22);color:#fff;font-weight:900;letter-spacing:.5px;
-}
-.calc-grid .field label{
-  color:#7a1e1e;font-weight:800;font-size:11px;
-}
-.calc-input{
-  width:100%;border:1px solid #e6bcbc;border-left:4px solid #bf4a49;
-  border-radius:9px;background:#fff6f6;color:#7a1e1e;
-  font-weight:800;padding:8px 10px;font-size:13px;
-  cursor:not-allowed;font-variant-numeric:tabular-nums;
-}
-.calc-input:focus{outline:none;box-shadow:none}
+.section-head h4{margin:0;font-size:14px;color:var(--navy);font-weight:800}
+.section-head .sub{margin-left:auto;color:var(--muted);font-size:11.5px;font-weight:600}
+.section-body{padding:16px 18px}
 
-
-
-
-.form-card{overflow:hidden;transition:box-shadow .15s;scroll-margin-top:110px}
-.form-card:hover{box-shadow:0 14px 34px rgba(11,51,64,.1)}
-.form-card-head{
-  padding:12px 16px;color:#fff;background:var(--navy);
-  display:flex;align-items:center;justify-content:space-between;cursor:pointer;
-  user-select:none;gap:12px;
+/* -------- Field grid -------- */
+.grid{
+  display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:14px 16px;
 }
-.form-card-head:hover{background:#0d3b49}
-.form-card-head h3{margin:0;font-size:13.5px;display:flex;align-items:center;gap:9px}
-.form-card-head .chev{display:inline-block;transition:transform .2s;font-size:11px;opacity:.75}
-details.group[open] .form-card-head .chev{transform:rotate(90deg)}
-.form-card-head .head-right{display:flex;align-items:center;gap:10px;font-size:11px}
-.form-card-head .hint{opacity:.75}
-.form-card-head .progress-pill{
-  padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.15);
-  font-weight:800;font-size:10.5px;letter-spacing:.3px;
+.grid.cols-3{grid-template-columns:repeat(3,minmax(180px,1fr))}
+.grid.cols-2{grid-template-columns:repeat(2,minmax(220px,1fr))}
+.field{min-width:0;display:flex;flex-direction:column;gap:5px}
+.field label{
+  color:#3e545a;font-size:12px;font-weight:700;line-height:1.3;
 }
-.form-card-head .progress-pill.full{background:var(--gold);color:#2d2b22}
-.form-card-head .progress-pill.partial{background:rgba(213,156,58,.35);color:#ffe1a8}
-.form-card-head .progress-pill.empty{background:rgba(191,74,73,.35);color:#ffd4d3}
-.form-card.accent .form-card-head{background:linear-gradient(90deg,#8a5f10,#b88122)}
-.form-card-body{padding:16px}
+.field label .opt{
+  color:#95a5a9;font-weight:500;font-size:10.5px;margin-left:4px;
+}
+.field input,.field select,.field textarea{
+  width:100%;border:1px solid #cfdbd8;border-radius:9px;color:var(--ink);
+  background:#fff;padding:10px 12px;outline:none;font-size:13.5px;
+  transition:border-color .12s, box-shadow .12s;
+}
+.field input:hover,.field select:hover{border-color:#aabcb8}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(18,74,89,.1);
+}
+.field input.filled{border-color:#8dc6b1;background:#fbfffd}
+.field input.input-date{border-left:4px solid var(--gold)}
 
-.field-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px}
-.field{min-width:0}
-.field label{display:block;min-height:30px;margin-bottom:5px;color:#40565c;font-size:11.5px;font-weight:700;line-height:1.25}
-.field label .req{color:var(--red);font-weight:900;margin-left:2px}
-.field input,.field select,.field textarea,.control-input{width:100%;border:1px solid #cdd9d6;border-radius:9px;color:var(--ink);background:#fff;padding:8px 10px;outline:none;font-size:13px}
-.field input:focus,.field select:focus,.field textarea:focus,.control-input:focus{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(18,74,89,.1)}
-.field input.filled{border-color:#7db8a2;background:#f6fcf9}
-.field input.missing{border-color:#efc6c5;background:#fff7f7;border-left:4px solid var(--red)}
-.field small{display:block;margin-top:4px;color:#819196;font-size:10px}
-.input-date{border-left:4px solid var(--gold) !important}
+/* -------- Live summary strip -------- */
+.live-strip{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;margin-top:14px;padding:12px 14px;
+  background:#f4f8f7;border:1px dashed #cbdad6;border-radius:12px;
+}
+.live-strip .cell{min-width:0}
+.live-strip .cell .k{
+  color:#6b7d82;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;
+}
+.live-strip .cell .v{
+  margin-top:3px;color:var(--navy);font-size:15px;font-weight:900;
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 
-.breakdown-row{display:grid;grid-template-columns:1.2fr 1fr 1fr 70px 34px;gap:8px;align-items:center;margin-bottom:8px}
-.breakdown-row input{width:100%;border:1px solid #cdd9d6;border-radius:8px;padding:8px;font-size:12px}
-.breakdown-row input.missing{border-color:#efc6c5;background:#fff7f7;border-left:4px solid var(--red)}
-.breakdown-hours{text-align:center;font-weight:800;color:var(--navy);font-size:12px;font-variant-numeric:tabular-nums}
-.icon-btn{border:0;width:34px;height:34px;border-radius:8px;color:var(--red);background:var(--red-soft);font-weight:900}
-.bd-empty{padding:12px 14px;background:#f8faf9;border:1px dashed #cdd9d6;border-radius:10px;color:var(--muted);font-size:12px}
+/* -------- Breakdown rows -------- */
+.bd-row{
+  display:grid;grid-template-columns:1.4fr 1fr 1fr 70px 36px;
+  gap:8px;align-items:center;margin-bottom:8px;
+}
+.bd-row input{
+  width:100%;border:1px solid #cfdbd8;border-radius:8px;padding:9px 10px;font-size:12.5px;
+}
+.bd-row .hrs{
+  text-align:center;font-weight:800;color:var(--navy);font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.icon-btn{
+  border:0;width:36px;height:36px;border-radius:9px;color:var(--red);
+  background:var(--red-soft);font-weight:900;font-size:15px;
+}
+.bd-empty{
+  padding:14px 16px;background:#f8faf9;border:1px dashed #cdd9d6;
+  border-radius:10px;color:var(--muted);font-size:12.5px;
+}
 
+/* -------- Sticky submit bar -------- */
 .submit-bar{
-  position:sticky;bottom:0;z-index:15;
-  margin-top:18px;
+  position:sticky;bottom:0;z-index:15;margin-top:18px;
   background:linear-gradient(180deg, rgba(238,243,242,.6), var(--canvas) 60%);
-  padding:14px 0 6px;
-  backdrop-filter:blur(6px);
+  padding:14px 0 6px;backdrop-filter:blur(6px);
 }
 .submit-bar-inner{
-  max-width:1180px;margin:0 auto;
   background:#fff;border:1px solid #e0e8e6;border-radius:14px;
-  padding:14px 18px;
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   box-shadow:0 10px 26px rgba(11,51,64,.12);
 }
 .submit-bar .progress-wrap{flex:1;min-width:220px}
-.submit-bar .progress-label{display:flex;justify-content:space-between;font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:5px}
+.submit-bar .progress-label{
+  display:flex;justify-content:space-between;font-size:11.5px;
+  font-weight:800;color:var(--muted);margin-bottom:5px;
+}
 .submit-bar .progress-label strong{color:var(--navy)}
-.submit-bar .progress-track{height:8px;background:#eef3f2;border-radius:99px;overflow:hidden;border:1px solid #dbe6e3}
-.submit-bar .progress-fill{height:100%;background:linear-gradient(90deg,#238264,#4fbf99);transition:width .2s}
+.submit-bar .progress-track{
+  height:8px;background:#eef3f2;border-radius:99px;overflow:hidden;border:1px solid #dbe6e3;
+}
+.submit-bar .progress-fill{
+  height:100%;background:linear-gradient(90deg,#238264,#4fbf99);transition:width .2s;
+}
 .submit-bar .progress-fill.partial{background:linear-gradient(90deg,#d59c3a,#e8b769)}
 .submit-bar .btn.submit{
   padding:12px 26px;font-size:14px;font-weight:900;
-  color:#2d2b22;background:var(--gold);border:1px solid #c58c2c;box-shadow:0 4px 12px rgba(213,156,58,.35);
+  color:#2d2b22;background:var(--gold);border:1px solid #c58c2c;
+  box-shadow:0 4px 12px rgba(213,156,58,.35);
 }
-.submit-bar .btn.submit:hover{transform:translateY(-1px);background:#e0a948}
-.submit-bar .btn.submit[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.submit-bar .btn.submit:hover:not([disabled]){transform:translateY(-1px);background:#e0a948}
 .submit-bar .btn.reset{background:#fff;color:var(--navy)}
 
-.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin:0}
-.summary-grid .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5ecea;font-size:13px}
-.summary-grid .row span{color:var(--muted)}
-.summary-grid .row strong{color:var(--navy);font-weight:800;font-variant-numeric:tabular-nums}
-.summary-section{margin-top:14px;padding:12px 14px;background:#f5f8f7;border-radius:10px;font-size:12.5px;line-height:1.55;color:#3a4a4f}
-.summary-section strong{color:var(--navy)}
-.confirm-icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--gold-soft);color:var(--gold);font-size:28px;margin:0 auto 8px}
+@media (max-width:1150px){
+  .grid{grid-template-columns:repeat(3,minmax(150px,1fr))}
+}
+@media (max-width:760px){
+  .grid,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr 1fr}
+  .section-body{padding:14px}
+  .bd-row{grid-template-columns:1fr 1fr;padding:10px;border:1px solid var(--line);border-radius:10px}
+  .bd-row .asset{grid-column:1 / -1}
+}
+@media (max-width:480px){
+  .grid,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr}
+}
 
 /* ============ REPORTS ============ */
 .report-shell{
@@ -659,45 +667,41 @@ details.group>summary::-webkit-details-marker{display:none}
   </header>
 
   <main>
-    <!-- ============ DAILY ENTRY ============ -->
+        <!-- ============ DAILY ENTRY ============ -->
     <section id="view-daily" class="view active">
       <div class="entry-hero" id="entryHero">
-  <div class="hero-left">
-    <div class="hero-mark">SGM</div>
-    <div class="hero-text">
-      <h3>Daily Operations Entry</h3>
-      <p>Fill in what you have. Blank fields are treated as zero.</p>
-    </div>
-  </div>
-  <div class="hero-right">
-    <div class="entry-store-chip">
-      <small>Store</small>
-      <span id="entryStoreLabel">—</span>
-    </div>
+        <div class="hero-left">
+          <div class="hero-mark">SGM</div>
+          <div class="hero-text">
+            <h3>Daily Operations Entry</h3>
+            <p>Fill in what you have — blanks are treated as zero.</p>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="entry-store-chip">
+            <small>Store</small>
+            <span id="entryStoreLabel">—</span>
+          </div>
+          <div class="entry-date-chip" title="Currently selected date">
+            <small>Selected Date</small>
+            <span id="entryDateLabel">—</span>
+          </div>
+          <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
+          <button class="entry-icon-btn" id="loadTodayBtn" type="button" title="Jump to today">📅 Today</button>
+          <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
+          <button class="entry-submit-btn" id="topSubmitBtn" type="button">
+            ✓ Submit
+            <span class="entry-submit-pill" id="topSubmitPill">0 / 0</span>
+          </button>
+          <span class="entry-status new" id="entryStatus">
+            <span class="dot"></span><span id="entryStatusText">New entry</span>
+          </span>
+        </div>
+      </div>
 
-    <!-- C2 → Selected date display -->
-    <div class="entry-date-chip" title="Currently selected date">
-      <small>Selected Date</small>
-      <span id="entryDateLabel">—</span>
-    </div>
-    <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
+      <div id="formStack"></div>
 
-    <button class="entry-icon-btn" id="loadTodayBtn" type="button" title="Jump to today">📅 Today</button>
-    <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
-
-    <!-- C1 → Submit button in the header -->
-    <button class="entry-submit-btn" id="topSubmitBtn" type="button" disabled>
-      ✓ Submit
-      <span class="entry-submit-pill" id="topSubmitPill">0 / 0</span>
-    </button>
-
-    <span class="entry-status new" id="entryStatus">
-      <span class="dot"></span><span id="entryStatusText">New entry</span>
-    </span>
-  </div>
-</div>
-<div class="form-stack" id="formStack"></div>
-            <div class="submit-bar">
+      <div class="submit-bar">
         <div class="submit-bar-inner">
           <div class="progress-wrap">
             <div class="progress-label">
@@ -707,10 +711,10 @@ details.group>summary::-webkit-details-marker{display:none}
             <div class="progress-track">
               <div class="progress-fill partial" id="progFill" style="width:0%"></div>
             </div>
-            <div style="margin-top:6px;font-size:11px;color:#66787e" id="progHint">0 still empty</div>
+            <div style="margin-top:6px;font-size:11px;color:#66787e" id="progHint">0 left blank (optional)</div>
           </div>
-                    <button class="btn reset" id="resetFormBtn" type="button">Reset form</button>
-          <button class="btn submit" id="submitDayBtn" type="button" disabled>✓ Submit Entry</button>
+          <button class="btn reset" id="resetFormBtn" type="button">Reset form</button>
+          <button class="btn submit" id="submitDayBtn" type="button">✓ Submit Entry</button>
         </div>
       </div>
     </section>
@@ -1244,6 +1248,20 @@ var MERCH_SKUS = [
   ["decaf","Decaf"],["dripPacket","Drip Packet"],["greenTea","Green Tea"],["herbTea","Herb Tea"],
   ["keyChain","Key Chain"],["mugs","Mugs"],["toteBag","Tote Bag"],["tumbler","Tumbler"]
 ];
+  /* Live summary keys shown under each input section */
+var LIVE_KEYS = {
+  salesMix:    ["salesWithoutTax","netSales","totalDiscount","adt","at","salesVsTargetPct"],
+  foodMix:     ["foodSales","foodMix"],
+  grabGoMix:   ["grabGoSales","grabGoMix"],
+  merchMix:    ["merchSales","merchandiseMix"],
+  cupMix:      ["cupsTotal","upsizeQty","upsizePct"],
+  dcApp:       ["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"],
+  controls:    ["cancelledBillPct","unpunchedPct","cashVariancePct"],
+  costEmployee:["employeeCost","employeePct","cogsPct","wastagePct","inventoryVariancePct"],
+  performance: ["checklistPct","positiveReviewPct","complaintClosurePct"],
+  availability:["productAvailabilityPct"],
+  maintenance: ["breakdownHours","estimatedLostSales"]
+};
 
   var GROUPS = [
   { id:"dateTarget", label:"Entry Date & Revenue Targets", hint:"Target first, then actual", accent:true, fields:[
@@ -1683,38 +1701,30 @@ function applyRoleUi(){
 /* ============================================================
    DAILY FORM
    ============================================================ */
-  function renderForm(){
+ function renderForm(){
   var host = q("formStack");
   host.innerHTML = "";
-  GROUPS.forEach(function(g, idx){
-    var details = document.createElement("details");
-    details.className = "card form-card group" + (g.accent ? " accent" : "") + (g.special === "calc" ? " calc-card" : "");
-    details.open = (idx === 0);
-    details.dataset.groupId = g.id;
-    details.id = "sec-" + g.id;
+  var sectionNo = 0;
 
-    var summary = document.createElement("summary");
-    summary.className = "form-card-head";
+  GROUPS.forEach(function(g){
+    /* Skip the old "calc" pseudo-groups — their values are shown inline instead */
+    if(g.special === "calc") return;
 
-    var pillHtml = "";
-    if(g.special === "breakdowns"){
-      pillHtml = '<span class="progress-pill" data-pill="'+g.id+'">0 events</span>';
-    } else if(g.special === "calc"){
-      pillHtml = '<span class="progress-pill locked-pill">🔒 LOCKED</span>';
-    } else {
-      pillHtml = '<span class="progress-pill" data-pill="'+g.id+'">0 / '+g.fields.length+'</span>';
-    }
+    sectionNo++;
+    var sec = document.createElement("div");
+    sec.className = "section";
+    sec.id = "sec-" + g.id;
 
-    summary.innerHTML =
-      '<h3><span class="chev">▶</span>'+escapeHtml(g.label)+'</h3>' +
-      '<div class="head-right">' +
-        '<span class="hint">'+escapeHtml(g.hint||"")+'</span>' +
-        pillHtml +
-      '</div>';
-    details.appendChild(summary);
+    var head = document.createElement("div");
+    head.className = "section-head";
+    head.innerHTML =
+      '<div class="num">' + sectionNo + '</div>' +
+      '<h4>' + escapeHtml(g.label.replace(/\s*\(INPUT\).*$/i, "").replace(/\s*\(LOCKED\).*$/i, "")) + '</h4>' +
+      '<div class="sub">' + escapeHtml(g.hint || "") + '</div>';
+    sec.appendChild(head);
 
     var body = document.createElement("div");
-    body.className = "form-card-body";
+    body.className = "section-body";
 
     if(g.special === "breakdowns"){
       var bdHost = document.createElement("div");
@@ -1724,7 +1734,7 @@ function applyRoleUi(){
       addBtn.type = "button";
       addBtn.className = "btn small";
       addBtn.id = "addBreakdownBtn";
-      addBtn.style.marginTop = "8px";
+      addBtn.style.marginTop = "10px";
       addBtn.textContent = "+ Add breakdown";
       addBtn.addEventListener("click", function(){
         currentBreakdowns.push({ id: uid("bd"), asset:"", start:"", end:"" });
@@ -1732,42 +1742,38 @@ function applyRoleUi(){
         renderBreakdowns();
       });
       body.appendChild(addBtn);
-    } else if(g.special === "calc"){
-      /* Locked calculated fields grid */
-      var cgrid = document.createElement("div");
-      cgrid.className = "field-grid calc-grid";
-      g.calcKeys.forEach(function(k){
-        var wrap = document.createElement("div");
-        wrap.className = "field calc-field";
-        var lbl = document.createElement("label");
-        lbl.textContent = calcLabelFor(k);
-        var ro = document.createElement("input");
-        ro.type = "text";
-        ro.id = "calc-"+k;
-        ro.readOnly = true;
-        ro.tabIndex = -1;
-        ro.dataset.calcKey = k;
-        ro.className = "calc-input";
-        ro.value = "—";
-        wrap.appendChild(lbl);
-        wrap.appendChild(ro);
-        cgrid.appendChild(wrap);
-      });
-      body.appendChild(cgrid);
     } else {
       var grid = document.createElement("div");
-      grid.className = "field-grid";
+      var cols = g.fields.length % 3 === 0 ? "cols-3"
+               : g.fields.length % 2 === 0 ? "cols-2"
+               : "";
+      grid.className = "grid " + cols;
       g.fields.forEach(function(f){ grid.appendChild(makeField(f, g.id)); });
       body.appendChild(grid);
+
+      /* Inline live summary for this section (only for groups that have calc outputs) */
+      var liveKeys = LIVE_KEYS[g.id];
+      if(liveKeys && liveKeys.length){
+        var strip = document.createElement("div");
+        strip.className = "live-strip";
+        liveKeys.forEach(function(k){
+          var cell = document.createElement("div");
+          cell.className = "cell";
+          cell.innerHTML = '<div class="k">'+escapeHtml(calcLabelFor(k).replace(/\s*\(.*\)$/,""))+'</div>'+
+                           '<div class="v" data-live="'+k+'">—</div>';
+          strip.appendChild(cell);
+        });
+        body.appendChild(strip);
+      }
     }
 
-    details.appendChild(body);
-    host.appendChild(details);
+    sec.appendChild(body);
+    host.appendChild(sec);
   });
 
-  /* Recalculate all locked calc fields whenever any input changes */
-  host.addEventListener("input", function(){ recalcAllCalcFields(); });
-  host.addEventListener("change", function(){ recalcAllCalcFields(); });
+  /* Attach recalculation listeners once */
+  host.addEventListener("input", recalcAllCalcFields);
+  host.addEventListener("change", recalcAllCalcFields);
 
   renderBreakdowns();
   refreshGroupPills();
@@ -1833,15 +1839,15 @@ function fmtCalcValue(v, key){
 function recalcAllCalcFields(){
   var rec = getFormRecord();
   var c = calculate(rec);
-  document.querySelectorAll("input[data-calc-key]").forEach(function(inp){
-    var key = inp.dataset.calcKey;
+  document.querySelectorAll("[data-live]").forEach(function(el){
+    var key = el.dataset.live;
     var v = c[key];
-    if(v === null || v === undefined || isNaN(v)){ inp.value = "—"; return; }
-    if(/Pct|Mix|Closure|Availability|DiscountPct/.test(key)) inp.value = pct(v);
-    else if(/Hours/.test(key)) inp.value = round(v,2) + " h";
-    else if(/Qty|Reviews|Complaints|Checks|Tickets|Incidents|adt$/.test(key)) inp.value = integer(v);
-    else if(/Variance|Loss|Cost|Discount|Sales|At$|AT$|NetSales|WithoutTax/.test(key)) inp.value = money(v);
-    else inp.value = round(v, 2);
+    if(v === null || v === undefined || isNaN(v)){ el.textContent = "—"; return; }
+    if(/Pct|Mix|Closure|Availability|DiscountPct/.test(key)) el.textContent = pct(v);
+    else if(/Hours/.test(key)) el.textContent = round(v,2) + " h";
+    else if(/Qty|Reviews|Complaints|Checks|Tickets|Incidents|adt$/.test(key)) el.textContent = integer(v);
+    else if(/Variance|Loss|Cost|Discount|Sales|At$|AT$|NetSales|WithoutTax/.test(key)) el.textContent = "SAR " + money(v);
+    else el.textContent = round(v, 2);
   });
 }
 function makeField(def, groupId){
@@ -1849,34 +1855,31 @@ function makeField(def, groupId){
   wrap.className = "field";
   var label = document.createElement("label");
   label.htmlFor = "f-"+def.key;
-  label.innerHTML = escapeHtml(def.label);
+  label.innerHTML = escapeHtml(def.label) + ' <span class="opt">(optional)</span>';
   var input = document.createElement("input");
   input.id = "f-"+def.key;
   input.name = def.key;
   input.type = def.type || "number";
   input.dataset.groupId = groupId;
-  input.required = true;
   if(input.type==="number"){
     input.step = def.step || "0.01";
-    if(!def.allowNegative) input.min = "0";
     if(def.max) input.max = def.max;
     input.inputMode = "decimal";
-    input.addEventListener("input", function(){
-      markDirty();
-      updateFieldClass(input);
-      refreshGroupPills();
-      refreshProgress();
-          });
-  } else {
-    input.addEventListener("change", function(){
-      markDirty();
-      updateFieldClass(input);
-      refreshGroupPills();
-      refreshProgress();
-     
-    });
+    input.placeholder = "0";
   }
   if(def.cls) input.className = (input.className?input.className+" ":"") + def.cls;
+  input.addEventListener("input", function(){
+    markDirty();
+    input.classList.toggle("filled", String(input.value||"").trim() !== "");
+    refreshGroupPills();
+    refreshProgress();
+  });
+  input.addEventListener("change", function(){
+    markDirty();
+    input.classList.toggle("filled", String(input.value||"").trim() !== "");
+    refreshGroupPills();
+    refreshProgress();
+  });
   wrap.appendChild(label);
   wrap.appendChild(input);
   return wrap;
@@ -1943,7 +1946,7 @@ function refreshProgress(){
   }
   if(txt) txt.textContent = "Filled " + filled + " / " + total;
   if(hint){
-    if(filled === total) hint.textContent = "All filled — ready to submit ✓";
+    if(filled === total) hint.textContent = "All filled ✓";
     else hint.textContent = (total - filled) + " left blank (optional)";
   }
    if(btn) btn.removeAttribute("disabled");
@@ -2039,7 +2042,7 @@ function renderBreakdowns(){
   if(!currentBreakdowns.length){
     var d = document.createElement("div");
     d.className = "bd-empty";
-    d.textContent = "No breakdown recorded for this date. Click + Add breakdown if there was one.";
+    d.textContent = "No breakdown recorded. Click + Add breakdown if there was one.";
     host.appendChild(d);
     refreshGroupPills();
     refreshProgress();
@@ -2047,23 +2050,23 @@ function renderBreakdowns(){
   }
   currentBreakdowns.forEach(function(item, index){
     var row = document.createElement("div");
-    row.className = "breakdown-row";
+    row.className = "bd-row";
     row.dataset.index = index;
     row.innerHTML =
       '<input class="asset" data-k="asset" type="text" placeholder="Equipment / issue" value="'+escapeAttr(item.asset||"")+'">'+
       '<input data-k="start" type="datetime-local" value="'+escapeAttr(item.start||"")+'">'+
       '<input data-k="end" type="datetime-local" value="'+escapeAttr(item.end||"")+'">'+
-      '<div class="breakdown-hours">'+round(calculateBreakdown(item, n(q("f-targetSales")?q("f-targetSales").value:0)).hours,2)+' h</div>'+
+      '<div class="hrs">'+round(calculateBreakdown(item, n(q("f-targetSales")?q("f-targetSales").value:0)).hours,2)+' h</div>'+
       '<button class="icon-btn" data-remove="'+index+'" type="button" title="Remove">×</button>';
     row.querySelectorAll("input").forEach(function(inp){
       inp.addEventListener("input", function(){
         currentBreakdowns[index][inp.dataset.k] = inp.value;
         var r = calculateBreakdown(currentBreakdowns[index], n(q("f-targetSales")?q("f-targetSales").value:0));
-        row.querySelector(".breakdown-hours").textContent = round(r.hours,2)+" h";
+        row.querySelector(".hrs").textContent = round(r.hours,2)+" h";
         markDirty();
         refreshGroupPills();
         refreshProgress();
-       
+        recalcAllCalcFields();
       });
     });
     row.querySelector("[data-remove]").addEventListener("click", function(){
@@ -2075,7 +2078,7 @@ function renderBreakdowns(){
   });
   refreshGroupPills();
   refreshProgress();
-  
+  recalcAllCalcFields();
 }
 function syncBreakdownsFromDom(){
   var rows = document.querySelectorAll(".breakdown-row");
