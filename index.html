@@ -56,6 +56,10 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .btn.small{padding:6px 9px;font-size:12px}
 .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
 .card{background:var(--paper);border:1px solid #e0e8e6;border-radius:var(--radius);box-shadow:var(--shadow)}
+  .control-input{
+  width:100%;border:1px solid #cfdbd8;border-radius:9px;color:var(--ink);
+  background:#fff;padding:8px 10px;outline:none;font-size:13px;
+}
   /* ============ DAILY ENTRY (simplified) ============ */
 .entry-hero{
   display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;
@@ -2081,7 +2085,7 @@ function renderBreakdowns(){
   recalcAllCalcFields();
 }
 function syncBreakdownsFromDom(){
-  var rows = document.querySelectorAll(".breakdown-row");
+  var rows = document.querySelectorAll(".bd-row");
   if(!rows.length) return;
   rows.forEach(function(row){
     var idx = n(row.dataset.index);
@@ -2222,10 +2226,11 @@ function commitDailyRecord(){
   state.records.sort(function(a,b){return (a.storeId+a.date).localeCompare(b.storeId+b.date);});
   if(saveState()){
     closeConfirmModal();
-    showToast("✓ Entry submitted successfully — form cleared for next entry.", "success");
-    var today = todayIso();
-    q("f-date").value = today;
-    q("f-date-hero").value = today;
+    showToast("✓ Entry submitted successfully — form cleared. Date kept for the next entry.", "success");
+    /* Keep the same date so the user can verify or enter the next day's data on purpose */
+    var keptDate = rec.date;
+    q("f-date").value = keptDate;
+    q("f-date-hero").value = keptDate;
     REQUIRED_FIELDS.forEach(function(f){
       var el = q("f-"+f.key);
       if(el){ el.value=""; el.classList.remove("filled","missing"); }
@@ -2237,8 +2242,8 @@ function commitDailyRecord(){
     recalcAllCalcFields();
     updateEntryDateLabel();
     updateTopSubmitBtn();
-    dirty = false;
-    updateEntryStatus("new");
+     dirty = false;
+    updateEntryStatus("saved");
     window.scrollTo({ top:0, behavior:"smooth" });
   }
 }
@@ -3029,7 +3034,7 @@ function renderTxList(){
         return;
       }
       if(!window.confirm("Delete the saved entry for " + store + " on " + dateLabel(date) + "?")) return;
-      var idx = state.records.findIndex(function(r){ return r.storeId === store && r.date === date; });
+      var idx = state.records.findIndex(function(r){         return normalizeStoreId(r.storeId) === normalizeStoreId(store) && r.date === date;       });
       if(idx >= 0){
         state.records.splice(idx, 1);
         saveState("Daily entry removed.");
@@ -3212,7 +3217,7 @@ function renderTxGrid(){
         return;
       }
       if(!window.confirm("Delete the saved entry for " + store + " on " + dateLabel(date) + "?")) return;
-      var idx = state.records.findIndex(function(r){ return r.storeId === store && r.date === date; });
+      var idx = state.records.findIndex(function(r){         return normalizeStoreId(r.storeId) === normalizeStoreId(store) && r.date === date;       });
       if(idx >= 0){
         state.records.splice(idx, 1);
         saveState("Daily entry removed.");
@@ -3318,7 +3323,7 @@ function addAction(){
   var txt = q("actionText").value.trim();
   if(!txt){ showToast("Enter the required action."); return; }
   state.actions.push({
-    id: uid("act"), storeId: state.selectedStore,
+    id: uid("act"), storeId: normalizeStoreId(state.selectedStore),
     category: q("actionCategory").value, text: txt,
     owner: q("actionOwner").value.trim(), due: q("actionDue").value,
     status: "Open", created: todayIso()
@@ -3332,7 +3337,7 @@ function getFilteredActions(){
   var cat = q("actionCategoryFilter") ? q("actionCategoryFilter").value : "";
   var search = q("actionSearch") ? (q("actionSearch").value||"").trim().toLowerCase() : "";
   return state.actions.filter(function(a){
-    if(a.storeId !== state.selectedStore) return false;
+    if(normalizeStoreId(a.storeId) !== normalizeStoreId(state.selectedStore)) return false;
     if(status && a.status !== status) return false;
     if(cat && a.category !== cat) return false;
     if(search){
@@ -3344,7 +3349,7 @@ function getFilteredActions(){
 }
 function renderActions(){
   var list = getFilteredActions();
-  var total = state.actions.filter(function(a){return a.storeId===state.selectedStore;}).length;
+  var total = state.actions.filter(function(a){     return normalizeStoreId(a.storeId) === normalizeStoreId(state.selectedStore);   }).length;
   var table = q("actionsTable");
   if(!list.length){
     var emptyMsg = total ? "No actions match the current filters." : "No actions recorded for this store.";
@@ -4234,8 +4239,8 @@ function bindEvents(){
   q("resetFormBtn").addEventListener("click", function(){
     if(!window.confirm("Clear all fields on this form?")) return;
     blankDailyRecord();
-    dirty = false;
-    updateEntryStatus("new");
+        dirty = false;
+    updateEntryStatus("saved");
   });
   q("clearDayBtn").addEventListener("click", clearDailyRecord);
   q("confirmModalClose").addEventListener("click", closeConfirmModal);
@@ -4378,8 +4383,7 @@ if(fDateEl){
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
   bindEvents();
-  q("appShell").style.display = "none";
-  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+    q("appShell").style.display = "none";
   if(restoreSession()){
     computeVisibleStores();
     setupStores();
