@@ -1769,12 +1769,6 @@ function applyRoleUi(){
   host.addEventListener("input", function(){ recalcAllCalcFields(); });
   host.addEventListener("change", function(){ recalcAllCalcFields(); });
 
-  var dateInput = q("f-date");
-  if(dateInput) dateInput.addEventListener("change", function(){
-    q("f-date-hero").value = dateInput.value;
-    loadDailyRecord();
-  });
-
   renderBreakdowns();
   refreshGroupPills();
   refreshProgress();
@@ -4256,8 +4250,16 @@ function bindEvents(){
     q("f-date-hero").value = todayIso();
     loadDailyRecord();
   });
-   q("f-date-hero").addEventListener("change", function(){
+    q("f-date-hero").addEventListener("change", function(){
     q("f-date").value = q("f-date-hero").value;
+    loadDailyRecord();
+    updateEntryDateLabel();
+    recalcAllCalcFields();
+  });
+
+  var fDateEl = q("f-date");
+  if(fDateEl) fDateEl.addEventListener("change", function(){
+    q("f-date-hero").value = fDateEl.value;
     loadDailyRecord();
     updateEntryDateLabel();
     recalcAllCalcFields();
