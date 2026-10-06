@@ -1385,7 +1385,7 @@ var GG_SUB_KEYS   = GG_SKUS.map(function(s){return "gg_"+s[0];});
 var MERCH_SUB_KEYS= MERCH_SKUS.map(function(s){return "merch_"+s[0];});
 
 var ALL_FIELDS = [];
-GROUPS.forEach(function(g){ ALL_FIELDS = ALL_FIELDS.concat(g.fields); });
+GROUPS.forEach(function(g){ ALL_FIELDS = ALL_FIELDS.concat(g.fields || []); });
 var NUMERIC_KEYS = ALL_FIELDS.filter(function(f){return f.type!=="date";}).map(function(f){return f.key;});
 var REQUIRED_FIELDS = ALL_FIELDS.slice();
 
