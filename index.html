@@ -101,6 +101,22 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;
   font-weight:800;font-size:12px;white-space:nowrap;
 }
+  .entry-hero .hero-progress{
+  display:flex;flex-direction:column;gap:4px;min-width:120px;
+}
+.entry-hero .hero-progress strong{
+  font-size:11px;font-weight:900;
+}
+.entry-hero .hero-progress .progress-track{
+  height:6px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.25);
+}
+.entry-hero .hero-progress .progress-fill{
+  height:100%;background:linear-gradient(90deg,#238264,#4fbf99);transition:width .2s;
+}
+.entry-hero .hero-progress .progress-fill.partial{
+  background:linear-gradient(90deg,#d59c3a,#e8b769);
+}
 .entry-status .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
 .entry-status.new{background:rgba(213,156,58,.25);color:#ffe1a8;border:1px solid rgba(213,156,58,.5)}
 .entry-status.saved{background:rgba(35,130,100,.3);color:#c8f5e3;border:1px solid rgba(193,241,225,.35)}
@@ -192,16 +208,28 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .calc-row .v.good{ color:#087443; }
 .calc-row .v.warn{ color:#9a6500; }
 .calc-row .v.bad { color:#b42318; }
-
 /* -------- Compact the input fields -------- */
 .grid{
   display:grid;
-  grid-template-columns:repeat(4,minmax(110px,1fr));
+  grid-template-columns:repeat(5,minmax(100px,1fr));
   gap:8px 10px;
 }
 .grid.cols-3{ grid-template-columns:repeat(4,minmax(120px,1fr)); }
-.grid.cols-2{ grid-template-columns:repeat(3,minmax(140px,1fr)); }
+.grid.cols-2{ grid-template-columns:repeat(5,minmax(110px,1fr)); }
 .section-body{ padding:10px 12px; }
+
+/* Narrower submit button in the hero */
+.entry-submit-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid #c58c2c;background:var(--gold);color:#2d2b22;
+  border-radius:10px;padding:9px 16px;font-weight:900;font-size:13px;
+  box-shadow:0 4px 12px rgba(213,156,58,.35);cursor:pointer;
+}
+.entry-submit-btn:hover{background:#e0a948;transform:translateY(-1px)}
+.entry-submit-btn .entry-submit-pill{
+  background:rgba(45,43,34,.15);padding:2px 8px;border-radius:999px;
+  font-size:11px;font-weight:800;
+}
 
 /* The old inline live-strip is hidden — values now live in the sidebar */
 .live-strip{ display:none !important; }
@@ -234,20 +262,7 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .field input.filled{border-color:#8dc6b1;background:#fbfffd}
 .field input.input-date{border-left:4px solid var(--gold)}
 
-/* -------- Live summary strip -------- */
-.live-strip{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-  gap:8px;margin-top:10px;padding:8px 12px;
-  background:#f4f8f7;border:1px dashed #cbdad6;border-radius:10px;
-}
-.live-strip .cell .k{
-  color:#6b7d82;font-size:9.5px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.3px;
-}
-.live-strip .cell .v{
-  margin-top:2px;color:var(--navy);font-size:13px;font-weight:900;
-  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
+
 
 /* -------- Breakdown rows -------- */
 .bd-row{
@@ -774,13 +789,21 @@ details.group>summary::-webkit-details-marker{display:none}
           <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
           <button class="entry-icon-btn" id="loadTodayBtn" type="button" title="Jump to today">📅 Today</button>
           <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
-          <button class="entry-submit-btn" id="topSubmitBtn" type="button">
-            ✓ Submit
-            <span class="entry-submit-pill" id="topSubmitPill">0 / 0</span>
-          </button>
           <span class="entry-status new" id="entryStatus">
             <span class="dot"></span><span id="entryStatusText">New entry</span>
           </span>
+          <div class="hero-progress" title="Entry completeness">
+            <strong id="progText">Filled 0 / 0</strong>
+            <div class="progress-track">
+              <div class="progress-fill partial" id="progFill" style="width:0%"></div>
+            </div>
+            <span id="progHint" style="font-size:10px;opacity:.75">0 left blank</span>
+          </div>
+          <button class="entry-icon-btn" id="resetFormBtn" type="button" title="Clear the form">↺ Reset</button>
+          <button class="entry-submit-btn" id="submitDayBtn" type="button">
+            ✓ Submit Entry
+            <span class="entry-submit-pill" id="topSubmitPill2">0 / 0</span>
+          </button>
         </div>
       </div>
 
@@ -795,26 +818,7 @@ details.group>summary::-webkit-details-marker{display:none}
           </div>
         </aside>
       </div>
-
-      <div class="submit-bar">
-        <div class="submit-bar-inner">
-          <div class="progress-wrap">
-            <div class="progress-label">
-              <span>Entry completeness</span>
-              <strong id="progText">Filled 0 / 0</strong>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill partial" id="progFill" style="width:0%"></div>
-            </div>
-            <div style="margin-top:6px;font-size:11px;color:#66787e" id="progHint">0 left blank (optional)</div>
-          </div>
-          <button class="btn reset" id="resetFormBtn" type="button">Reset form</button>
-          <button class="btn submit" id="submitDayBtn" type="button">✓ Submit Entry</button>
-        </div>
-      </div>
     </section>
-
-
     <!-- ============ DAILY REPORT ============ -->
       
     <section id="view-dailyreport" class="view">
@@ -2341,13 +2345,12 @@ function updateEntryDateLabel(){
 }
 
 function updateTopSubmitBtn(){
-  var btn  = q("topSubmitBtn");
-  var pill = q("topSubmitPill");
-  if(!btn) return;
-  var total  = REQUIRED_FIELDS.length;
-  var filled = countRequiredFilled();
-  if(pill) pill.textContent = filled + " / " + total;
-  btn.removeAttribute("disabled");
+  var pill = q("topSubmitPill2");
+  if(pill){
+    var total  = REQUIRED_FIELDS.length;
+    var filled = countRequiredFilled();
+    pill.textContent = filled + " / " + total;
+  }
 }
 function updateEntryHero(){
   var label = q("entryStoreLabel");
@@ -4429,8 +4432,6 @@ function bindEvents(){
   q("logoutBtn").addEventListener("click", logout);
 
   q("submitDayBtn").addEventListener("click", submitDailyRecord);
-    var topBtn = q("topSubmitBtn");
-  if(topBtn) topBtn.addEventListener("click", submitDailyRecord);
   q("resetFormBtn").addEventListener("click", function(){
     if(!window.confirm("Clear all fields on this form?")) return;
     blankDailyRecord();
