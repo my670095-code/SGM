@@ -2096,11 +2096,15 @@ function syncBreakdownsFromDom(){
   });
 }
 function getFormRecord(){
+  var heroEl = q("f-date-hero");
   var dateEl = q("f-date");
+  /* Prefer hero input; fall back to hidden input; fall back to today */
+  var dateValue = (heroEl && heroEl.value) || (dateEl && dateEl.value) || todayIso();
+
   var rec = {
-    id: normalizeStoreId(state.selectedStore) + "_" + ((dateEl && dateEl.value) || todayIso()),
-        storeId: normalizeStoreId(state.selectedStore),
-    date: (dateEl && dateEl.value) || todayIso(),
+    id: normalizeStoreId(state.selectedStore) + "_" + dateValue,
+    storeId: normalizeStoreId(state.selectedStore),
+    date: dateValue,
     breakdowns: currentBreakdowns.map(function(x){
       return { id:x.id||uid("bd"), asset:x.asset||"", start:x.start||"", end:x.end||"" };
     })
@@ -2216,33 +2220,54 @@ function submitDailyRecord(){
 function closeConfirmModal(){
   q("confirmModal").classList.remove("show");
 }
-function commitDailyRecord(){
+  function commitDailyRecord(){
+  /* Always trust the hero date — it is the user-visible control */
+  var heroDate = q("f-date-hero") ? q("f-date-hero").value : "";
+  if(heroDate){
+    q("f-date").value = heroDate;
+  }
   var rec = getFormRecord();
   rec.storeId = normalizeStoreId(rec.storeId);
-  rec.id = rec.storeId + "_" + rec.date;
+  rec.date = String(rec.date || "").trim();
   if(!rec.date){ showToast("Select an entry date first."); return; }
-  var idx = state.records.findIndex(function(r){return r.storeId===rec.storeId && r.date===rec.date;});
-  if(idx>=0) state.records[idx] = rec; else state.records.push(rec);
-  state.records.sort(function(a,b){return (a.storeId+a.date).localeCompare(b.storeId+b.date);});
+  rec.id = rec.storeId + "_" + rec.date;
+
+  /* Normalize comparison so old records with different casing still match */
+  var idx = state.records.findIndex(function(r){
+    return normalizeStoreId(r.storeId) === rec.storeId && String(r.date).trim() === rec.date;
+  });
+
+  if(idx >= 0) {
+    state.records[idx] = rec;              /* replace existing */
+  } else {
+    state.records.push(rec);               /* add new */
+  }
+
+  state.records.sort(function(a,b){
+    return (normalizeStoreId(a.storeId)+a.date).localeCompare(normalizeStoreId(b.storeId)+b.date);
+  });
+
   if(saveState()){
     closeConfirmModal();
     showToast("✓ Entry submitted successfully — form cleared. Date kept for the next entry.", "success");
-    /* Keep the same date so the user can verify or enter the next day's data on purpose */
+
     var keptDate = rec.date;
     q("f-date").value = keptDate;
     q("f-date-hero").value = keptDate;
+
     REQUIRED_FIELDS.forEach(function(f){
       var el = q("f-"+f.key);
       if(el){ el.value=""; el.classList.remove("filled","missing"); }
     });
-        currentBreakdowns = [];
+
+    currentBreakdowns = [];
     renderBreakdowns();
     refreshGroupPills();
     refreshProgress();
     recalcAllCalcFields();
     updateEntryDateLabel();
     updateTopSubmitBtn();
-     dirty = false;
+    dirty = false;
     updateEntryStatus("saved");
     window.scrollTo({ top:0, behavior:"smooth" });
   }
@@ -4256,27 +4281,30 @@ function bindEvents(){
     loadDailyRecord();
   });
     /* Unified date sync — both pickers stay in step and reload the record */
+    /* Unified date sync — only listen to `change` (not `input`), so the picker value is fully committed */
 function handleDateChange(source){
   var val = source.value || todayIso();
-  if(dirty && val !== q("f-date").value){
+  var prev = q("f-date").value;
+  if(dirty && val !== prev){
     if(!window.confirm("You have unsaved changes. Discard them and load the new date?")){
-      source.value = q("f-date").value;
+      source.value = prev;
       return;
     }
   }
+  /* Set BOTH fields first so getFormRecord() reads the new date */
   q("f-date").value = val;
   q("f-date-hero").value = val;
+  dirty = false;
   loadDailyRecord();
   updateEntryDateLabel();
   recalcAllCalcFields();
   refreshProgress();
 }
+
 q("f-date-hero").addEventListener("change", function(){ handleDateChange(q("f-date-hero")); });
-q("f-date-hero").addEventListener("input",  function(){ handleDateChange(q("f-date-hero")); });
 var fDateEl = q("f-date");
 if(fDateEl){
   fDateEl.addEventListener("change", function(){ handleDateChange(fDateEl); });
-  fDateEl.addEventListener("input",  function(){ handleDateChange(fDateEl); });
 }
    q("weekDate").addEventListener("change", renderWeekly);
   q("weekDate2").addEventListener("change", renderWeekly);
