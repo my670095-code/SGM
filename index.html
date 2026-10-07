@@ -194,6 +194,14 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .calc-row .v.bad { color:#b42318; }
 
 /* -------- Compact the input fields -------- */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(110px,1fr));
+  gap:8px 10px;
+}
+.grid.cols-3{ grid-template-columns:repeat(4,minmax(120px,1fr)); }
+.grid.cols-2{ grid-template-columns:repeat(3,minmax(140px,1fr)); }
+.section-body{ padding:10px 12px; }
 
 /* The old inline live-strip is hidden — values now live in the sidebar */
 .live-strip{ display:none !important; }
@@ -207,17 +215,17 @@ main{max-width:1480px;margin:0 auto;padding:22px}
     margin-top:14px;
   }
 }
-  .field{min-width:0;display:flex;flex-direction:column;gap:4px}
+ .field{min-width:0;display:flex;flex-direction:column;gap:3px}
 .field label{
-  color:#3e545a;font-size:10.5px;font-weight:700;line-height:1.2;
-  display:block;margin-bottom:2px;
+  color:#3e545a;font-size:10px;font-weight:700;line-height:1.1;
+  display:block;margin-bottom:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .field label .opt{display:none}
 .field input,.field select,.field textarea{
-  width:100%;border:1px solid #cfdbd8;border-radius:8px;color:var(--ink);
-  background:#fff;padding:4px 8px;outline:none;font-size:12px;
-  height:28px;transition:border-color .12s, box-shadow .12s;
+  width:100%;border:1px solid #cfdbd8;border-radius:6px;color:var(--ink);
+  background:#fff;padding:3px 7px;outline:none;font-size:11.5px;
+  height:26px;transition:border-color .12s, box-shadow .12s;
 }
 .field textarea{height:auto;padding:8px 9px}
 .field input:focus,.field select:focus,.field textarea:focus{
@@ -294,9 +302,6 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .submit-bar .btn.submit:hover:not([disabled]){transform:translateY(-1px);background:#e0a948}
 .submit-bar .btn.reset{background:#fff;color:var(--navy)}
 
-@media (max-width:1150px){
-  .grid{grid-template-columns:repeat(3,minmax(150px,1fr))}
-}
 @media (max-width:760px){
   .grid,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr 1fr}
   .section-body{padding:14px}
@@ -1833,11 +1838,17 @@ function applyRoleUi(){
       });
       body.appendChild(addBtn);
     } else {
-      var grid = document.createElement("div");
+            var grid = document.createElement("div");
       var cols = g.fields.length % 3 === 0 ? "cols-3"
                : g.fields.length % 2 === 0 ? "cols-2"
                : "";
       grid.className = "grid " + cols;
+      /* Defensive inline style — guarantees grid layout even if CSS fails */
+      grid.style.display = "grid";
+      grid.style.gap = "8px 10px";
+      if(cols === "cols-3") grid.style.gridTemplateColumns = "repeat(4, minmax(110px, 1fr))";
+      else if(cols === "cols-2") grid.style.gridTemplateColumns = "repeat(3, minmax(130px, 1fr))";
+      else grid.style.gridTemplateColumns = "repeat(4, minmax(110px, 1fr))";
       g.fields.forEach(function(f){ grid.appendChild(makeField(f, g.id)); });
       body.appendChild(grid);
 
