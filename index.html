@@ -123,25 +123,101 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .section-head .sub{margin-left:auto;color:var(--muted);font-size:10.5px;font-weight:600}
 .section-body{padding:12px 14px}
 
-/* -------- Field grid -------- */
-  .grid{
+
+  /* ============ DAILY ENTRY — 2-COLUMN LAYOUT ============ */
+.entry-layout{
   display:grid;
-  grid-template-columns:repeat(6,minmax(120px,1fr));
-  gap:10px 12px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap:16px;
+  align-items:start;
 }
-.grid.cols-3{grid-template-columns:repeat(4,minmax(140px,1fr))}
-.grid.cols-2{grid-template-columns:repeat(3,minmax(160px,1fr))}
-.field{min-width:0;display:flex;flex-direction:column;gap:5px}
+.entry-main{ min-width:0; }
+
+/* -------- Sticky live calculations sidebar -------- */
+.calc-sidebar{
+  position:sticky;
+  top:90px;                    /* clears the topbar */
+  background:#fff;
+  border:1px solid #e0e8e6;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:14px;
+  max-height:calc(100vh - 110px);
+  overflow-y:auto;
+}
+.calc-sidebar h4{
+  margin:0 0 10px;
+  color:var(--navy);
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.2px;
+  padding-bottom:8px;
+  border-bottom:1px solid #e5ecea;
+}
+.calc-group{
+  margin-bottom:12px;
+  padding-bottom:10px;
+  border-bottom:1px dashed #e5ecea;
+}
+.calc-group:last-child{ border-bottom:0; margin-bottom:0; padding-bottom:0; }
+.calc-group .grp-title{
+  font-size:10.5px;
+  font-weight:800;
+  color:#6b7d82;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.calc-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  padding:3px 0;
+  font-size:12px;
+}
+.calc-row .k{
+  color:#6b7d82;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.calc-row .v{
+  color:var(--navy);
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.calc-row .v.good{ color:#087443; }
+.calc-row .v.warn{ color:#9a6500; }
+.calc-row .v.bad { color:#b42318; }
+
+/* -------- Compact the input fields -------- */
+
+/* The old inline live-strip is hidden — values now live in the sidebar */
+.live-strip{ display:none !important; }
+
+/* Responsive: collapse to a single column on small screens */
+@media (max-width:1150px){
+  .entry-layout{ grid-template-columns:1fr; }
+  .calc-sidebar{
+    position:static;
+    max-height:none;
+    margin-top:14px;
+  }
+}
+  .field{min-width:0;display:flex;flex-direction:column;gap:4px}
 .field label{
-  color:#3e545a;font-size:11px;font-weight:700;line-height:1.2;
-  display:block;margin-bottom:3px;
+  color:#3e545a;font-size:10.5px;font-weight:700;line-height:1.2;
+  display:block;margin-bottom:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .field label .opt{display:none}
-  .field input,.field select,.field textarea{
+.field input,.field select,.field textarea{
   width:100%;border:1px solid #cfdbd8;border-radius:8px;color:var(--ink);
-  background:#fff;padding:6px 9px;outline:none;font-size:12.5px;
-  height:32px;transition:border-color .12s, box-shadow .12s;
+  background:#fff;padding:4px 8px;outline:none;font-size:12px;
+  height:28px;transition:border-color .12s, box-shadow .12s;
 }
 .field textarea{height:auto;padding:8px 9px}
 .field input:focus,.field select:focus,.field textarea:focus{
@@ -703,7 +779,17 @@ details.group>summary::-webkit-details-marker{display:none}
         </div>
       </div>
 
-      <div id="formStack"></div>
+           <div class="entry-layout">
+        <div class="entry-main">
+          <div id="formStack"></div>
+        </div>
+        <aside class="calc-sidebar" id="calcSidebar">
+          <h4>Live Calculations</h4>
+          <div id="calcSidebarBody">
+            <div class="calc-row"><span class="k">Start entering data…</span></div>
+          </div>
+        </aside>
+      </div>
 
       <div class="submit-bar">
         <div class="submit-bar-inner">
@@ -1840,19 +1926,92 @@ function fmtCalcValue(v, key){
   if(/Hours/.test(key)) return round(v, 2) + " h";
   return round(v, 2);
 }
+function fmtSidebarValue(key, v){
+  if(v === null || v === undefined || isNaN(v)) return "—";
+  if(/Pct|Mix|Closure|Availability|DiscountPct|PositiveReview|NegativeReview|Checklist|Complaint/.test(key)) return pct(v);
+  if(/Hours/.test(key)) return round(v,2) + " h";
+  if(/Qty|Reviews|Complaints|Checks|Tickets|Incidents|adt$/.test(key)) return integer(v);
+  if(/Variance|Loss|Cost|Discount|Sales|At$|AT$|NetSales|WithoutTax|employeeCost|estimatedLostSales/.test(key)) return "SAR " + money(v);
+  return round(v, 2);
+}
+
+function statusForSidebar(key, v, c){
+  /* Return "", "good", "warn" or "bad" for the sidebar value */
+  if(v == null || isNaN(v)) return "";
+  var rules = {
+    salesVsTargetPct: { target:0,  lower:false },
+    adtVsTargetPct:   { target:0,  lower:false },
+    atVsTargetPct:    { target:0,  lower:false },
+    foodMix:          { target:TARGETS.foodMix,          lower:false },
+    grabGoMix:        { target:TARGETS.grabGoMix,        lower:false },
+    merchandiseMix:   { target:TARGETS.merchandiseMix,   lower:false },
+    modifierMix:      { target:TARGETS.modifierMix,      lower:false },
+    upsizePct:        { target:TARGETS.upsize,           lower:false },
+    cogsPct:          { target:TARGETS.cogs,             lower:true  },
+    wastagePct:       { target:TARGETS.wastage,          lower:true  },
+    employeePct:      { target:TARGETS.employee,         lower:true  },
+    inventoryVariancePct:{ target:TARGETS.inventory,     lower:true  },
+    cancelledBillPct: { target:TARGETS.cancelledBill,    lower:true  },
+    unpunchedPct:     { target:TARGETS.unpunchedSales,   lower:true  },
+    cashVariancePct:  { target:TARGETS.cashVariance,     lower:true  },
+    productAvailabilityPct:{ target:TARGETS.productAvailability, lower:false },
+    complaintClosurePct:   { target:TARGETS.complaintClosure,    lower:false }
+  };
+  var r = rules[key];
+  if(!r) return "";
+  return statusClass(v, r.target, r.lower);
+}
+
 function recalcAllCalcFields(){
   var rec = getFormRecord();
   var c = calculate(rec);
+
+  /* Old inline strips (kept for backwards compatibility — hidden by CSS) */
   document.querySelectorAll("[data-live]").forEach(function(el){
     var key = el.dataset.live;
-    var v = c[key];
-    if(v === null || v === undefined || isNaN(v)){ el.textContent = "—"; return; }
-    if(/Pct|Mix|Closure|Availability|DiscountPct/.test(key)) el.textContent = pct(v);
-    else if(/Hours/.test(key)) el.textContent = round(v,2) + " h";
-    else if(/Qty|Reviews|Complaints|Checks|Tickets|Incidents|adt$/.test(key)) el.textContent = integer(v);
-    else if(/Variance|Loss|Cost|Discount|Sales|At$|AT$|NetSales|WithoutTax/.test(key)) el.textContent = "SAR " + money(v);
-    else el.textContent = round(v, 2);
+    el.textContent = fmtSidebarValue(key, c[key]);
   });
+
+  /* New sidebar */
+  var body = q("calcSidebarBody");
+  if(!body) return;
+
+  var groups = [
+    { title:"Sales & Mix",  keys:["salesWithoutTax","netSales","totalDiscount","adt","at","salesVsTargetPct"] },
+    { title:"Mix %",        keys:["foodMix","grabGoMix","merchandiseMix","modifierMix","upsizePct"] },
+    { title:"Cost",         keys:["cogsPct","wastagePct","employeeCost","employeePct","inventoryVariancePct"] },
+    { title:"Controls",     keys:["cancelledBillPct","unpunchedPct","cashVariancePct"] },
+    { title:"DC App",       keys:["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"] },
+    { title:"QA & Guest",   keys:["checklistPct","positiveReviewPct","complaintClosurePct","productAvailabilityPct"] },
+    { title:"Breakdowns",   keys:["breakdownHours","estimatedLostSales"] }
+  ];
+
+  var html = "";
+  groups.forEach(function(g){
+    /* Skip a group if every value is empty/zero AND the user has typed nothing relevant */
+    var anyValue = g.keys.some(function(k){
+      var v = c[k];
+      return v !== null && v !== undefined && !isNaN(v) && v !== 0;
+    });
+    if(!anyValue) return;
+
+    html += '<div class="calc-group">'+
+              '<div class="grp-title">'+escapeHtml(g.title)+'</div>';
+    g.keys.forEach(function(k){
+      var v = c[k];
+      var cls = statusForSidebar(k, v, c);
+      html += '<div class="calc-row">'+
+                '<span class="k">'+escapeHtml(calcLabelFor(k).replace(/\s*\(.*\)$/,""))+'</span>'+
+                '<span class="v '+cls+'">'+escapeHtml(fmtSidebarValue(k, v))+'</span>'+
+              '</div>';
+    });
+    html += '</div>';
+  });
+
+  if(!html){
+    html = '<div class="calc-row"><span class="k">Start entering data…</span></div>';
+  }
+  body.innerHTML = html;
 }
 function makeField(def, groupId){
   var wrap = document.createElement("div");
