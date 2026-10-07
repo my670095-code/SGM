@@ -673,6 +673,52 @@ details.group>summary::-webkit-details-marker{display:none}
   .view{display:none !important}
   .view.active{display:block !important}
 }
+  @media print{
+  .topbar,.toolbar,.notice,.footer,.btn,.entry-toolbar,.submit-bar {display:none !important}
+  body{background:#fff}
+  main{max-width:none;padding:0}
+  .card,.report-shell,.table-card{box-shadow:none}
+  .view{display:none !important}
+  .view.active{display:block !important}
+}
+
+/* ===== KPI DASHBOARD COLUMN FIX ===== */
+#dashboardTable { table-layout: fixed; width: 100%; }
+
+#dashboardTable th,
+#dashboardTable td { padding: 10px 12px; }
+
+/* Category column — narrow, dark */
+#dashboardTable th:first-child,
+#dashboardTable td:first-child {
+  width: 120px;
+  text-align: center;
+}
+
+/* KPI name column — wide, left aligned */
+#dashboardTable th.dash-kpi-name,
+#dashboardTable td.dash-kpi-name {
+  width: auto;
+  text-align: left;
+  white-space: normal;
+}
+
+/* Actual / Target columns — fixed width, right aligned */
+#dashboardTable th.dash-col-actual,
+#dashboardTable td.dash-col-actual,
+#dashboardTable th.dash-col-target,
+#dashboardTable td.dash-col-target {
+  width: 150px;
+  text-align: right;
+}
+
+/* Status column — fixed, centered */
+#dashboardTable th.dash-col-status,
+#dashboardTable td.dash-col-status {
+  width: 110px;
+  text-align: center;
+}
+</style>
 </style>
 </head>
 <body>
@@ -2860,17 +2906,23 @@ function renderDashboard(){
 
   var table = q("dashboardTable");
   if(!table) return;
+
+  /* ---- NEW: Enhanced table header with better column structure ---- */
   var thead = "<thead><tr>"+
-    "<th>Category</th><th style='text-align:left'>KPI</th>"+
-    "<th>Actual</th><th>Target</th><th>Status</th>"+
+    '<th class="dash-cat-col">Category</th>'+
+    '<th class="dash-kpi-col">KPI</th>'+
+    '<th class="dash-val-col">Actual</th>'+
+  '<th class="dash-col-actual">Actual</th><th class="dash-col-target">Target</th><th class="dash-col-status">Status</th>'+
+    '<th class="dash-val-col">Variance</th>'+
+    '<th class="dash-status-col">Status</th>'+
   "</tr></thead>";
 
   if(!rows.length){
-    table.innerHTML = thead + '<tbody><tr><td colspan="5" class="empty">No KPIs match your search.</td></tr></tbody>';
+    table.innerHTML = thead + '<tbody><tr><td colspan="6" class="empty">No KPIs match your search.</td></tr></tbody>';
     return;
   }
   if(!agg._records.length){
-    table.innerHTML = thead + '<tbody><tr><td colspan="5" class="empty">No saved daily entries for '+escapeHtml(mv)+'.</td></tr></tbody>';
+    table.innerHTML = thead + '<tbody><tr><td colspan="6" class="empty">No saved daily entries for '+escapeHtml(mv)+'.</td></tr></tbody>';
     return;
   }
 
@@ -2881,21 +2933,33 @@ function renderDashboard(){
     var v = agg._calc[k.key];
     var cls = k.target!=null ? statusClass(v, k.target, !!k.lower) : "";
     var lbl = k.target!=null ? statusLabel(v, k.target, !!k.lower) : "—";
+    
+    /* Calculate variance from target */
+    var varianceText = "—";
+    if(k.target != null && typeof v === "number"){
+      var diff = v - k.target;
+      var sign = diff >= 0 ? "+" : "";
+      if(k.fmt === "pct") varianceText = sign + round(diff, 1) + " pp";
+      else if(k.fmt === "money") varianceText = sign + "SAR " + money(Math.abs(diff));
+      else if(k.fmt === "rating") varianceText = sign + round(diff, 2);
+      else varianceText = sign + integer(diff);
+    }
+    
     body += "<tr>";
     if(k.cat !== prevCat){
-      body += '<td class="cat-col" rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
+      body += '<td class="dash-cat-col" rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
       prevCat = k.cat;
     }
-    body += '<td style="text-align:left">'+escapeHtml(k.name)+'</td>'+
-      '<td class="num '+cls+'">'+escapeHtml(fmtVal(v, k.fmt))+'</td>'+
-      '<td class="num">'+(k.target!=null?escapeHtml(fmtVal(k.target, k.fmt)):"—")+'</td>'+
-      '<td class="num '+cls+'">'+escapeHtml(lbl)+'</td>'+
+   body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
+      '<td class="dash-val-col num '+cls+'">'+escapeHtml(fmtVal(v, k.fmt))+'</td>'+
+      '<td class="dash-val-col num">'+(k.target!=null?escapeHtml(fmtVal(k.target, k.fmt)):"—")+'</td>'+
+      '<td class="dash-val-col num variance">'+escapeHtml(varianceText)+'</td>'+
+      '<td class="dash-status-col"><span class="dash-status '+cls+'">'+escapeHtml(lbl)+'</span></td>'+
     '</tr>';
   });
   body += "</tbody>";
   table.innerHTML = thead + body;
 }
-
 /* ---------- Multi-period 2-column renderer ---------- */
 function renderReportTable2Col(table, periods, search, countElId){
   var all = reportRows();
