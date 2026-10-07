@@ -2905,8 +2905,8 @@ function renderDashboard(){
 
   var table = q("dashboardTable");
   if(!table) return;
-
   /* ---- NEW: Enhanced table header with better column structure ---- */
+
   var thead = "<thead><tr>"+
     '<th class="dash-cat-col">Category</th>'+
     '<th class="dash-kpi-col">KPI</th>'+
@@ -2938,7 +2938,7 @@ function renderDashboard(){
     if(k.target != null && typeof v === "number"){
       var diff = v - k.target;
       var sign = diff >= 0 ? "+" : "";
-      if(k.fmt === "pct") varianceText = sign + round(diff, 1) + " pp";
+      if(k.fmt === "pct") varianceText = sign + round(diff, 1) + "%";
       else if(k.fmt === "money") varianceText = sign + "SAR " + money(Math.abs(diff));
       else if(k.fmt === "rating") varianceText = sign + round(diff, 2);
       else varianceText = sign + integer(diff);
