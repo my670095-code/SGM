@@ -80,29 +80,17 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 }
 .entry-hero .hero-text h3{margin:0;font-size:18px;letter-spacing:.2px}
 .entry-hero .hero-text p{margin:3px 0 0;opacity:.75;font-size:12px}
-.entry-hero .hero-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .entry-store-chip{
   padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.2);font-weight:800;font-size:13px;letter-spacing:.3px;
 }
 .entry-store-chip small{display:block;font-weight:600;opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
-.entry-date-chip{
-  padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.1);
-  border:1px solid rgba(255,255,255,.2);min-width:140px;
-}
-.entry-date-chip small{display:block;font-weight:600;opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
-.entry-date-chip span{font-weight:800;font-size:13px;letter-spacing:.3px}
 .entry-date-input{
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;
   border-radius:10px;padding:9px 12px;font-weight:800;font-size:13px;outline:none;
 }
 .entry-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.8;cursor:pointer}
-.entry-icon-btn{
-  border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;
-  border-radius:10px;padding:9px 12px;font-weight:800;font-size:12px;line-height:1;
-}
-.entry-icon-btn:hover{background:rgba(255,255,255,.18)}
-.entry-icon-btn.danger{border-color:rgba(255,180,180,.5);color:#ffd4d3}
+
 .entry-status{
   display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;
   font-weight:800;font-size:12px;white-space:nowrap;
@@ -290,38 +278,6 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   padding:14px 16px;background:#f8faf9;border:1px dashed #cdd9d6;
   border-radius:10px;color:var(--muted);font-size:12.5px;
 }
-
-/* -------- Sticky submit bar -------- */
-.submit-bar{
-  position:sticky;bottom:0;z-index:15;margin-top:18px;
-  background:linear-gradient(180deg, rgba(238,243,242,.6), var(--canvas) 60%);
-  padding:14px 0 6px;backdrop-filter:blur(6px);
-}
-.submit-bar-inner{
-  background:#fff;border:1px solid #e0e8e6;border-radius:14px;
-  padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  box-shadow:0 10px 26px rgba(11,51,64,.12);
-}
-.submit-bar .progress-wrap{flex:1;min-width:220px}
-.submit-bar .progress-label{
-  display:flex;justify-content:space-between;font-size:11.5px;
-  font-weight:800;color:var(--muted);margin-bottom:5px;
-}
-.submit-bar .progress-label strong{color:var(--navy)}
-.submit-bar .progress-track{
-  height:8px;background:#eef3f2;border-radius:99px;overflow:hidden;border:1px solid #dbe6e3;
-}
-.submit-bar .progress-fill{
-  height:100%;background:linear-gradient(90deg,#238264,#4fbf99);transition:width .2s;
-}
-.submit-bar .progress-fill.partial{background:linear-gradient(90deg,#d59c3a,#e8b769)}
-.submit-bar .btn.submit{
-  padding:12px 26px;font-size:14px;font-weight:900;
-  color:#2d2b22;background:var(--gold);border:1px solid #c58c2c;
-  box-shadow:0 4px 12px rgba(213,156,58,.35);
-}
-.submit-bar .btn.submit:hover:not([disabled]){transform:translateY(-1px);background:#e0a948}
-.submit-bar .btn.reset{background:#fff;color:var(--navy)}
 
 @media (max-width:760px){
   .grid,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr 1fr}
@@ -791,6 +747,7 @@ details.group>summary::-webkit-details-marker{display:none}
             <span id="entryStoreLabel">—</span>
           </div>
           <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
+          <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
           <span class="entry-status new" id="entryStatus">
             <span class="dot"></span><span id="entryStatusText">New entry</span>
           </span>
@@ -2134,21 +2091,16 @@ function refreshProgress(){
   var pctFill = total ? Math.round((filled/total)*100) : 0;
   var bar = q("progFill");
   var txt = q("progText");
-  var hint = q("progHint");
   var btn = q("submitDayBtn");
   if(bar){
     bar.style.width = pctFill + "%";
     bar.classList.toggle("partial", pctFill < 100);
   }
   if(txt) txt.textContent = "Filled " + filled + " / " + total;
- 
-   if(btn) btn.removeAttribute("disabled");
+  if(btn) btn.removeAttribute("disabled");
   updateTopSubmitBtn();
   updateEntryDateLabel();
 }
-
-
-
 function sumKeys(record, keys){
   var t = 0;
   keys.forEach(function(k){ t += n(record[k]); });
@@ -4442,6 +4394,7 @@ function bindEvents(){
   q("logoutBtn").addEventListener("click", logout);
 
     q("submitDayBtn").addEventListener("click", submitDailyRecord);
+    q("clearDayBtn").addEventListener("click", clearDailyRecord);
     q("confirmModalClose").addEventListener("click", closeConfirmModal);
   q("confirmModalCancel").addEventListener("click", closeConfirmModal);
   q("confirmModalSave").addEventListener("click", commitDailyRecord);
