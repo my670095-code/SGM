@@ -7,9 +7,15 @@
 <title>SGM Operations Control</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-.tx-controls .field select{min-width:180px}
-.tx-controls #txAm{min-width:180px}
-.tx-controls #txStore{min-width:180px}
+.tx-controls #txAm{min-width:200px}
+.tx-controls #txStore{min-width:220px}
+#weeklyAm,#monthlyAm,#dashAm{min-width:200px}
+#weeklyStore,#monthlyStore,#dashStore{min-width:220px}
+#weekCompareMode,#monthCompareMode{min-width:180px}
+#dashKpi{min-width:240px}
+#weekDate,#weekDate2,#weekDate3,#weekDate4,
+#monthDate,#monthDate2,#monthDate3,
+#dashMonth,#txFrom,#txTo{min-width:150px}
 :root{
   --navy:#0b3340;--navy-2:#124a59;--ink:#14282e;--muted:#66787e;
   --paper:#fff;--canvas:#eef3f2;--line:#d7e1df;--gold:#d59c3a;--gold-soft:#fff4dc;
@@ -297,11 +303,22 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   background:#fff;border:1px solid #e0e8e6;border-radius:var(--radius);box-shadow:var(--shadow);
   padding:18px 20px 20px;margin-bottom:18px;
 }
-.report-shell .report-top{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:14px}
-.report-shell .report-top .field{min-width:190px}
-.report-shell .report-top .field label{min-height:0;font-size:11px;margin-bottom:4px}
-.report-shell .report-top .field input,.report-shell .report-top .field select{padding:8px 10px;font-size:13px}
-.report-shell .report-top .search-field{flex:1;min-width:260px}
+.report-shell .report-top{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+.report-shell .report-top .field{min-width:190px;display:flex;flex-direction:column;gap:4px}
+.report-shell .report-top .field label{font-size:11.5px;font-weight:800;color:var(--navy);margin-bottom:0;min-height:14px;line-height:1.2}
+.report-shell .report-top .field input,
+.report-shell .report-top .field select{
+  padding:9px 12px;font-size:13px;height:38px;line-height:1.2;
+  border-radius:9px;border:1px solid #cfdbd8;background:#fff;color:var(--ink);
+  box-sizing:border-box;
+}
+.report-shell .report-top .field select{
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23334d54' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+}
+.report-shell .report-top .search-field{flex:1;min-width:220px}
 .report-shell .report-top .search-field input{padding-left:32px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366787e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/></svg>");background-repeat:no-repeat;background-position:10px center}
 .report-shell .report-top .range-chip{padding:9px 13px;border-radius:10px;background:#edf4f2;color:var(--navy);font-weight:800;font-size:12.5px;white-space:nowrap}
 .report-shell .report-count{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0 12px;color:var(--muted);font-size:12px;border-bottom:1px solid #e5ecea}
@@ -446,12 +463,21 @@ table.report-2col td.val-col.warn .val-main{color:#9a6500}
 table.report-2col td.val-col.bad  .val-main{color:#b42318}
 
 /* ============ DAILY REPORT ============ */
-.tx-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:14px 16px;margin-bottom:15px;background:#fff;border:1px solid #e0e8e6;border-radius:var(--radius);box-shadow:var(--shadow)}
-.tx-controls .field label{min-height:0;font-size:11px;margin-bottom:4px}
-.tx-controls .field{min-width:150px}
+  .tx-controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px;margin-bottom:15px;background:#fff;border:1px solid #e0e8e6;border-radius:var(--radius);box-shadow:var(--shadow)}
+.tx-controls .field{min-width:150px;display:flex;flex-direction:column;gap:4px}
+.tx-controls .field label{font-size:11.5px;font-weight:800;color:var(--navy);margin-bottom:0;min-height:14px;line-height:1.2}
+.tx-controls input,.tx-controls select{
+  padding:9px 12px;font-size:12.5px;height:38px;line-height:1.2;box-sizing:border-box;
+  border:1px solid #cfdbd8;border-radius:9px;background:#fff;color:var(--ink);
+}
+.tx-controls select{
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23334d54' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+}
 .tx-controls .search-field{flex:1;min-width:220px}
 .tx-controls .search-field input{padding-left:32px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366787e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/></svg>");background-repeat:no-repeat;background-position:10px center}
-.tx-controls input,.tx-controls select{padding:8px 10px;font-size:12.5px}
 .tx-count{padding:9px 16px;color:var(--muted);font-size:12px;border-top:1px solid #e5ecea;background:#fff;border-radius:0 0 var(--radius) var(--radius)}
 .tx-table-card{overflow:auto;max-height:70vh;background:#fff;border:1px solid #e0e8e6;border-radius:var(--radius);box-shadow:var(--shadow)}
 .tx-table-card table{min-width:1500px}
@@ -796,11 +822,16 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="tx-controls">
         <div class="field"><label for="txFrom">From</label><input class="control-input" type="date" id="txFrom"></div>
         <div class="field"><label for="txTo">To</label><input class="control-input" type="date" id="txTo"></div>
-        <div class="field" id="txAmFilterWrap" style="min-width:200px">
+        <div class="field" id="txAmFilterWrap" style="min-width:220px">
           <label for="txAm">Area Manager</label>
-          <select class="control-input" id="txAm"><option value="">All area managers</option></select>
+          <input class="control-input" type="text" id="txAm" list="txAmList" placeholder="All area managers" autocomplete="off">
+          <datalist id="txAmList"></datalist>
         </div>
-        <div class="field" id="txStoreFilterWrap" style="min-width:200px"><label for="txStore">Store</label><select class="control-input" id="txStore"><option value="">All accessible stores</option></select></div>
+        <div class="field" id="txStoreFilterWrap" style="min-width:240px">
+          <label for="txStore">Store</label>
+          <input class="control-input" type="text" id="txStore" list="txStoreList" placeholder="All accessible stores" autocomplete="off">
+          <datalist id="txStoreList"></datalist>
+        </div>
         <div class="field search-field"><label for="txSearch">Search</label><input class="control-input" type="text" id="txSearch" placeholder="Search date, store, or any value…"></div>
         <button class="btn small" id="txResetBtn" type="button">Reset filters</button>
         <div class="tx-view-toggle" id="txViewToggle">
@@ -838,8 +869,8 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="field" id="weekWrap2" style="display:none;min-width:150px"><label for="weekDate2">Week 2</label><input class="control-input" type="date" id="weekDate2"></div>
           <div class="field" id="weekWrap3" style="display:none;min-width:150px"><label for="weekDate3">Week 3</label><input class="control-input" type="date" id="weekDate3"></div>
           <div class="field" id="weekWrap4" style="display:none;min-width:150px"><label for="weekDate4">Week 4</label><input class="control-input" type="date" id="weekDate4"></div>
-                    <div class="field" style="min-width:200px"><label for="weeklyAm">Area Manager</label><select class="control-input" id="weeklyAm"><option value="">All area managers</option></select></div>
-          <div class="field" style="min-width:200px"><label for="weeklyStore">Store</label><select class="control-input" id="weeklyStore"><option value="">All accessible stores</option></select></div>
+            <div class="field" style="min-width:220px"><label for="weeklyAm">Area Manager</label><input class="control-input" type="text" id="weeklyAm" list="weeklyAmList" placeholder="All area managers" autocomplete="off"><datalist id="weeklyAmList"></datalist></div>
+          <div class="field" style="min-width:240px"><label for="weeklyStore">Store</label><input class="control-input" type="text" id="weeklyStore" list="weeklyStoreList" placeholder="All accessible stores" autocomplete="off"><datalist id="weeklyStoreList"></datalist></div>
           <div class="range-chip" id="weekRange">—</div>
           <div class="field search-field"><label for="weeklySearch">Search</label><input class="control-input" type="text" id="weeklySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="weeklyClearBtn" type="button">Clear search</button>
@@ -872,8 +903,8 @@ details.group>summary::-webkit-details-marker{display:none}
           </div>
           <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="month" id="monthDate2"></div>
           <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="month" id="monthDate3"></div>
-                    <div class="field" style="min-width:200px"><label for="monthlyAm">Area Manager</label><select class="control-input" id="monthlyAm"><option value="">All area managers</option></select></div>
-          <div class="field" style="min-width:200px"><label for="monthlyStore">Store</label><select class="control-input" id="monthlyStore"><option value="">All accessible stores</option></select></div>
+                     <div class="field" style="min-width:220px"><label for="monthlyAm">Area Manager</label><input class="control-input" type="text" id="monthlyAm" list="monthlyAmList" placeholder="All area managers" autocomplete="off"><datalist id="monthlyAmList"></datalist></div>
+          <div class="field" style="min-width:240px"><label for="monthlyStore">Store</label><input class="control-input" type="text" id="monthlyStore" list="monthlyStoreList" placeholder="All accessible stores" autocomplete="off"><datalist id="monthlyStoreList"></datalist></div>
           <div class="range-chip" id="monthRangeChip">—</div>
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
@@ -897,8 +928,8 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="report-shell">
               <div class="report-top">
           <div class="field" style="min-width:170px"><label for="dashMonth">Reporting month</label><input class="control-input" type="month" id="dashMonth"></div>
-          <div class="field" style="min-width:200px"><label for="dashAm">Area Manager</label><select class="control-input" id="dashAm"><option value="">All area managers</option></select></div>
-          <div class="field" style="min-width:200px"><label for="dashStore">Store</label><select class="control-input" id="dashStore"><option value="">All accessible stores</option></select></div>
+                 <div class="field" style="min-width:220px"><label for="dashAm">Area Manager</label><input class="control-input" type="text" id="dashAm" list="dashAmList" placeholder="All area managers" autocomplete="off"><datalist id="dashAmList"></datalist></div>
+          <div class="field" style="min-width:240px"><label for="dashStore">Store</label><input class="control-input" type="text" id="dashStore" list="dashStoreList" placeholder="All accessible stores" autocomplete="off"><datalist id="dashStoreList"></datalist></div>
           <div class="field" style="min-width:220px"><label for="dashKpi">Focus KPI</label><select class="control-input" id="dashKpi"></select></div>
           <div class="range-chip" id="dashFocusValue" style="font-size:14px">—</div>
           <div class="field search-field"><label for="dashSearch">Search KPIs</label><input class="control-input" type="text" id="dashSearch" placeholder="Filter by category or KPI name…"></div>
@@ -3032,14 +3063,14 @@ var txSortDir = -1;
 var txViewMode = "list";
 
 function getTxStoresForScope(){
-  if(currentUser && currentUser.role === "store"){
-    return visibleStores.slice();
-  }
-  var amSel = q("txAm") ? q("txAm").value : "";
-  var sel = q("txStore") ? q("txStore").value : "";
+  if(currentUser && currentUser.role === "store") return visibleStores.slice();
+  var amEl = q("txAm");
+  var storeEl = q("txStore");
+  var amVal = amEl ? (amEl.value || "").trim() : "";
+  var storeVal = storeEl ? (storeEl.value || "").trim() : "";
   var list = visibleStores.slice();
-  if(amSel) list = list.filter(function(s){ return (s.areaManager||"") === amSel; });
-  if(sel)   list = list.filter(function(s){ return s.id === sel; });
+  if(amVal)    list = list.filter(function(s){ return (s.areaManager||"") === amVal; });
+  if(storeVal) list = list.filter(function(s){ return s.id === storeVal; });
   return list;
 }
 function getTxRecords(){
@@ -3433,78 +3464,66 @@ function setTxView(mode){
   }
 }
 function fillTxAmFilter(){
-  var sel = q("txAm");
-  if(!sel) return;
-  var current = sel.value;
+  var el = q("txAm");
+  var dl = q("txAmList");
+  if(!el || !dl) return;
   var ams = {};
-  visibleStores.forEach(function(s){
-    if(s.areaManager) ams[s.areaManager] = true;
-  });
+  visibleStores.forEach(function(s){ if(s.areaManager) ams[s.areaManager] = true; });
   var list = Object.keys(ams).sort();
-  var opts = ['<option value="">All area managers</option>'];
-  list.forEach(function(a){
-    opts.push('<option value="'+escapeAttr(a)+'">'+escapeHtml(a)+'</option>');
-  });
-  sel.innerHTML = opts.join("");
-  if(current && list.indexOf(current) >= 0) sel.value = current; else sel.value = "";
+  dl.innerHTML = list.map(function(a){ return '<option value="'+escapeAttr(a)+'"></option>'; }).join("");
+  /* keep current value if it is still in the list; else blank */
+  if(el.value && list.indexOf(el.value) < 0) el.value = "";
 }
 
 function fillTxStoreFilter(){
-  var sel = q("txStore");
-  if(!sel) return;
-  var current = sel.value;
-  var amSel = q("txAm");
-  var chosenAm = amSel ? amSel.value : "";
+  var el = q("txStore");
+  var dl = q("txStoreList");
+  if(!el || !dl) return;
+  var amEl = q("txAm");
+  var chosenAm = amEl ? (amEl.value || "").trim() : "";
   var list = visibleStores.filter(function(s){
     if(chosenAm && (s.areaManager||"") !== chosenAm) return false;
     return true;
   });
-  var opts = ['<option value="">All accessible stores</option>'];
-  list.slice().sort(function(a,b){return a.id.localeCompare(b.id);}).forEach(function(s){
-    opts.push('<option value="'+escapeAttr(s.id)+'">'+escapeHtml(s.id+" — "+(s.area||""))+'</option>');
-  });
-  sel.innerHTML = opts.join("");
-  if(current && list.some(function(s){ return s.id === current; })) sel.value = current;
-  else sel.value = "";
+  dl.innerHTML = list.slice().sort(function(a,b){return a.id.localeCompare(b.id);}).map(function(s){
+    var label = s.id + " — " + (s.area||"");
+    return '<option value="'+escapeAttr(s.id)+'">'+escapeHtml(label)+'</option>';
+  }).join("");
+  /* if the current store is not in the new list, clear it */
+  if(el.value && !list.some(function(s){ return s.id === el.value; })) el.value = "";
 }
-  function fillReportScopeFilters(amSelId, storeSelId){
-  var amSel = q(amSelId);
-  var storeSel = q(storeSelId);
-  if(!amSel || !storeSel) return;
+function fillReportScopeFilters(amSelId, storeSelId){
+  var amEl = q(amSelId);
+  var amDl = q(amSelId + "List");
+  var storeEl = q(storeSelId);
+  var storeDl = q(storeSelId + "List");
+  if(!amEl || !amDl || !storeEl || !storeDl) return;
 
   var ams = {};
   visibleStores.forEach(function(s){ if(s.areaManager) ams[s.areaManager] = true; });
   var amList = Object.keys(ams).sort();
-  var curAm = amSel.value;
-  var amOpts = ['<option value="">All area managers</option>'];
-  amList.forEach(function(a){
-    amOpts.push('<option value="'+escapeAttr(a)+'">'+escapeHtml(a)+'</option>');
-  });
-  amSel.innerHTML = amOpts.join("");
-  if(curAm && amList.indexOf(curAm) >= 0) amSel.value = curAm; else amSel.value = "";
+  amDl.innerHTML = amList.map(function(a){ return '<option value="'+escapeAttr(a)+'"></option>'; }).join("");
+  var chosenAm = (amEl.value || "").trim();
+  if(chosenAm && amList.indexOf(chosenAm) < 0) amEl.value = "";
 
-  var chosenAm = amSel.value;
   var storeList = visibleStores.filter(function(s){
     if(chosenAm && (s.areaManager||"") !== chosenAm) return false;
     return true;
   });
-  var curStore = storeSel.value;
-  var storeOpts = ['<option value="">All accessible stores</option>'];
-  storeList.slice().sort(function(a,b){return a.id.localeCompare(b.id);}).forEach(function(s){
-    storeOpts.push('<option value="'+escapeAttr(s.id)+'">'+escapeHtml(s.id+" — "+(s.area||""))+'</option>');
-  });
-  storeSel.innerHTML = storeOpts.join("");
-  if(curStore && storeList.some(function(s){ return s.id === curStore; })) storeSel.value = curStore;
-  else storeSel.value = "";
+  storeDl.innerHTML = storeList.slice().sort(function(a,b){return a.id.localeCompare(b.id);}).map(function(s){
+    var label = s.id + " — " + (s.area||"");
+    return '<option value="'+escapeAttr(s.id)+'">'+escapeHtml(label)+'</option>';
+  }).join("");
+  if(storeEl.value && !storeList.some(function(s){ return s.id === storeEl.value; })) storeEl.value = "";
 }
 
 function chosenReportStore(amSelId, storeSelId){
-  var storeSel = q(storeSelId);
-  var storeVal = storeSel ? storeSel.value : "";
-  var amSel = q(amSelId);
-  var amVal = amSel ? amSel.value : "";
+  var storeEl = q(storeSelId);
+  var storeVal = storeEl ? (storeEl.value || "").trim() : "";
+  var amEl = q(amSelId);
+  var amVal = amEl ? (amEl.value || "").trim() : "";
   if(storeVal){
-    var s = state.stores.find(function(x){return x.id === storeVal;});
+    var s = state.stores.find(function(x){ return x.id === storeVal; });
     if(s) return s.id;
   }
   if(amVal){
@@ -3518,14 +3537,23 @@ function bindTxFilters(){
     var el = q(id);
     if(el) el.addEventListener("input", renderTransactions);
   });
-  var storeSel = q("txStore");
-  if(storeSel) storeSel.addEventListener("change", renderTransactions);
 
-  var amSel = q("txAm");
-  if(amSel) amSel.addEventListener("change", function(){
-    fillTxStoreFilter();   /* rebuild store list from chosen AM */
-    renderTransactions();
-  });
+  var storeEl = q("txStore");
+  if(storeEl){
+    storeEl.addEventListener("change", renderTransactions);
+    storeEl.addEventListener("input", renderTransactions);
+  }
+  var amEl = q("txAm");
+  if(amEl){
+    amEl.addEventListener("change", function(){
+      fillTxStoreFilter();
+      renderTransactions();
+    });
+    amEl.addEventListener("input", function(){
+      fillTxStoreFilter();
+      renderTransactions();
+    });
+  }
 
   var reset = q("txResetBtn");
   if(reset) reset.addEventListener("click", function(){
@@ -4563,28 +4591,43 @@ if(fDateEl){
   q("weekDate3").addEventListener("change", renderWeekly);
   q("weekDate4").addEventListener("change", renderWeekly);
   q("weekCompareMode").addEventListener("change", renderWeekly);
-    q("weeklyAm").addEventListener("change", function(){
-    fillReportScopeFilters("weeklyAm","weeklyStore");
-    renderWeekly();
+  ["change","input"].forEach(function(ev){
+    var el = q("weeklyAm");
+    if(el) el.addEventListener(ev, function(){
+      fillReportScopeFilters("weeklyAm","weeklyStore");
+      renderWeekly();
+    });
+    var el2 = q("weeklyStore");
+    if(el2) el2.addEventListener(ev, renderWeekly);
   });
-  q("weeklyStore").addEventListener("change", renderWeekly);
 
   q("monthDate").addEventListener("change", renderMonthly);
   q("monthDate2").addEventListener("change", renderMonthly);
   q("monthDate3").addEventListener("change", renderMonthly);
   q("monthCompareMode").addEventListener("change", renderMonthly);
-    q("monthlyAm").addEventListener("change", function(){
-    fillReportScopeFilters("monthlyAm","monthlyStore");
-    renderMonthly();
+
+  ["change","input"].forEach(function(ev){
+    var el = q("monthlyAm");
+    if(el) el.addEventListener(ev, function(){
+      fillReportScopeFilters("monthlyAm","monthlyStore");
+      renderMonthly();
+    });
+    var el2 = q("monthlyStore");
+    if(el2) el2.addEventListener(ev, renderMonthly);
   });
-  q("monthlyStore").addEventListener("change", renderMonthly);
-   q("dashMonth").addEventListener("change", renderDashboard);
+
+  q("dashMonth").addEventListener("change", renderDashboard);
   q("dashKpi").addEventListener("change", renderDashboard);
-    q("dashAm").addEventListener("change", function(){
-    fillReportScopeFilters("dashAm","dashStore");
-    renderDashboard();
+
+  ["change","input"].forEach(function(ev){
+    var el = q("dashAm");
+    if(el) el.addEventListener(ev, function(){
+      fillReportScopeFilters("dashAm","dashStore");
+      renderDashboard();
+    });
+    var el2 = q("dashStore");
+    if(el2) el2.addEventListener(ev, renderDashboard);
   });
-  q("dashStore").addEventListener("change", renderDashboard);
 
   var wSearch = q("weeklySearch");
   if(wSearch) wSearch.addEventListener("input", renderWeekly);
