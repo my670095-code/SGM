@@ -62,10 +62,16 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 }
   /* ============ DAILY ENTRY (simplified) ============ */
 .entry-hero{
-  display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;
-  padding:16px 20px;margin-bottom:14px;
+  display:flex;gap:16px;align-items:center;justify-content:space-between;
+  flex-wrap:nowrap;                 /* ← keeps it on ONE line */
+  padding:14px 20px;margin-bottom:14px;
   background:linear-gradient(110deg,#082c37,#0f4958);color:#fff;
   border-radius:var(--radius);box-shadow:0 10px 28px rgba(11,51,64,.18);
+}
+.entry-hero .hero-right{
+  display:flex;gap:10px;align-items:center;
+  flex-wrap:nowrap;                 /* ← also keeps items in the right group on one line */
+  flex-shrink:0;
 }
 .entry-hero .hero-left{display:flex;align-items:center;gap:14px;min-width:0}
 .entry-hero .hero-mark{
@@ -659,6 +665,8 @@ details.group>summary::-webkit-details-marker{display:none}
   .breakdown-row{grid-template-columns:1fr 1fr;padding:10px;border:1px solid var(--line);border-radius:10px}
   .breakdown-row .asset{grid-column:1 / -1}
   .modal-body{grid-template-columns:1fr}
+    .entry-hero{flex-wrap:wrap}
+  .entry-hero .hero-right{flex-wrap:wrap}
   .entry-hero{padding:14px}
   .entry-hero .hero-mark{width:44px;height:44px;font-size:12px}
   .entry-hero .hero-text h3{font-size:16px}
@@ -782,13 +790,7 @@ details.group>summary::-webkit-details-marker{display:none}
             <small>Store</small>
             <span id="entryStoreLabel">—</span>
           </div>
-          <div class="entry-date-chip" title="Currently selected date">
-            <small>Selected Date</small>
-            <span id="entryDateLabel">—</span>
-          </div>
           <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
-          <button class="entry-icon-btn" id="loadTodayBtn" type="button" title="Jump to today">📅 Today</button>
-          <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
           <span class="entry-status new" id="entryStatus">
             <span class="dot"></span><span id="entryStatusText">New entry</span>
           </span>
@@ -797,11 +799,9 @@ details.group>summary::-webkit-details-marker{display:none}
             <div class="progress-track">
               <div class="progress-fill partial" id="progFill" style="width:0%"></div>
             </div>
-            <span id="progHint" style="font-size:10px;opacity:.75">0 left blank</span>
           </div>
-          <button class="entry-icon-btn" id="resetFormBtn" type="button" title="Clear the form">↺ Reset</button>
           <button class="entry-submit-btn" id="submitDayBtn" type="button">
-            ✓ Submit Entry
+            ✓ Submit
             <span class="entry-submit-pill" id="topSubmitPill2">0 / 0</span>
           </button>
         </div>
@@ -2141,10 +2141,7 @@ function refreshProgress(){
     bar.classList.toggle("partial", pctFill < 100);
   }
   if(txt) txt.textContent = "Filled " + filled + " / " + total;
-  if(hint){
-    if(filled === total) hint.textContent = "All filled ✓";
-    else hint.textContent = (total - filled) + " left blank (optional)";
-  }
+ 
    if(btn) btn.removeAttribute("disabled");
   updateTopSubmitBtn();
   updateEntryDateLabel();
@@ -2353,13 +2350,8 @@ function updateEntryStatus(mode){
   else if(m === "dirty") txt.textContent = "Unsaved changes";
 }
 function updateEntryDateLabel(){
-  var el = q("entryDateLabel");
-  if(!el) return;
-  var v = q("f-date-hero") ? q("f-date-hero").value : "";
-  if(!v){ el.textContent = "—"; return; }
-  var d = parseDate(v);
-  el.textContent = d.toLocaleDateString("en-GB",
-    { weekday:"short", day:"2-digit", month:"short", year:"numeric" });
+  /* Date chip was removed from the hero — the date picker itself is the label */
+  return;
 }
 
 function updateTopSubmitBtn(){
@@ -4449,25 +4441,12 @@ function bindEvents(){
   q("loginUsername").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginPassword").focus(); });
   q("logoutBtn").addEventListener("click", logout);
 
-  q("submitDayBtn").addEventListener("click", submitDailyRecord);
-  q("resetFormBtn").addEventListener("click", function(){
-    if(!window.confirm("Clear all fields on this form?")) return;
-    blankDailyRecord();
-        dirty = false;
-    updateEntryStatus("saved");
-  });
-  q("clearDayBtn").addEventListener("click", clearDailyRecord);
-  q("confirmModalClose").addEventListener("click", closeConfirmModal);
+    q("submitDayBtn").addEventListener("click", submitDailyRecord);
+    q("confirmModalClose").addEventListener("click", closeConfirmModal);
   q("confirmModalCancel").addEventListener("click", closeConfirmModal);
   q("confirmModalSave").addEventListener("click", commitDailyRecord);
   q("confirmModal").addEventListener("click", function(e){
     if(e.target === q("confirmModal")) closeConfirmModal();
-  });
-
-  q("loadTodayBtn").addEventListener("click", function(){
-    q("f-date").value = todayIso();
-    q("f-date-hero").value = todayIso();
-    loadDailyRecord();
   });
     /* Unified date sync — both pickers stay in step and reload the record */
     /* Unified date sync — only listen to `change` (not `input`), so the picker value is fully committed */
