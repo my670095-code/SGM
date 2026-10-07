@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#0b3340">
 <title>SGM Operations Control</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  .tx-controls .field select{min-width:180px}
+<style>
+.tx-controls .field select{min-width:180px}
 .tx-controls #txAm{min-width:180px}
 .tx-controls #txStore{min-width:180px}
-<style>
 :root{
   --navy:#0b3340;--navy-2:#124a59;--ink:#14282e;--muted:#66787e;
   --paper:#fff;--canvas:#eef3f2;--line:#d7e1df;--gold:#d59c3a;--gold-soft:#fff4dc;
@@ -1662,9 +1662,12 @@ function finalizeLogin(){
   q("loginScreen").classList.remove("show");
   q("appShell").style.display = "";
   switchView("daily");
-  setupStores();
-    fillTxAmFilter();
+   setupStores();
+  fillTxAmFilter();
   fillTxStoreFilter();
+  fillReportScopeFilters("weeklyAm","weeklyStore");
+  fillReportScopeFilters("monthlyAm","monthlyStore");
+  fillReportScopeFilters("dashAm","dashStore");
   loadDailyRecord();
   refreshCurrentView();
   renderTransactions();
@@ -2220,11 +2223,11 @@ function renderBreakdowns(){
       '<input data-k="end" type="datetime-local" value="'+escapeAttr(item.end||"")+'">'+
       '<div class="hrs">'+round(calc.hours,2)+' h · SAR '+money(calc.loss)+'</div>'+
       '<button class="icon-btn" data-remove="'+index+'" type="button" title="Remove">×</button>';
-    row.querySelectorAll("input").forEach(function(inp){
+      row.querySelectorAll("input").forEach(function(inp){
       inp.addEventListener("input", function(){
         currentBreakdowns[index][inp.dataset.k] = inp.value;
         var r = calculateBreakdown(currentBreakdowns[index], n(q("f-targetSales")?q("f-targetSales").value:0));
-        row.querySelector(".hrs").textContent = round(r.hours,2)+" h";
+        row.querySelector(".hrs").textContent = round(r.hours,2)+" h · SAR "+money(r.loss);
         markDirty();
         refreshGroupPills();
         refreshProgress();
@@ -4676,11 +4679,15 @@ if(fDateEl){
   renderSalaryTable();
   bindEvents();
     q("appShell").style.display = "none";
-  if(restoreSession()){
+   if(restoreSession()){
     computeVisibleStores();
     setupStores();
+    fillTxAmFilter();
     fillTxStoreFilter();
-    loadDailyRecord();
+    fillReportScopeFilters("weeklyAm","weeklyStore");
+    fillReportScopeFilters("monthlyAm","monthlyStore");
+    fillReportScopeFilters("dashAm","dashStore");
+    loadDailyRecord();  
     updateStorageStat();
     renderStoreFilters();
     renderStores();
