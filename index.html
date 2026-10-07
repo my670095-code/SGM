@@ -1843,16 +1843,34 @@ function applyRoleUi(){
       body.appendChild(addBtn);
     } else {
             var grid = document.createElement("div");
-      var cols = g.fields.length % 3 === 0 ? "cols-3"
-               : g.fields.length % 2 === 0 ? "cols-2"
-               : "";
-      grid.className = "grid " + cols;
-      /* Defensive inline style — guarantees grid layout even if CSS fails */
+      /* Decide columns based on how many fields this section has:
+         - 4 fields → 4 columns (1 row)
+         - 8 fields → 4 columns (2 rows)
+         - 10 fields → 5 columns (2 rows)
+         - 12 fields → 4 columns (3 rows)
+         - 15 fields → 5 columns (3 rows)
+         - 20 fields → 5 columns (4 rows)
+         - 22 fields → 5 columns + remainder
+         - 16 fields → 4 columns (4 rows)
+      */
+      var n = g.fields.length;
+      var colCount;
+      if(n === 4)       colCount = 4;
+      else if(n === 8)  colCount = 4;
+      else if(n === 9)  colCount = 3;
+      else if(n === 10) colCount = 5;
+      else if(n === 12) colCount = 4;
+      else if(n === 15) colCount = 5;
+      else if(n === 16) colCount = 4;
+      else if(n === 20) colCount = 5;
+      else if(n === 22) colCount = 5;
+      else              colCount = 5;   /* fallback */
+
+      grid.className = "grid";
       grid.style.display = "grid";
       grid.style.gap = "8px 10px";
-      if(cols === "cols-3") grid.style.gridTemplateColumns = "repeat(4, minmax(110px, 1fr))";
-      else if(cols === "cols-2") grid.style.gridTemplateColumns = "repeat(3, minmax(130px, 1fr))";
-      else grid.style.gridTemplateColumns = "repeat(4, minmax(110px, 1fr))";
+      grid.style.gridTemplateColumns = "repeat(" + colCount + ", minmax(0, 1fr))";
+
       g.fields.forEach(function(f){ grid.appendChild(makeField(f, g.id)); });
       body.appendChild(grid);
 
