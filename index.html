@@ -718,6 +718,129 @@ details.group>summary::-webkit-details-marker{display:none}
   width: 110px;
   text-align: center;
 }
+  /* ===== TOP-BAR AREA MANAGER MULTI-SELECT ===== */
+.am-multiselect{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.am-multiselect label{
+  font-size:12px;
+  opacity:.8;
+  white-space:nowrap;
+}
+.am-ms-shell{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:240px;
+  max-width:340px;
+  min-height:38px;
+  padding:5px 10px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.1);
+  border-radius:10px;
+  flex-wrap:wrap;
+  cursor:text;
+}
+.am-ms-shell.open{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(213,156,58,.2);
+}
+.am-ms-tags{
+  display:flex;
+  gap:4px;
+  flex-wrap:wrap;
+}
+.am-ms-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 8px;
+  border-radius:999px;
+  background:var(--gold);
+  color:#193941;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.am-ms-tag .x{
+  cursor:pointer;
+  font-weight:900;
+  opacity:.7;
+}
+.am-ms-tag .x:hover{ opacity:1; }
+.am-ms-search{
+  flex:1;
+  min-width:120px;
+  border:0;
+  background:transparent;
+  color:#fff;
+  outline:none;
+  font-size:12.5px;
+  padding:3px 2px;
+}
+.am-ms-search::placeholder{ color:rgba(255,255,255,.55); }
+.am-ms-dropdown{
+  position:absolute;
+  top:100%;
+  left:auto;
+  right:0;
+  margin-top:6px;
+  min-width:320px;
+  max-height:320px;
+  overflow-y:auto;
+  background:#fff;
+  color:var(--ink);
+  border:1px solid #d7e1df;
+  border-radius:10px;
+  box-shadow:0 18px 40px rgba(11,51,64,.25);
+  z-index:40;
+  display:none;
+  padding:6px 0;
+}
+.am-ms-dropdown.open{ display:block; }
+.am-ms-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 12px;
+  cursor:pointer;
+  font-size:12.5px;
+}
+.am-ms-item:hover{ background:#f1f6f4; }
+.am-ms-item input{ margin:0; }
+.am-ms-item .cnt{
+  margin-left:auto;
+  color:#66787e;
+  font-size:11px;
+  font-weight:600;
+}
+.am-ms-empty{
+  padding:10px 12px;
+  color:#66787e;
+  font-size:12px;
+}
+.am-ms-clear{
+  padding:6px 12px;
+  border-top:1px solid #e5ecea;
+  color:var(--red);
+  font-weight:800;
+  font-size:11.5px;
+  cursor:pointer;
+  text-align:center;
+}
+.am-ms-clear:hover{ background:#fff0ef; }
+@media (max-width:1150px){
+  .am-ms-shell{ min-width:180px; max-width:240px; }
+  .am-ms-dropdown{ min-width:260px; }
+}
+@media (max-width:760px){
+  .am-multiselect{ width:100%; }
+  .am-ms-shell{ flex:1; max-width:none; }
+  .am-ms-dropdown{ left:0; right:auto; min-width:240px; }
+}
 </style>
 </head>
 <body>
@@ -781,6 +904,14 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="store-control">
         <label for="globalStore">Store</label>
         <select id="globalStore"></select>
+        <div class="am-multiselect" id="amMultiWrap">
+          <label>Area Manager</label>
+          <div class="am-ms-shell" id="amMsShell">
+            <div class="am-ms-tags" id="amMsTags"></div>
+            <input type="text" class="am-ms-search" id="amMsSearch" placeholder="Search or pick area managers…" autocomplete="off">
+          </div>
+          <div class="am-ms-dropdown" id="amMsDropdown"></div>
+        </div>
         <span class="user-pill" id="userPill">
           <span id="userName">—</span>
           <span class="role-tag" id="userRole">—</span>
@@ -867,16 +998,6 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="tx-controls">
         <div class="field"><label for="txFrom">From</label><input class="control-input" type="date" id="txFrom"></div>
         <div class="field"><label for="txTo">To</label><input class="control-input" type="date" id="txTo"></div>
-        <div class="field" id="txAmFilterWrap" style="min-width:220px">
-          <label for="txAm">Area Manager</label>
-          <input class="control-input" type="text" id="txAm" list="txAmList" placeholder="All area managers" autocomplete="off">
-          <datalist id="txAmList"></datalist>
-        </div>
-        <div class="field" id="txStoreFilterWrap" style="min-width:240px">
-          <label for="txStore">Store</label>
-          <input class="control-input" type="text" id="txStore" list="txStoreList" placeholder="All accessible stores" autocomplete="off">
-          <datalist id="txStoreList"></datalist>
-        </div>
         <div class="field search-field"><label for="txSearch">Search</label><input class="control-input" type="text" id="txSearch" placeholder="Search date, store, or any value…"></div>
         <button class="btn small" id="txResetBtn" type="button">Reset filters</button>
         <div class="tx-view-toggle" id="txViewToggle">
@@ -914,8 +1035,6 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="field" id="weekWrap2" style="display:none;min-width:150px"><label for="weekDate2">Week 2</label><input class="control-input" type="date" id="weekDate2"></div>
           <div class="field" id="weekWrap3" style="display:none;min-width:150px"><label for="weekDate3">Week 3</label><input class="control-input" type="date" id="weekDate3"></div>
           <div class="field" id="weekWrap4" style="display:none;min-width:150px"><label for="weekDate4">Week 4</label><input class="control-input" type="date" id="weekDate4"></div>
-            <div class="field" style="min-width:220px"><label for="weeklyAm">Area Manager</label><input class="control-input" type="text" id="weeklyAm" list="weeklyAmList" placeholder="All area managers" autocomplete="off"><datalist id="weeklyAmList"></datalist></div>
-          <div class="field" style="min-width:240px"><label for="weeklyStore">Store</label><input class="control-input" type="text" id="weeklyStore" list="weeklyStoreList" placeholder="All accessible stores" autocomplete="off"><datalist id="weeklyStoreList"></datalist></div>
           <div class="range-chip" id="weekRange">—</div>
           <div class="field search-field"><label for="weeklySearch">Search</label><input class="control-input" type="text" id="weeklySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="weeklyClearBtn" type="button">Clear search</button>
@@ -948,8 +1067,6 @@ details.group>summary::-webkit-details-marker{display:none}
           </div>
           <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="month" id="monthDate2"></div>
           <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="month" id="monthDate3"></div>
-                     <div class="field" style="min-width:220px"><label for="monthlyAm">Area Manager</label><input class="control-input" type="text" id="monthlyAm" list="monthlyAmList" placeholder="All area managers" autocomplete="off"><datalist id="monthlyAmList"></datalist></div>
-          <div class="field" style="min-width:240px"><label for="monthlyStore">Store</label><input class="control-input" type="text" id="monthlyStore" list="monthlyStoreList" placeholder="All accessible stores" autocomplete="off"><datalist id="monthlyStoreList"></datalist></div>
           <div class="range-chip" id="monthRangeChip">—</div>
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
@@ -973,8 +1090,6 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="report-shell">
               <div class="report-top">
           <div class="field" style="min-width:170px"><label for="dashMonth">Reporting month</label><input class="control-input" type="month" id="dashMonth"></div>
-                 <div class="field" style="min-width:220px"><label for="dashAm">Area Manager</label><input class="control-input" type="text" id="dashAm" list="dashAmList" placeholder="All area managers" autocomplete="off"><datalist id="dashAmList"></datalist></div>
-          <div class="field" style="min-width:240px"><label for="dashStore">Store</label><input class="control-input" type="text" id="dashStore" list="dashStoreList" placeholder="All accessible stores" autocomplete="off"><datalist id="dashStoreList"></datalist></div>
           <div class="field" style="min-width:220px"><label for="dashKpi">Focus KPI</label><select class="control-input" id="dashKpi"></select></div>
           <div class="range-chip" id="dashFocusValue" style="font-size:14px">—</div>
           <div class="field search-field"><label for="dashSearch">Search KPIs</label><input class="control-input" type="text" id="dashSearch" placeholder="Filter by category or KPI name…"></div>
@@ -1633,6 +1748,56 @@ var currentBreakdowns = [];
 var currentUser = null;
 var visibleStores = [];
 var dirty = false;
+  /* ============================================================
+   TOP-BAR SCOPE FILTER
+   ============================================================ */
+var topFilter = {
+  storeId: "",          // "" = no specific store
+  areaManagers: []      // [] = no AM filter; otherwise list of AM names
+};
+
+/* Resolve the top filter into an array of store IDs */
+function resolveStoreScope(){
+  if(topFilter.storeId){
+    return [ normalizeStoreId(topFilter.storeId) ];
+  }
+  if(topFilter.areaManagers && topFilter.areaManagers.length){
+    var wanted = {};
+    topFilter.areaManagers.forEach(function(a){ wanted[a] = true; });
+    return visibleStores
+      .filter(function(s){ return wanted[s.areaManager]; })
+      .map(function(s){ return s.id; });
+  }
+  return visibleStores.map(function(s){ return s.id; });
+}
+
+/* Human-readable label of the current scope */
+function scopeLabel(){
+  if(topFilter.storeId) return topFilter.storeId;
+  if(topFilter.areaManagers && topFilter.areaManagers.length){
+    return topFilter.areaManagers.join(", ") + " (" + resolveStoreScope().length + " stores)";
+  }
+  return "All visible stores (" + visibleStores.length + ")";
+}
+
+/* Pull records for many stores in a date range */
+function recordsBetweenStores(storeIds, start, end){
+  var set = {};
+  storeIds.forEach(function(id){ set[ normalizeStoreId(id) ] = true; });
+  return state.records.filter(function(r){
+    return set[ normalizeStoreId(r.storeId) ] && r.date >= start && r.date <= end;
+  });
+}
+
+/* Reset both filters */
+function clearTopFilter(){
+  topFilter.storeId = "";
+  topFilter.areaManagers = [];
+  var sel = q("globalStore");
+  if(sel) sel.value = state.selectedStore;
+  renderAmMultiSelect();
+  refreshCurrentView();
+}
 
 function saveState(msg){
   try{
@@ -1713,11 +1878,7 @@ function finalizeLogin(){
   q("appShell").style.display = "";
   switchView("daily");
    setupStores();
-  fillTxAmFilter();
-  fillTxStoreFilter();
-  fillReportScopeFilters("weeklyAm","weeklyStore");
-  fillReportScopeFilters("monthlyAm","monthlyStore");
-  fillReportScopeFilters("dashAm","dashStore");
+  renderAmMultiSelect();
   loadDailyRecord();
   refreshCurrentView();
   renderTransactions();
@@ -2824,13 +2985,13 @@ function renderDashboard(){
   var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
   var end = isoDate(d);
 
-  var storeForReport = chosenReportStore("dashAm", "dashStore");
-  var agg = aggregate(recordsBetween(storeForReport, start, end));
+  var ids = resolveStoreScope();
+  var agg = aggregate(recordsBetweenStores(ids, start, end));
   agg._periodStartLabel = mv;
   agg._periodEndLabel = mv;
 
   var scope = q("dashScope");
-  if(scope) scope.textContent = storeForReport+" · "+mv+" · "+agg._records.length+" daily entries";
+  if(scope) scope.textContent = scopeLabel()+" · "+mv+" · "+agg._records.length+" daily entries";
 
   var focusSel = q("dashKpi");
   if(focusSel && !focusSel.options.length){
@@ -2983,8 +3144,8 @@ function buildWeeklyPeriods(){
     var dv = q(inputs[i]).value || base;
     var s = weekStart(dv);
     var e = addDays(s, 6);
-     var storeForReport = chosenReportStore("weeklyAm", "weeklyStore");
-    var agg = aggregate(recordsBetween(storeForReport, s, e));
+    var ids = resolveStoreScope();
+    var agg = aggregate(recordsBetweenStores(ids, s, e));
     agg._periodStartLabel = dateLabel(s);
     agg._periodEndLabel   = dateLabel(e);
       periods.push({
@@ -3007,8 +3168,8 @@ function buildMonthlyPeriods(){
     var start = mv+"-01";
     var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
     var end = isoDate(d);
-        var storeForReport = chosenReportStore("monthlyAm", "monthlyStore");
-    var agg = aggregate(recordsBetween(storeForReport, start, end));
+       var ids = resolveStoreScope();
+    var agg = aggregate(recordsBetweenStores(ids, start, end));
     agg._periodStartLabel = mv;
     agg._periodEndLabel   = mv;
        periods.push({
@@ -3032,8 +3193,8 @@ function renderWeekly(){
 
   var periods = buildWeeklyPeriods();
   var range = periods.map(function(p){ return dateLabel(p.start)+" — "+dateLabel(p.end); }).join("  |  ");
-  q("weekRange").textContent = periods.length>1 ? periods.length+" weeks" : dateLabel(periods[0].start)+" — "+dateLabel(periods[0].end);
-  q("weeklyRange").textContent = range;
+  q("weekRange").textContent = "Scope: " + scopeLabel();
+  q("weeklyRange").textContent = (periods.length>1 ? periods.length+" weeks — " : "") + range;
 
 
   renderReportTable2Col(q("weeklyTable"), periods, q("weeklySearch")?q("weeklySearch").value:"", "weeklyCount");
@@ -3058,7 +3219,7 @@ function renderMonthly(){
 
   var periods = buildMonthlyPeriods();
   var range = periods.map(function(p){ return p.shortLabel; }).join("  |  ");
-  q("monthRangeChip").textContent = periods.length>1 ? periods.length+" months" : base;
+  q("monthRangeChip").textContent = "Scope: " + scopeLabel();
   var total = periods.reduce(function(a,p){ return a + p.agg._records.length; }, 0);
   q("monthCoverage").textContent = total+" daily entries · "+range;
 
@@ -3080,14 +3241,10 @@ var txViewMode = "list";
 
 function getTxStoresForScope(){
   if(currentUser && currentUser.role === "store") return visibleStores.slice();
-  var amEl = q("txAm");
-  var storeEl = q("txStore");
-  var amVal = amEl ? (amEl.value || "").trim() : "";
-  var storeVal = storeEl ? (storeEl.value || "").trim() : "";
-  var list = visibleStores.slice();
-  if(amVal)    list = list.filter(function(s){ return (s.areaManager||"") === amVal; });
-  if(storeVal) list = list.filter(function(s){ return s.id === storeVal; });
-  return list;
+  var ids = resolveStoreScope();
+  var set = {};
+  ids.forEach(function(id){ set[id] = true; });
+  return visibleStores.filter(function(s){ return set[s.id]; });
 }
 function getTxRecords(){
   var from = q("txFrom") ? q("txFrom").value : "";
@@ -3157,8 +3314,8 @@ function renderTxList(){
     var totalScope = state.records.filter(function(r){
       return getTxStoresForScope().some(function(s){ return s.id === r.storeId; });
     }).length;
-    countEl.textContent = "Showing " + enriched.length + " of " + totalScope + " daily entries" +
-      (currentUser && currentUser.role === "store" ? " for your store" : " in the current scope");
+    countEl.textContent = "Scope: " + scopeLabel() +
+      " — showing " + enriched.length + " of " + totalScope + " daily entries";
   }
   if(!enriched.length){
     table.innerHTML = '<tbody><tr><td class="tx-empty">No saved entries match the current filters.</td></tr></tbody>';
@@ -3356,7 +3513,8 @@ function renderTxGrid(){
     var totalScope = state.records.filter(function(r){
       return getTxStoresForScope().some(function(s){ return s.id === r.storeId; });
     }).length;
-    countEl.textContent = "Showing " + enriched.length + " of " + totalScope + " daily entries in the current scope";
+        countEl.textContent = "Scope: " + scopeLabel() +
+      " — showing " + enriched.length + " of " + totalScope + " daily entries";
   }
      table.className = "sgm-grid";
   table.removeAttribute("style");
@@ -3545,30 +3703,12 @@ function bindTxFilters(){
     if(el) el.addEventListener("input", renderTransactions);
   });
 
-  var storeEl = q("txStore");
-  if(storeEl){
-    storeEl.addEventListener("change", renderTransactions);
-    storeEl.addEventListener("input", renderTransactions);
-  }
-  var amEl = q("txAm");
-  if(amEl){
-    amEl.addEventListener("change", function(){
-      fillTxStoreFilter();
-      renderTransactions();
-    });
-    amEl.addEventListener("input", function(){
-      fillTxStoreFilter();
-      renderTransactions();
-    });
-  }
-
   var reset = q("txResetBtn");
   if(reset) reset.addEventListener("click", function(){
-    ["txFrom","txTo","txSearch","txStore","txAm"].forEach(function(id){
+    ["txFrom","txTo","txSearch"].forEach(function(id){
       var el = q(id);
       if(el) el.value = "";
     });
-    fillTxStoreFilter();
     renderTransactions();
   });
   var exportBtn = q("txExportBtn");
@@ -3738,7 +3878,8 @@ function exportReport(kind){
     return;
   }
 
-  var storeForReport = chosenReportStore(amSelId, storeSelId);
+  var scopeIds = resolveStoreScope();
+  var storeForReport = (scopeIds.length === 1) ? scopeIds[0] : (scopeIds.length + "stores");
   var allRows = reportRows();
 
   /* Header: Category | Section | Period1 | Period2 | ... */
@@ -3833,7 +3974,6 @@ function restoreJson(){
       renderSalaryTable();
       computeVisibleStores();
       setupStores();
-      fillTxStoreFilter();
       renderStoreFilters();
       renderStores();
       renderUsers();
@@ -4476,6 +4616,131 @@ function exportUsersCsv(){
 /* ============================================================
    STORE SELECTOR / VIEW SWITCH
    ============================================================ */
+  /* ============================================================
+   AM MULTI-SELECT — renderer
+   ============================================================ */
+function amListForUser(){
+  /* Return the list of AM names the current user may choose */
+  var seen = {};
+  visibleStores.forEach(function(s){
+    if(s.areaManager) seen[s.areaManager] = true;
+  });
+  return Object.keys(seen).sort();
+}
+function amStoreCount(amName){
+  return visibleStores.filter(function(s){ return s.areaManager === amName; }).length;
+}
+function renderAmMultiSelect(){
+  var host = q("amMsTags");
+  var dd = q("amMsDropdown");
+  var searchEl = q("amMsSearch");
+  var wrap = q("amMultiWrap");
+  if(!host || !dd || !wrap) return;
+
+  /* Hide entirely for store-role logins */
+  if(currentUser && currentUser.role === "store"){
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "";
+
+  /* Render tag chips */
+  var tagsHtml = "";
+  topFilter.areaManagers.forEach(function(a){
+    tagsHtml += '<span class="am-ms-tag" data-am="'+escapeAttr(a)+'">'+
+                  escapeHtml(a)+
+                  '<span class="x" data-am-remove="'+escapeAttr(a)+'">×</span>'+
+                '</span>';
+  });
+  host.innerHTML = tagsHtml;
+
+  /* Refresh dropdown list */
+  var search = (searchEl ? (searchEl.value||"").trim().toLowerCase() : "");
+  var all = amListForUser();
+  var filtered = all.filter(function(a){
+    return !search || a.toLowerCase().indexOf(search) >= 0;
+  });
+  var html = "";
+  if(!filtered.length){
+    html = '<div class="am-ms-empty">No area managers match.</div>';
+  } else {
+    filtered.forEach(function(a){
+      var checked = topFilter.areaManagers.indexOf(a) >= 0 ? ' checked' : '';
+      html += '<label class="am-ms-item">'+
+                '<input type="checkbox" data-am-toggle="'+escapeAttr(a)+'"'+checked+'>'+
+                '<span>'+escapeHtml(a)+'</span>'+
+                '<span class="cnt">'+amStoreCount(a)+' stores</span>'+
+              '</label>';
+    });
+  }
+  if(topFilter.areaManagers.length){
+    html += '<div class="am-ms-clear" id="amMsClear">Clear all area managers</div>';
+  }
+  dd.innerHTML = html;
+
+  /* Tag remove */
+  host.querySelectorAll("[data-am-remove]").forEach(function(el){
+    el.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var am = el.dataset.amRemove;
+      topFilter.areaManagers = topFilter.areaManagers.filter(function(x){ return x !== am; });
+      pushFilterPersistence();
+      renderAmMultiSelect();
+      refreshCurrentView();
+    });
+  });
+
+  /* Toggle checkbox */
+  dd.querySelectorAll("[data-am-toggle]").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var am = cb.dataset.amToggle;
+      if(cb.checked){
+        if(topFilter.areaManagers.indexOf(am) < 0) topFilter.areaManagers.push(am);
+        /* Mutual exclusion with store dropdown */
+        topFilter.storeId = "";
+        var sel = q("globalStore");
+        if(sel){ sel.value = ""; sel.disabled = true; }
+      } else {
+        topFilter.areaManagers = topFilter.areaManagers.filter(function(x){ return x !== am; });
+        if(!topFilter.areaManagers.length){
+          var sel2 = q("globalStore");
+          if(sel2){ sel2.disabled = false; sel2.value = state.selectedStore; }
+        }
+      }
+      pushFilterPersistence();
+      renderAmMultiSelect();
+      refreshCurrentView();
+    });
+  });
+
+  /* Clear all */
+  var clearBtn = q("amMsClear");
+  if(clearBtn){
+    clearBtn.addEventListener("click", function(){
+      topFilter.areaManagers = [];
+      var sel = q("globalStore");
+      if(sel){ sel.disabled = false; sel.value = state.selectedStore; }
+      pushFilterPersistence();
+      renderAmMultiSelect();
+      refreshCurrentView();
+    });
+  }
+}
+
+function pushFilterPersistence(){
+  try{ localStorage.setItem("sgm_top_filter_v1", JSON.stringify(topFilter)); }catch(e){}
+}
+function pullFilterPersistence(){
+  try{
+    var raw = localStorage.getItem("sgm_top_filter_v1");
+    if(!raw) return;
+    var obj = JSON.parse(raw);
+    if(obj && typeof obj === "object"){
+      topFilter.storeId = obj.storeId || "";
+      topFilter.areaManagers = Array.isArray(obj.areaManagers) ? obj.areaManagers.slice() : [];
+    }
+  }catch(e){}
+}
 function setupStores(){
   var sel = q("globalStore");
   if(!sel) return;
@@ -4496,13 +4761,20 @@ function setupStores(){
   }
   sel.value = state.selectedStore;
   sel.disabled = !!(currentUser && currentUser.role === "store");
+
+  /* ---- Store dropdown drives the top filter ---- */
   sel.onchange = function(){
     state.selectedStore = sel.value;
+    topFilter.storeId = sel.value || "";
+    topFilter.areaManagers = [];
+    pushFilterPersistence();
     saveState();
     loadDailyRecord();
     updateEntryHero();
+    renderAmMultiSelect();
     refreshCurrentView();
   };
+
   updateEntryHero();
 }
 function switchView(name){
@@ -4552,6 +4824,30 @@ function bindEvents(){
   q("loginStoreCode").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginStorePin").focus(); });
   q("loginUsername").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginPassword").focus(); });
   q("logoutBtn").addEventListener("click", logout);
+    /* ---- AM multi-select wiring ---- */
+  var shell = q("amMsShell");
+  var dd = q("amMsDropdown");
+  var searchEl = q("amMsSearch");
+  if(shell && dd){
+    shell.addEventListener("click", function(e){
+      if(e.target.closest(".am-ms-tag")) return;
+      dd.classList.add("open");
+      shell.classList.add("open");
+      if(searchEl) searchEl.focus();
+    });
+    if(searchEl){
+      searchEl.addEventListener("input", renderAmMultiSelect);
+      searchEl.addEventListener("keydown", function(e){
+        if(e.key === "Escape"){ dd.classList.remove("open"); shell.classList.remove("open"); }
+      });
+    }
+    document.addEventListener("click", function(e){
+      if(!e.target.closest("#amMultiWrap")){
+        dd.classList.remove("open");
+        shell.classList.remove("open");
+      }
+    });
+  }
 
     q("submitDayBtn").addEventListener("click", submitDailyRecord);
     q("clearDayBtn").addEventListener("click", clearDailyRecord);
@@ -4747,16 +5043,13 @@ if(grossSalesEl){
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
   bindEvents();
-    q("appShell").style.display = "none";
-   if(restoreSession()){
+  q("appShell").style.display = "none";
+  if(restoreSession()){
     computeVisibleStores();
+    pullFilterPersistence();
     setupStores();
-    fillTxAmFilter();
-    fillTxStoreFilter();
-    fillReportScopeFilters("weeklyAm","weeklyStore");
-    fillReportScopeFilters("monthlyAm","monthlyStore");
-    fillReportScopeFilters("dashAm","dashStore");
-    loadDailyRecord();  
+    renderAmMultiSelect();
+    loadDailyRecord();
     updateStorageStat();
     renderStoreFilters();
     renderStores();
