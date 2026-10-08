@@ -7,10 +7,7 @@
 <title>SGM Operations Control</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-.tx-controls #txAm{min-width:200px}
-.tx-controls #txStore{min-width:220px}
-#weeklyAm,#monthlyAm,#dashAm{min-width:200px}
-#weeklyStore,#monthlyStore,#dashStore{min-width:220px}
+
 #weekCompareMode,#monthCompareMode{min-width:180px}
 #dashKpi{min-width:240px}
 #weekDate,#weekDate2,#weekDate3,#weekDate4,
@@ -1790,14 +1787,7 @@ function recordsBetweenStores(storeIds, start, end){
 }
 
 /* Reset both filters */
-function clearTopFilter(){
-  topFilter.storeId = "";
-  topFilter.areaManagers = [];
-  var sel = q("globalStore");
-  if(sel) sel.value = state.selectedStore;
-  renderAmMultiSelect();
-  refreshCurrentView();
-}
+
 
 function saveState(msg){
   try{
@@ -2128,7 +2118,6 @@ function applyRoleUi(){
     positiveReviewPct:"Google Positive Review %",
     negativeReviewPct:"Google Negative Review %",
     complaintClosurePct:"Complaint Closure % (Tgt 90.0%)",
-    productAvailabilityPct:"Product Availability % (Tgt 95.0%)",
     breakdownHours:"Breakdown Hours",
     estimatedLostSales:"Estimated Lost Sales (SAR)"
   };
@@ -2685,12 +2674,7 @@ function clearDailyRecord(){
 function normalizeStoreId(id){
   return String(id == null ? "" : id).toUpperCase().replace(/^DC\s+/, "DC").trim();
 }
-function recordsBetween(storeId, start, end){
-  var want = normalizeStoreId(storeId);
-  return state.records.filter(function(r){
-    return normalizeStoreId(r.storeId) === want && r.date >= start && r.date <= end;
-  });
-}
+
 var AVG_KEYS = ["targetAdt","targetAt","smartCompletedPct","smartOnTimePct","qaScore","googleRating","dcAppRating"];
 var LAST_KEYS = ["closingSoh","inventoryVariance"];
 
@@ -2770,8 +2754,7 @@ function fmtVal(v, fmt){
   if(fmt==="hours") return round(v,2)+" hrs";
   return integer(v);
 }
-function metricFromAgg(agg, key){ return agg._calc ? agg._calc[key] : 0; }
-/* ---------- Row list — mirrors Book1.xlsx exactly ---------- */
+
 /* ---------- Row list mirrors Book1.xlsx exactly ---------- */
 function reportRows(){
   function R(cat, name){ return { cat:cat, name:name }; }
@@ -3862,15 +3845,13 @@ function download(name, content, mime){
 function exportReport(kind){
   if(kind==="dashboard"){ showToast("Dashboard export coming soon."); return; }
 
-  var periods, kindLabel, amSelId, storeSelId, baseName;
+  var periods, kindLabel, baseName;
   if(kind === "weekly"){
-    amSelId = "weeklyAm"; storeSelId = "weeklyStore";
     var mode = q("weekCompareMode").value;
     periods = buildWeeklyPeriods();
     kindLabel = "Weekly";
     baseName = "Weekly_" + dateLabel(periods[0].start);
   } else if(kind === "monthly"){
-    amSelId = "monthlyAm"; storeSelId = "monthlyStore";
     periods = buildMonthlyPeriods();
     kindLabel = "Monthly";
     baseName = "Monthly_" + periods[0].start.slice(0,7);
@@ -3913,7 +3894,7 @@ function exportAllDailyCsv(){
     "Food Mix %","Grab & Go Mix %","Merchandise Mix %","Water Attachment %","Modifier Mix %","Upsize %",
     "DC App Sales %","DC App Order Mix %","DC App Delivery %","DC App AT",
     "COGS %","Wastage %","Employee Cost","Employee Cost %","Cash Variance","DC App Variance",
-    "Product Availability %","Complaint Closure %","Cancelled Bill %","Unpunched Sales %","Cash Variance %",
+    "Complaint Closure %","Cancelled Bill %","Unpunched Sales %","Cash Variance %",
     "Breakdown Hours","Estimated Lost Sales"
   ]);
   var csv = [headers];
@@ -3925,7 +3906,7 @@ function exportAllDailyCsv(){
         c.foodMix,c.grabGoMix,c.merchandiseMix,c.waterAttachment,c.modifierMix,c.upsizePct,
         c.dcAppSalesPct,c.dcAppOrderMix,c.dcAppDeliveryPct,c.dcAppAt,
         c.cogsPct,c.wastagePct,c.employeeCost,c.employeePct,c.cashVariance,c.dcVariance,
-        c.productAvailabilityPct,c.complaintClosurePct,c.cancelledBillPct,c.unpunchedPct,c.cashVariancePct,
+        c.complaintClosurePct,c.cancelledBillPct,c.unpunchedPct,c.cashVariancePct,
         c.breakdownHours,c.estimatedLostSales]));
   });
   download("SGM_All_Daily_Data_"+todayIso()+".csv",
@@ -4011,7 +3992,6 @@ function clearAll(){
   renderSalaryTable();
   computeVisibleStores();
   setupStores();
-  fillTxStoreFilter();
   renderStoreFilters();
   renderStores();
   renderUsers();
@@ -4912,43 +4892,19 @@ if(grossSalesEl){
   q("weekDate3").addEventListener("change", renderWeekly);
   q("weekDate4").addEventListener("change", renderWeekly);
   q("weekCompareMode").addEventListener("change", renderWeekly);
-  ["change","input"].forEach(function(ev){
-    var el = q("weeklyAm");
-    if(el) el.addEventListener(ev, function(){
-      fillReportScopeFilters("weeklyAm","weeklyStore");
-      renderWeekly();
-    });
-    var el2 = q("weeklyStore");
-    if(el2) el2.addEventListener(ev, renderWeekly);
-  });
+
 
   q("monthDate").addEventListener("change", renderMonthly);
   q("monthDate2").addEventListener("change", renderMonthly);
   q("monthDate3").addEventListener("change", renderMonthly);
   q("monthCompareMode").addEventListener("change", renderMonthly);
 
-  ["change","input"].forEach(function(ev){
-    var el = q("monthlyAm");
-    if(el) el.addEventListener(ev, function(){
-      fillReportScopeFilters("monthlyAm","monthlyStore");
-      renderMonthly();
-    });
-    var el2 = q("monthlyStore");
-    if(el2) el2.addEventListener(ev, renderMonthly);
-  });
+
 
   q("dashMonth").addEventListener("change", renderDashboard);
   q("dashKpi").addEventListener("change", renderDashboard);
 
-  ["change","input"].forEach(function(ev){
-    var el = q("dashAm");
-    if(el) el.addEventListener(ev, function(){
-      fillReportScopeFilters("dashAm","dashStore");
-      renderDashboard();
-    });
-    var el2 = q("dashStore");
-    if(el2) el2.addEventListener(ev, renderDashboard);
-  });
+
 
   var wSearch = q("weeklySearch");
   if(wSearch) wSearch.addEventListener("input", renderWeekly);
