@@ -1350,8 +1350,7 @@ var TARGETS = {
   cogs:25.2, employee:17, wastage:1, inventory:0,
   cancelledBill:0, unpunchedSales:0, cashVariance:0,
   smartCompleted:95, smartOnTime:90,
-  qa:90, googleRating:4.5, dcAppRating:4.5, complaintClosure:90,
-  productAvailability:95, overdueMaintenance:0, criticalEquipment:0
+  qa:90, googleRating:4.5, dcAppRating:4.5, complaintClosure:90
 };
 
 var DEFAULT_SALARY = [
@@ -1378,13 +1377,11 @@ var FOOD_SKUS = [
   ["wrapSandwiches","Wrap Sandwiches"],["paniniSandwiches","Panini Sandwiches"],
   ["baguetteSandwich","Baguette Sandwich"],["lowFatBaguette","Low Fat Baguette Sandwich"],
   ["brioche","Brioche"],["multigrainSandwiches","Multigrain Sandwiches"],["bagels","Bagels"],
-  ["appetite","Appetite"],["miniCroissant","Mini Croissant"],["keto","Keto"],
-  ["newFood1","New Food 1"],["newFood2","New Food 2"],["newFood3","New Food 3"],["newFood4","New Food 4"]
+  ["appetite","Appetite"],["miniCroissant","Mini Croissant"],["keto","Keto"]
 ];
 var GG_SKUS = [
   ["bars","Bars"],["chocolates","Chocolates"],["allCookies","All Cookies"],["nuts","Nuts"],
-  ["dateBox","Date Box"],["premiumDates","Premium Dates"],["newGg1","New G&G 1"],
-  ["newGg2","New G&G 2"],["newGg3","New G&G 3"],["newGg4","New G&G 4"]
+  ["dateBox","Date Box"],["premiumDates","Premium Dates"]
 ];
 var MERCH_SKUS = [
   ["blends","Blends"],["brewInBag","Brew In The Bag"],["cocoaNutty","Cocoa / Nutty"],
@@ -1404,8 +1401,6 @@ var LIVE_KEYS = {
   controls:    ["cancelledBillPct","unpunchedPct","cashVariancePct"],
   costEmployee:["employeeCost","employeePct","cogsPct","wastagePct","inventoryVariancePct"],
   performance: ["checklistPct","positiveReviewPct","complaintClosurePct"],
-  availability:["productAvailabilityPct"],
-  maintenance: ["breakdownHours","estimatedLostSales"]
 };
 
   var GROUPS = [
@@ -1422,7 +1417,7 @@ var LIVE_KEYS = {
     { key:"taxAmount", label:"Tax Amount (SAR)" },
     { key:"complimentaryDiscount", label:"Complimentary Discount (SAR)" },
     { key:"promotionDiscount", label:"Promotion Discount (SAR)" },
-    { key:"openingDays", label:"Opening Days (1=open, 0=closed)", step:"1" },
+    { key:"openingDays", label:"Opening Days (auto = 1)", step:"1" },
     { key:"transactions", label:"Guest Count / Transactions", step:"1" },
     { key:"waterQty", label:"Water Sold Qty", step:"1" },
     { key:"waterSales", label:"Water Sales Amount (SAR)" },
@@ -1522,24 +1517,6 @@ var LIVE_KEYS = {
     "checklistPct","positiveReviewPct","negativeReviewPct","complaintClosurePct"
   ]},
 
-  { id:"availability", label:"Availability & Sold-Out (INPUT)", hint:"Product checks and sold-out SKUs", fields:[
-    { key:"productChecks", label:"Product Checks", step:"1" },
-    { key:"productsAvailable", label:"Products Available", step:"1" },
-    { key:"beverageSoldOutSku", label:"Beverage Sold-Out SKU Count", step:"1" },
-    { key:"beverageSoldOutHours", label:"Beverage Sold-Out Hours" },
-    { key:"nonBeverageSoldOutSku", label:"Non-Beverage Sold-Out SKU Count", step:"1" },
-    { key:"nonBeverageSoldOutHours", label:"Non-Beverage Sold-Out Hours" }
-  ]},
-  { id:"availabilityCalc", label:"Availability — Calculated (LOCKED)", hint:"Product availability %", special:"calc", calcKeys:["productAvailabilityPct"] },
-
-  { id:"maintenance", label:"Maintenance (INPUT)", hint:"Tickets, downtime, critical equipment", fields:[
-    { key:"openMaintenanceTickets", label:"Open Maintenance Tickets", step:"1" },
-    { key:"overdueMaintenanceTickets", label:"Overdue Maintenance Tickets", step:"1" },
-    { key:"equipmentDowntimeHours", label:"Equipment Downtime Hours" },
-    { key:"criticalEquipmentOut", label:"Critical Equipment Out of Service", step:"1" }
-  ]},
-  { id:"maintenanceCalc", label:"Maintenance & Breakdown — Calculated (LOCKED)", hint:"Breakdown hours and lost sales", special:"calc", calcKeys:["breakdownHours","estimatedLostSales"] },
-
   { id:"breakdowns", label:"Breakdowns", hint:"Add one row per breakdown event", special:"breakdowns", fields:[] }
 ];
 
@@ -1573,10 +1550,7 @@ var KPI_DEFS = [
   { cat:"QA & Guest", name:"QA Score %",       key:"qaScore",          target:TARGETS.qa,              fmt:"pct" },
   { cat:"QA & Guest", name:"Google Rating",    key:"googleRating",     target:TARGETS.googleRating,    fmt:"rating" },
   { cat:"QA & Guest", name:"DC App Rating",    key:"dcAppRating",      target:TARGETS.dcAppRating,     fmt:"rating" },
-  { cat:"QA & Guest", name:"Complaint Closure %",key:"complaintClosurePct",target:TARGETS.complaintClosure,fmt:"pct" },
-  { cat:"Availability", name:"Product Availability %", key:"productAvailabilityPct", target:TARGETS.productAvailability, fmt:"pct" },
-  { cat:"Maintenance", name:"Overdue Maintenance Tickets", key:"overdueMaintenanceTickets", target:TARGETS.overdueMaintenance, fmt:"number", lower:true },
-  { cat:"Maintenance", name:"Critical Equipment Out", key:"criticalEquipmentOut", target:TARGETS.criticalEquipment, fmt:"number", lower:true }
+  { cat:"QA & Guest", name:"Complaint Closure %",key:"complaintClosurePct",target:TARGETS.complaintClosure,fmt:"pct" }
 ];
 
 function q(id){return document.getElementById(id);}
@@ -2037,7 +2011,6 @@ function statusForSidebar(key, v, c){
     cancelledBillPct: { target:TARGETS.cancelledBill,    lower:true  },
     unpunchedPct:     { target:TARGETS.unpunchedSales,   lower:true  },
     cashVariancePct:  { target:TARGETS.cashVariance,     lower:true  },
-    productAvailabilityPct:{ target:TARGETS.productAvailability, lower:false },
     complaintClosurePct:   { target:TARGETS.complaintClosure,    lower:false }
   };
   var r = rules[key];
@@ -2065,18 +2038,20 @@ function recalcAllCalcFields(){
     { title:"Cost",         keys:["cogsPct","wastagePct","employeeCost","employeePct","inventoryVariancePct"] },
     { title:"Controls",     keys:["cancelledBillPct","unpunchedPct","cashVariancePct"] },
     { title:"DC App",       keys:["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"] },
-    { title:"QA & Guest",   keys:["checklistPct","positiveReviewPct","complaintClosurePct","productAvailabilityPct"] },
+    { title:"QA & Guest",   keys:["checklistPct","positiveReviewPct","complaintClosurePct"] },
     { title:"Breakdowns",   keys:["breakdownHours","estimatedLostSales"] }
   ];
 
   var html = "";
   groups.forEach(function(g){
     /* Skip a group if every value is empty/zero AND the user has typed nothing relevant */
-    var anyValue = g.keys.some(function(k){
-      var v = c[k];
-      return v !== null && v !== undefined && !isNaN(v) && v !== 0;
-    });
-    if(!anyValue) return;
+   var anyValue = g.keys.some(function(k){
+  var v = c[k];
+  return v !== null && v !== undefined && !isNaN(v) && v !== 0;
+});
+/* Always show the Breakdowns group when at least one row exists */
+if(g.title === "Breakdowns" && currentBreakdowns.length > 0) anyValue = true;
+if(!anyValue) return;
 
     html += '<div class="calc-group">'+
               '<div class="grp-title">'+escapeHtml(g.title)+'</div>';
@@ -2257,7 +2232,6 @@ function calculate(record){
     positiveReviewPct: safeDiv(record.positiveReviews, record.googleReviews) * 100,
     negativeReviewPct: safeDiv(record.negativeReviews, record.googleReviews) * 100,
     complaintClosurePct: safeDiv(record.complaintsClosed, record.complaints) * 100,
-    productAvailabilityPct: safeDiv(record.productsAvailable, record.productChecks) * 100,
     cancelledBillPct: safeDiv(record.cancelledBillAmount, salesWoTax) * 100,
     unpunchedPct: safeDiv(record.unpunchedValue, salesWoTax) * 100,
     cashVariancePct: safeDiv(Math.abs(n(record.cashVarianceAbsolute)), salesWoTax) * 100,
@@ -2271,7 +2245,9 @@ function calculateBreakdown(b, targetSales){
   if(e < s) e.setDate(e.getDate()+1);
   var hours = Math.max(0, (e - s) / 3600000);
   var planned = Math.max(1, n(state.settings.plannedHours) || 24);
-  return { hours: hours, loss: hours * n(targetSales) / planned };
+  var tgt = n(targetSales);
+  if(tgt <= 0) return { hours: hours, loss: 0 };
+  return { hours: hours, loss: hours * tgt / planned };
 }
 function renderBreakdowns(){
   var host = q("breakdownRows");
@@ -2299,17 +2275,19 @@ function renderBreakdowns(){
       '<input data-k="end" type="datetime-local" value="'+escapeAttr(item.end||"")+'">'+
       '<div class="hrs">'+round(calc.hours,2)+' h · SAR '+money(calc.loss)+'</div>'+
       '<button class="icon-btn" data-remove="'+index+'" type="button" title="Remove">×</button>';
-      row.querySelectorAll("input").forEach(function(inp){
-      inp.addEventListener("input", function(){
-        currentBreakdowns[index][inp.dataset.k] = inp.value;
-        var r = calculateBreakdown(currentBreakdowns[index], n(q("f-targetSales")?q("f-targetSales").value:0));
-        row.querySelector(".hrs").textContent = round(r.hours,2)+" h · SAR "+money(r.loss);
-        markDirty();
-        refreshGroupPills();
-        refreshProgress();
-        recalcAllCalcFields();
-      });
-    });
+  row.querySelectorAll("input").forEach(function(inp){
+  function handleBdChange(){
+    currentBreakdowns[index][inp.dataset.k] = inp.value;
+    var r = calculateBreakdown(currentBreakdowns[index], n(q("f-targetSales")?q("f-targetSales").value:0));
+    row.querySelector(".hrs").textContent = round(r.hours,2)+" h · SAR "+money(r.loss);
+    markDirty();
+    refreshGroupPills();
+    refreshProgress();
+    recalcAllCalcFields();
+  }
+  inp.addEventListener("input",  handleBdChange);
+  inp.addEventListener("change", handleBdChange);
+});
     row.querySelector("[data-remove]").addEventListener("click", function(){
       currentBreakdowns.splice(index,1);
       markDirty();
@@ -2553,7 +2531,7 @@ function recordsBetween(storeId, start, end){
   });
 }
 var AVG_KEYS = ["targetAdt","targetAt","smartCompletedPct","smartOnTimePct","qaScore","googleRating","dcAppRating"];
-var LAST_KEYS = ["openMaintenanceTickets","overdueMaintenanceTickets","criticalEquipmentOut","closingSoh","inventoryVariance"];
+var LAST_KEYS = ["closingSoh","inventoryVariance"];
 
 function aggregate(records){
   var res = { storeId: state.selectedStore, breakdowns: [], _records: records };
@@ -2707,19 +2685,7 @@ function reportRows(){
     R("QA, Guest & Availability", "Google Negative Review %"),
     R("QA, Guest & Availability", "Guest Complaints"),
     R("QA, Guest & Availability", "Complaints Closed On Time"),
-    R("QA, Guest & Availability", "Complaint Closure %"),
-    R("QA, Guest & Availability", "Product Checks"),
-    R("QA, Guest & Availability", "Products Available"),
-    R("QA, Guest & Availability", "Product Availability %"),
-    R("QA, Guest & Availability", "Beverage Sold-Out SKU Count"),
-    R("QA, Guest & Availability", "Beverage Sold-Out Hours"),
-    R("QA, Guest & Availability", "Non-Beverage Sold-Out SKU Count"),
-    R("QA, Guest & Availability", "Non-Beverage Sold-Out Hours"),
-
-    R("Maintenance", "Open Maintenance Tickets"),
-    R("Maintenance", "Overdue Maintenance Tickets"),
-    R("Maintenance", "Equipment Downtime Hours"),
-    R("Maintenance", "Critical Equipment Out of Service")
+    R("QA, Guest & Availability", "Complaint Closure %")
   ];
 }
 
@@ -2805,19 +2771,6 @@ function sectionValue(agg, label){
     case "Guest Complaints":                 return { value: n(agg.complaints), fmt:"number" };
     case "Complaints Closed On Time":        return { value: n(agg.complaintsClosed), fmt:"number" };
     case "Complaint Closure %":              return { value: c.complaintClosurePct, fmt:"pct", target: TARGETS.complaintClosure };
-    case "Product Checks":                   return { value: n(agg.productChecks), fmt:"number" };
-    case "Products Available":               return { value: n(agg.productsAvailable), fmt:"number" };
-    case "Product Availability %":           return { value: c.productAvailabilityPct, fmt:"pct", target: TARGETS.productAvailability };
-    case "Beverage Sold-Out SKU Count":      return { value: n(agg.beverageSoldOutSku), fmt:"number", lower:true };
-    case "Beverage Sold-Out Hours":          return { value: n(agg.beverageSoldOutHours), fmt:"hours", lower:true };
-    case "Non-Beverage Sold-Out SKU Count":  return { value: n(agg.nonBeverageSoldOutSku), fmt:"number", lower:true };
-    case "Non-Beverage Sold-Out Hours":      return { value: n(agg.nonBeverageSoldOutHours), fmt:"hours", lower:true };
-
-    /* Maintenance */
-    case "Open Maintenance Tickets":         return { value: n(agg.openMaintenanceTickets), fmt:"number", lower:true };
-    case "Overdue Maintenance Tickets":      return { value: n(agg.overdueMaintenanceTickets), fmt:"number", target: TARGETS.overdueMaintenance, lower:true };
-    case "Equipment Downtime Hours":         return { value: n(agg.equipmentDowntimeHours), fmt:"hours", lower:true };
-    case "Critical Equipment Out of Service":return { value: n(agg.criticalEquipmentOut), fmt:"number", target: TARGETS.criticalEquipment, lower:true };
   }
   return { value: "", fmt:"text" };
 }
@@ -3180,7 +3133,6 @@ var TX_COLUMNS = [
   { key:"googleRating",        label:"Google",               fmt:"rating",target:TARGETS.googleRating,     lower:false },
   { key:"dcAppRating",         label:"DC App",               fmt:"rating",target:TARGETS.dcAppRating,      lower:false },
   { key:"complaintClosurePct", label:"Complaints %",         fmt:"pct",  target:TARGETS.complaintClosure, lower:false },
-  { key:"productAvailabilityPct", label:"Availability %",    fmt:"pct",  target:TARGETS.productAvailability, lower:false },
   { key:"breakdownHours",      label:"Breakdown hrs",        fmt:"hours", target:0,                       lower:true  },
   { key:"estimatedLostSales",  label:"Lost Sales",           fmt:"money", target:0,                       lower:true  }
 ];
@@ -3375,14 +3327,6 @@ var GRID_ROWS = [
   { type:"metric", key:"positiveReviewPct",label:"Positive Review %",      fmt:"pct" },
   { type:"metric", key:"negativeReviewPct",label:"Negative Review %",      fmt:"pct", lower:true },
   { type:"metric", key:"complaintClosurePct", label:"Complaint Closure %", fmt:"pct", target:TARGETS.complaintClosure, lower:false },
-  { type:"category", label:"Availability & Maintenance" },
-  { type:"metric", key:"productAvailabilityPct", label:"Product Availability %", fmt:"pct", target:TARGETS.productAvailability, lower:false },
-  { type:"metric", key:"beverageSoldOutSku",     label:"Beverage Sold-Out SKUs",     fmt:"number", lower:true },
-  { type:"metric", key:"nonBeverageSoldOutSku",  label:"Non-Beverage Sold-Out SKUs", fmt:"number", lower:true },
-  { type:"metric", key:"openMaintenanceTickets", label:"Open Maintenance Tickets",   fmt:"number", lower:true },
-  { type:"metric", key:"overdueMaintenanceTickets", label:"Overdue Maintenance Tickets", fmt:"number", lower:true },
-  { type:"metric", key:"equipmentDowntimeHours", label:"Equipment Downtime Hours",   fmt:"hours",  lower:true },
-  { type:"metric", key:"criticalEquipmentOut",   label:"Critical Equipment Out",     fmt:"number", lower:true },
   { type:"category", label:"Breakdown" },
   { type:"metric", key:"breakdownHours",   label:"Breakdown Hours",        fmt:"hours", lower:true },
   { type:"metric", key:"estimatedLostSales", label:"Estimated Lost Sales", fmt:"money", lower:true }
@@ -4639,15 +4583,33 @@ function handleDateChange(source){
 }
 
 q("f-date-hero").addEventListener("change", function(){ handleDateChange(q("f-date-hero")); });
-    var targetSalesEl = q("f-targetSales");
-  if(targetSalesEl){
-    targetSalesEl.addEventListener("input", function(){
-      renderBreakdowns();
-    });
-  }
+ var targetSalesEl = q("f-targetSales");
+if(targetSalesEl){
+  targetSalesEl.addEventListener("input", function(){
+    renderBreakdowns();
+    recalcAllCalcFields();
+  });
+}
 var fDateEl = q("f-date");
 if(fDateEl){
   fDateEl.addEventListener("change", function(){ handleDateChange(fDateEl); });
+}
+  /* Auto-set Opening Days = 1 when Gross Sales is typed and Opening Days is blank */
+var grossSalesEl = q("f-grossSales");
+if(grossSalesEl){
+  grossSalesEl.addEventListener("input", function(){
+    var openingEl = q("f-openingDays");
+    if(!openingEl) return;
+    var grossHasValue  = String(grossSalesEl.value||"").trim() !== "";
+    var openingIsBlank = String(openingEl.value||"").trim() === "";
+    if(grossHasValue && openingIsBlank){
+      openingEl.value = "1";
+      openingEl.classList.add("filled");
+      refreshGroupPills();
+      refreshProgress();
+      recalcAllCalcFields();
+    }
+  });
 }
    q("weekDate").addEventListener("change", renderWeekly);
   q("weekDate2").addEventListener("change", renderWeekly);
@@ -4768,6 +4730,7 @@ if(fDateEl){
     }
   });
 }
+  
  function init(){
   renderForm();
   q("f-date").value = todayIso();
