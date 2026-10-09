@@ -899,8 +899,8 @@ details.group>summary::-webkit-details-marker{display:none}
         </div>
       </div>
       <div class="store-control">
-        <label for="globalStore">Store</label>
-        <select id="globalStore"></select>
+
+        <!-- ===== AREA MANAGER (first) ===== -->
         <div class="am-multiselect" id="amMultiWrap">
           <label>Area Manager</label>
           <div class="am-ms-shell" id="amMsShell">
@@ -909,6 +909,20 @@ details.group>summary::-webkit-details-marker{display:none}
           </div>
           <div class="am-ms-dropdown" id="amMsDropdown"></div>
         </div>
+
+        <!-- ===== STORE (second, now a multi-select) ===== -->
+        <div class="am-multiselect" id="storeMultiWrap">
+          <label>Store</label>
+          <div class="am-ms-shell" id="storeMsShell">
+            <div class="am-ms-tags" id="storeMsTags"></div>
+            <input type="text" class="am-ms-search" id="storeMsSearch" placeholder="Search or pick stores…" autocomplete="off">
+          </div>
+          <div class="am-ms-dropdown" id="storeMsDropdown"></div>
+        </div>
+
+        <!-- Hidden fallback so legacy code that reads #globalStore keeps working -->
+        <select id="globalStore" style="display:none"></select>
+
         <span class="user-pill" id="userPill">
           <span id="userName">—</span>
           <span class="role-tag" id="userRole">—</span>
@@ -1748,15 +1762,26 @@ var dirty = false;
    TOP-BAR SCOPE FILTER
    ============================================================ */
 var topFilter = {
-  storeId: "",          // "" = no specific store
+  storeId: "",          // legacy single-store (kept for back-compat)
+  storeIds: [],         // NEW: multiple selected store IDs
   areaManagers: []      // [] = no AM filter; otherwise list of AM names
 };
 
 /* Resolve the top filter into an array of store IDs */
 function resolveStoreScope(){
+  /* 1) Explicit store picks win */
+  if(topFilter.storeIds && topFilter.storeIds.length){
+    var wantedStore = {};
+    topFilter.storeIds.forEach(function(id){ wantedStore[ normalizeStoreId(id) ] = true; });
+    return visibleStores
+      .filter(function(s){ return wantedStore[ s.id ]; })
+      .map(function(s){ return s.id; });
+  }
+  /* 2) Legacy single-store fallback */
   if(topFilter.storeId){
     return [ normalizeStoreId(topFilter.storeId) ];
   }
+  /* 3) AM filter */
   if(topFilter.areaManagers && topFilter.areaManagers.length){
     var wanted = {};
     topFilter.areaManagers.forEach(function(a){ wanted[a] = true; });
@@ -1769,6 +1794,10 @@ function resolveStoreScope(){
 
 /* Human-readable label of the current scope */
 function scopeLabel(){
+  if(topFilter.storeIds && topFilter.storeIds.length){
+    if(topFilter.storeIds.length === 1) return topFilter.storeIds[0];
+    return topFilter.storeIds.length + " stores selected";
+  }
   if(topFilter.storeId) return topFilter.storeId;
   if(topFilter.areaManagers && topFilter.areaManagers.length){
     return topFilter.areaManagers.join(", ") + " (" + resolveStoreScope().length + " stores)";
@@ -1866,8 +1895,9 @@ function finalizeLogin(){
   q("loginScreen").classList.remove("show");
   q("appShell").style.display = "";
   switchView("daily");
-   setupStores();
+    setupStores();
   renderAmMultiSelect();
+  renderStoreMultiSelect();
   loadDailyRecord();
   refreshCurrentView();
   renderTransactions();
@@ -2027,19 +2057,19 @@ function applyRoleUi(){
          - 22 fields → 5 columns + remainder
          - 16 fields → 4 columns (4 rows)
       */
-      var n = g.fields.length;
-      var colCount;
-       if(n === 3)       colCount = 3;
-      if(n === 4)       colCount = 4;
-      else if(n === 8)  colCount = 4;
-      else if(n === 9)  colCount = 3;
-      else if(n === 10) colCount = 5;
-      else if(n === 12) colCount = 4;
-      else if(n === 15) colCount = 5;
-      else if(n === 16) colCount = 4;
-      else if(n === 20) colCount = 5;
-      else if(n === 22) colCount = 5;
-      else              colCount = 5;   /* fallback */
+var n = g.fields.length;
+var colCount;
+if(n === 3)       colCount = 3;
+else if(n === 4)  colCount = 4;
+else if(n === 8)  colCount = 4;
+else if(n === 9)  colCount = 3;
+else if(n === 10) colCount = 5;
+else if(n === 12) colCount = 4;
+else if(n === 15) colCount = 5;
+else if(n === 16) colCount = 4;
+else if(n === 20) colCount = 5;
+else if(n === 22) colCount = 5;
+else              colCount = 5;
 
       grid.className = "grid";
       grid.style.display = "grid";
@@ -4666,9 +4696,10 @@ function renderAmMultiSelect(){
     el.addEventListener("click", function(ev){
       ev.stopPropagation();
       var am = el.dataset.amRemove;
-      topFilter.areaManagers = topFilter.areaManagers.filter(function(x){ return x !== am; });
+       topFilter.areaManagers = topFilter.areaManagers.filter(function(x){ return x !== am; });
       pushFilterPersistence();
       renderAmMultiSelect();
+      renderStoreMultiSelect();
       refreshCurrentView();
     });
   });
@@ -4690,8 +4721,12 @@ function renderAmMultiSelect(){
           if(sel2){ sel2.disabled = false; sel2.value = state.selectedStore; }
         }
       }
+      /* Picking an AM clears any explicit store picks — they overlap */
+      topFilter.storeIds = [];
+      syncLegacyStoreSelect();
       pushFilterPersistence();
       renderAmMultiSelect();
+      renderStoreMultiSelect();   /* <-- refresh store list to this AM's stores */
       refreshCurrentView();
     });
   });
@@ -4701,12 +4736,140 @@ function renderAmMultiSelect(){
   if(clearBtn){
     clearBtn.addEventListener("click", function(){
       topFilter.areaManagers = [];
-      var sel = q("globalStore");
-      if(sel){ sel.disabled = false; sel.value = state.selectedStore; }
       pushFilterPersistence();
       renderAmMultiSelect();
+      renderStoreMultiSelect();
       refreshCurrentView();
     });
+  }
+}
+
+/* ============================================================
+   STORE MULTI-SELECT — renderer (mirrors AM multi-select)
+   ============================================================ */
+function storeListForUser(){
+  /* Stores visible to the current user, optionally narrowed by chosen AMs */
+  var ams = topFilter.areaManagers || [];
+  return visibleStores.filter(function(s){
+    if((s.status||"Active") !== "Active") return false;
+    if(ams.length && ams.indexOf(s.areaManager) < 0) return false;
+    return true;
+  });
+}
+function renderStoreMultiSelect(){
+  var host = q("storeMsTags");
+  var dd = q("storeMsDropdown");
+  var searchEl = q("storeMsSearch");
+  var wrap = q("storeMultiWrap");
+  if(!host || !dd || !wrap) return;
+
+  /* Hide entire Store picker for store-role logins (they only see their store) */
+  if(currentUser && currentUser.role === "store"){
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "";
+
+  /* Prune selected stores that are no longer in scope (e.g. AM changed) */
+  var allowed = {};
+  storeListForUser().forEach(function(s){ allowed[s.id] = true; });
+  topFilter.storeIds = (topFilter.storeIds || []).filter(function(id){ return allowed[id]; });
+
+  /* Also mirror into legacy single-store field for other code paths */
+  topFilter.storeId = (topFilter.storeIds.length === 1) ? topFilter.storeIds[0] : "";
+
+  /* Render tag chips */
+  var tagsHtml = "";
+  topFilter.storeIds.forEach(function(id){
+    tagsHtml += '<span class="am-ms-tag" data-store="'+escapeAttr(id)+'">'+
+                  escapeHtml(id)+
+                  '<span class="x" data-store-remove="'+escapeAttr(id)+'">×</span>'+
+                '</span>';
+  });
+  host.innerHTML = tagsHtml;
+
+  /* Refresh dropdown list */
+  var search = (searchEl ? (searchEl.value||"").trim().toLowerCase() : "");
+  var all = storeListForUser();
+  var filtered = all.filter(function(s){
+    if(!search) return true;
+    var hay = (s.id+" "+(s.area||"")+" "+(s.areaManager||"")).toLowerCase();
+    return hay.indexOf(search) >= 0;
+  });
+  var html = "";
+  if(!filtered.length){
+    html = '<div class="am-ms-empty">No stores match.</div>';
+  } else {
+    filtered.forEach(function(s){
+      var checked = topFilter.storeIds.indexOf(s.id) >= 0 ? ' checked' : '';
+      var label = s.id + (s.area ? " — "+s.area : "");
+      html += '<label class="am-ms-item">'+
+                '<input type="checkbox" data-store-toggle="'+escapeAttr(s.id)+'"'+checked+'>'+
+                '<span>'+escapeHtml(label)+'</span>'+
+                '<span class="cnt">'+escapeHtml(s.areaManager||"")+'</span>'+
+              '</label>';
+    });
+  }
+  if(topFilter.storeIds.length){
+    html += '<div class="am-ms-clear" id="storeMsClear">Clear all stores</div>';
+  }
+  dd.innerHTML = html;
+
+  /* Tag remove */
+  host.querySelectorAll("[data-store-remove]").forEach(function(el){
+    el.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var id = el.dataset.storeRemove;
+      topFilter.storeIds = topFilter.storeIds.filter(function(x){ return x !== id; });
+      pushFilterPersistence();
+      syncLegacyStoreSelect();
+      renderStoreMultiSelect();
+      refreshCurrentView();
+    });
+  });
+
+  /* Toggle checkbox */
+  dd.querySelectorAll("[data-store-toggle]").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var id = cb.dataset.storeToggle;
+      if(cb.checked){
+        if(topFilter.storeIds.indexOf(id) < 0) topFilter.storeIds.push(id);
+      } else {
+        topFilter.storeIds = topFilter.storeIds.filter(function(x){ return x !== id; });
+      }
+      /* Store picks become the primary scope — clear AMs to avoid overlap confusion */
+      topFilter.areaManagers = [];
+      pushFilterPersistence();
+      syncLegacyStoreSelect();
+      renderAmMultiSelect();
+      renderStoreMultiSelect();
+      refreshCurrentView();
+    });
+  });
+
+  /* Clear all */
+  var clearBtn = q("storeMsClear");
+  if(clearBtn){
+    clearBtn.addEventListener("click", function(){
+      topFilter.storeIds = [];
+      syncLegacyStoreSelect();
+      pushFilterPersistence();
+      renderStoreMultiSelect();
+      refreshCurrentView();
+    });
+  }
+}
+
+/* Keep the legacy #globalStore <select> in sync so existing code keeps working */
+function syncLegacyStoreSelect(){
+  var sel = q("globalStore");
+  if(!sel) return;
+  if(!sel.options.length) return;   /* options are filled by setupStores() */
+  if(topFilter.storeIds.length === 1){
+    sel.value = topFilter.storeIds[0];
+    state.selectedStore = topFilter.storeIds[0];
+  } else if(topFilter.storeIds.length === 0){
+    sel.value = state.selectedStore;
   }
 }
 
@@ -4719,7 +4882,8 @@ function pullFilterPersistence(){
     if(!raw) return;
     var obj = JSON.parse(raw);
     if(obj && typeof obj === "object"){
-      topFilter.storeId = obj.storeId || "";
+      topFilter.storeId      = obj.storeId || "";
+      topFilter.storeIds     = Array.isArray(obj.storeIds)    ? obj.storeIds.slice()    : [];
       topFilter.areaManagers = Array.isArray(obj.areaManagers) ? obj.areaManagers.slice() : [];
     }
   }catch(e){}
@@ -4748,13 +4912,15 @@ function setupStores(){
   /* ---- Store dropdown drives the top filter ---- */
   sel.onchange = function(){
     state.selectedStore = sel.value;
-    topFilter.storeId = sel.value || "";
+    topFilter.storeIds = sel.value ? [ sel.value ] : [];
+    topFilter.storeId  = sel.value || "";
     topFilter.areaManagers = [];
     pushFilterPersistence();
     saveState();
     loadDailyRecord();
     updateEntryHero();
     renderAmMultiSelect();
+    renderStoreMultiSelect();
     refreshCurrentView();
   };
 
@@ -4828,6 +4994,31 @@ function bindEvents(){
       if(!e.target.closest("#amMultiWrap")){
         dd.classList.remove("open");
         shell.classList.remove("open");
+      }
+    });
+  }
+
+  /* ---- Store multi-select wiring ---- */
+  var stShell = q("storeMsShell");
+  var stDd    = q("storeMsDropdown");
+  var stSearch= q("storeMsSearch");
+  if(stShell && stDd){
+    stShell.addEventListener("click", function(e){
+      if(e.target.closest(".am-ms-tag")) return;
+      stDd.classList.add("open");
+      stShell.classList.add("open");
+      if(stSearch) stSearch.focus();
+    });
+    if(stSearch){
+      stSearch.addEventListener("input", renderStoreMultiSelect);
+      stSearch.addEventListener("keydown", function(e){
+        if(e.key === "Escape"){ stDd.classList.remove("open"); stShell.classList.remove("open"); }
+      });
+    }
+    document.addEventListener("click", function(e){
+      if(!e.target.closest("#storeMultiWrap")){
+        stDd.classList.remove("open");
+        stShell.classList.remove("open");
       }
     });
   }
@@ -5006,8 +5197,9 @@ if(grossSalesEl){
   if(restoreSession()){
     computeVisibleStores();
     pullFilterPersistence();
-    setupStores();
+        setupStores();
     renderAmMultiSelect();
+    renderStoreMultiSelect();
     loadDailyRecord();
     updateStorageStat();
     renderStoreFilters();
