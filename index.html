@@ -822,52 +822,81 @@ details.group>summary::-webkit-details-marker{display:none}
 .am-ms-search::placeholder{ color:rgba(255,255,255,.55); }
 .am-ms-dropdown{
   position:absolute;
-  top:100%;
-  left:auto;
+  top:calc(100% + 6px);
   right:0;
-  margin-top:6px;
-  min-width:320px;
-  max-height:320px;
+  min-width:340px;
+  max-width:520px;
+  max-height:340px;
   overflow-y:auto;
   background:#fff;
   color:var(--ink);
   border:1px solid #d7e1df;
-  border-radius:10px;
-  box-shadow:0 18px 40px rgba(11,51,64,.25);
-  z-index:40;
+  border-radius:12px;
+  box-shadow:0 20px 45px rgba(11,51,64,.28);
+  z-index:1000;
   display:none;
   padding:6px 0;
+  scrollbar-width:thin;
 }
 .am-ms-dropdown.open{ display:block; }
+.am-ms-dropdown::-webkit-scrollbar{ width:8px; }
+.am-ms-dropdown::-webkit-scrollbar-thumb{ background:#cdd9d6; border-radius:99px; }
+.am-ms-dropdown::-webkit-scrollbar-thumb:hover{ background:#aebfbb; }
+
 .am-ms-item{
-  display:flex;
+  display:grid;
+  grid-template-columns:24px 1fr auto;
   align-items:center;
-  gap:8px;
-  padding:7px 12px;
+  gap:10px;
+  padding:9px 14px;
   cursor:pointer;
-  font-size:12.5px;
+  font-size:13px;
+  color:#14282e;
+  border-bottom:1px solid #f0f4f3;
+  transition:background .1s;
 }
-.am-ms-item:hover{ background:#f1f6f4; }
-.am-ms-item input{ margin:0; }
+.am-ms-item:last-of-type{ border-bottom:0; }
+.am-ms-item:hover{ background:#f4f8f7; }
+.am-ms-item input[type="checkbox"]{
+  margin:0;
+  width:16px;
+  height:16px;
+  accent-color:#0b3340;
+  cursor:pointer;
+}
+.am-ms-item .lbl{
+  font-weight:600;
+  color:#0b3340;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 .am-ms-item .cnt{
-  margin-left:auto;
-  color:#66787e;
+  color:#8b9ba0;
   font-size:11px;
   font-weight:600;
+  white-space:nowrap;
 }
+
 .am-ms-empty{
-  padding:10px 12px;
+  padding:14px;
   color:#66787e;
-  font-size:12px;
+  font-size:12.5px;
+  text-align:center;
 }
+
 .am-ms-clear{
-  padding:6px 12px;
-  border-top:1px solid #e5ecea;
-  color:var(--red);
+  position:sticky;
+  bottom:0;
+  padding:10px 14px;
+  background:#fff8f7;
+  border-top:1px solid #f2d6d5;
+  color:#bf4a49;
   font-weight:800;
-  font-size:11.5px;
+  font-size:12px;
   cursor:pointer;
   text-align:center;
+  letter-spacing:.2px;
 }
 .am-ms-clear:hover{ background:#fff0ef; }
 @media (max-width:1150px){
@@ -4729,10 +4758,10 @@ function renderAmMultiSelect(){
   } else {
     filtered.forEach(function(a){
       var checked = topFilter.areaManagers.indexOf(a) >= 0 ? ' checked' : '';
-      html += '<label class="am-ms-item">'+
-                '<input type="checkbox" data-am-toggle="'+escapeAttr(a)+'"'+checked+'>'+
-                '<span>'+escapeHtml(a)+'</span>'+
-                '<span class="cnt">'+amStoreCount(a)+' stores</span>'+
+      html += '<label class="am-ms-item">' +
+                '<input type="checkbox" data-am-toggle="' + escapeAttr(a) + '"' + checked + '>' +
+                '<span class="lbl">' + escapeHtml(a) + '</span>' +
+                '<span class="cnt">' + amStoreCount(a) + ' stores</span>' +
               '</label>';
     });
   }
@@ -4760,23 +4789,15 @@ function renderAmMultiSelect(){
       var am = cb.dataset.amToggle;
       if(cb.checked){
         if(topFilter.areaManagers.indexOf(am) < 0) topFilter.areaManagers.push(am);
-        /* Mutual exclusion with store dropdown */
-        topFilter.storeId = "";
-        var sel = q("globalStore");
-        if(sel){ sel.value = ""; sel.disabled = true; }
       } else {
         topFilter.areaManagers = topFilter.areaManagers.filter(function(x){ return x !== am; });
-        if(!topFilter.areaManagers.length){
-          var sel2 = q("globalStore");
-          if(sel2){ sel2.disabled = false; sel2.value = state.selectedStore; }
-        }
       }
       /* Picking an AM clears any explicit store picks — they overlap */
       topFilter.storeIds = [];
       syncLegacyStoreSelect();
       pushFilterPersistence();
       renderAmMultiSelect();
-      renderStoreMultiSelect();   /* <-- refresh store list to this AM's stores */
+      renderStoreMultiSelect();
       refreshCurrentView();
     });
   });
@@ -4862,7 +4883,7 @@ function renderStoreMultiSelect(){
       var label = s.id + (s.area ? " — "+s.area : "");
       html += '<label class="am-ms-item">'+
                 '<input type="checkbox" data-store-toggle="'+escapeAttr(s.id)+'"'+checked+'>'+
-                '<span>'+escapeHtml(label)+'</span>'+
+                '<span class="lbl">'+escapeHtml(label)+'</span>'+
                 '<span class="cnt">'+escapeHtml(s.areaManager||"")+'</span>'+
               '</label>';
     });
