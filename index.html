@@ -1131,10 +1131,6 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="field search-field"><label for="weeklySearch">Search</label><input class="control-input" type="text" id="weeklySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="weeklyClearBtn" type="button">Clear search</button>
         </div>
-        <div class="report-count">
-          <span>Showing <strong id="weeklyCount">0</strong> rows</span>
-          <span id="weeklyRange"></span>
-        </div>
       </div>	
       <div class="table-card"><table id="weeklyTable" class="report-2col"></table></div>
     </section>
@@ -1162,10 +1158,6 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="range-chip" id="monthRangeChip">—</div>
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
-        </div>
-        <div class="report-count">
-          <span>Showing <strong id="monthlyCount">0</strong> rows</span>
-          <span id="monthCoverage"></span>
         </div>
       </div>
       <div class="table-card"><table id="monthlyTable" class="report-2col"></table></div>
@@ -3463,7 +3455,7 @@ function renderWeekly(){
   var periods = buildWeeklyPeriods();
   var range = periods.map(function(p){ return dateLabel(p.start)+" — "+dateLabel(p.end); }).join("  |  ");
   q("weekRange").textContent = "Scope: " + scopeLabel();
-  q("weeklyRange").textContent = (periods.length>1 ? periods.length+" weeks — " : "") + range;
+  
 
 
   renderReportTable2Col(q("weeklyTable"), periods, q("weeklySearch")?q("weeklySearch").value:"", "weeklyCount");
@@ -3490,7 +3482,7 @@ function renderMonthly(){
   var range = periods.map(function(p){ return p.shortLabel; }).join("  |  ");
   q("monthRangeChip").textContent = "Scope: " + scopeLabel();
   var total = periods.reduce(function(a,p){ return a + p.agg._records.length; }, 0);
-  q("monthCoverage").textContent = total+" daily entries · "+range;
+  
 
   renderReportTable2Col(q("monthlyTable"), periods, q("monthlySearch")?q("monthlySearch").value:"", "monthlyCount");
 }
