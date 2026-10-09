@@ -1056,7 +1056,17 @@ details.group>summary::-webkit-details-marker{display:none}
           <div id="formStack"></div>
         </div>
         <aside class="calc-sidebar" id="calcSidebar">
-          <h4>Live Calculations</h4>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e5ecea">
+            <h4 style="margin:0;padding:0;border:0;flex:1">Live Calculations</h4>
+            <button type="button" id="copyCalcBtn" title="Copy calculations to paste into WhatsApp"
+              style="border:1px solid #25D366;background:#25D366;color:#fff;border-radius:8px;padding:6px 10px;font-weight:800;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy
+            </button>
+          </div>
           <div id="calcSidebarBody">
             <div class="calc-row"><span class="k">Start entering data…</span></div>
           </div>
@@ -2230,6 +2240,97 @@ function statusForSidebar(key, v, c){
   var r = rules[key];
   if(!r) return "";
   return statusClass(v, r.target, r.lower);
+}
+  /* Build a WhatsApp-friendly text of the live calculations */
+function buildCalcText(){
+  var rec = getFormRecord();
+  var c = calculate(rec);
+  var store = state.stores.find(function(x){ return x.id === state.selectedStore; });
+  var storeLabel = rec.storeId + (store && store.area ? " · " + store.area : "");
+  var lines = [];
+  lines.push("*SGM Daily Entry*");
+  lines.push("Store: " + storeLabel);
+  lines.push("Date: " + dateLabel(rec.date));
+  lines.push("");
+  lines.push("*Sales & Mix*");
+  lines.push("Sales W/O Tax: SAR " + money(c.salesWithoutTax));
+  lines.push("Net Sales: SAR " + money(c.netSales));
+  lines.push("Transactions: " + integer(rec.transactions));
+  lines.push("ADT: " + integer(c.adt));
+  lines.push("AT: SAR " + money(c.at));
+  lines.push("vs Target: " + pct(c.salesVsTargetPct));
+  lines.push("");
+  lines.push("*Mix %*");
+  lines.push("Food: " + pct(c.foodMix) + " (Tgt 15%)");
+  lines.push("Grab & Go: " + pct(c.grabGoMix) + " (Tgt 5%)");
+  lines.push("Merch: " + pct(c.merchandiseMix) + " (Tgt 1%)");
+  lines.push("Modifier: " + pct(c.modifierMix) + " (Tgt 2%)");
+  lines.push("Upsize: " + pct(c.upsizePct) + " (Tgt 25%)");
+  lines.push("");
+  lines.push("*Cost*");
+  lines.push("Wastage: " + pct(c.wastagePct) + " (Tgt 1%)");
+  lines.push("Employee: " + pct(c.employeePct) + " (Tgt 17%)");
+  lines.push("Inventory Var: " + pct(c.inventoryVariancePct));
+  lines.push("");
+  lines.push("*Controls*");
+  lines.push("Cancelled Bill: " + pct(c.cancelledBillPct));
+  lines.push("Cash Deposited Var: SAR " + money(c.cashVariance));
+  lines.push("");
+  lines.push("*DC App*");
+  lines.push("POS: SAR " + money(c.dcPosTotal));
+  lines.push("App: SAR " + money(c.dcAppTotal));
+  lines.push("Variance: SAR " + money(c.dcVariance));
+  lines.push("Sales %: " + pct(c.dcAppSalesPct));
+  lines.push("");
+  lines.push("*QA & Guest*");
+  lines.push("Positive Reviews: " + pct(c.positiveReviewPct));
+  lines.push("Negative Reviews: " + pct(c.negativeReviewPct));
+  if(c.breakdownHours){
+    lines.push("");
+    lines.push("*Breakdown*");
+    lines.push("Hours: " + round(c.breakdownHours, 2) + " h");
+    lines.push("Lost Sales: SAR " + money(c.estimatedLostSales));
+  }
+  return lines.join("\n");
+}
+
+/* Copy live calculations to clipboard */
+function copyCalcToClipboard(){
+  var text = buildCalcText();
+  if(!text || !text.trim()){
+    showToast("Nothing to copy yet — enter some numbers first.");
+    return;
+  }
+  /* Modern async API — works in all evergreen browsers, requires HTTPS or localhost */
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      showToast("✓ Copied — paste into WhatsApp.", "success");
+    }).catch(function(){
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+/* Fallback for older browsers / non-secure contexts */
+function fallbackCopy(text){
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.top = "-1000px";
+  ta.style.left = "-1000px";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    var ok = document.execCommand("copy");
+    if(ok) showToast("✓ Copied — paste into WhatsApp.", "success");
+    else showToast("Copy failed — please copy manually.");
+  } catch(e){
+    showToast("Copy failed — please copy manually.");
+  }
+  document.body.removeChild(ta);
 }
 
 function recalcAllCalcFields(){
@@ -4923,6 +5024,8 @@ function bindEvents(){
   q("loginStoreCode").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginStorePin").focus(); });
   q("loginUsername").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginPassword").focus(); });
   q("logoutBtn").addEventListener("click", logout);
+    var copyCalcBtn = q("copyCalcBtn");
+  if(copyCalcBtn) copyCalcBtn.addEventListener("click", copyCalcToClipboard);
     /* ---- AM multi-select wiring ---- */
   var shell = q("amMsShell");
   var dd = q("amMsDropdown");
