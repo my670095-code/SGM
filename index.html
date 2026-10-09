@@ -26,7 +26,7 @@ button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 .app-shell{min-height:100vh}
 .topbar{position:sticky;top:0;z-index:20;color:#fff;background:linear-gradient(110deg,#082c37,#0f4958);box-shadow:0 6px 18px rgba(5,35,43,.2)}
-.topbar-main{max-width:1480px;margin:0 auto;min-height:74px;padding:12px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.topbar-main{max-width:1480px;margin:0 auto;min-height:74px;max-height:74px;padding:12px 22px;display:flex;align-items:center;gap:18px;flex-wrap:nowrap;overflow:visible}
 .brand{display:flex;align-items:center;gap:12px;min-width:285px}
 .brand-mark{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#193941;background:var(--gold);font-weight:900;letter-spacing:-.5px}
 .brand h1{margin:0;font-size:18px;letter-spacing:.2px}
@@ -732,13 +732,15 @@ details.group>summary::-webkit-details-marker{display:none}
   align-items:center;
   gap:6px;
   min-width:240px;
-  max-width:340px;
+  max-width:520px;
   min-height:38px;
+  max-height:38px;
   padding:5px 10px;
   border:1px solid rgba(255,255,255,.25);
   background:rgba(255,255,255,.1);
   border-radius:10px;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
+  overflow:hidden;
   cursor:text;
 }
 .am-ms-shell.open{
@@ -748,8 +750,13 @@ details.group>summary::-webkit-details-marker{display:none}
 .am-ms-tags{
   display:flex;
   gap:4px;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-width:100%;
+  scrollbar-width:none;
 }
+.am-ms-tags::-webkit-scrollbar{ display:none; }
 .am-ms-tag{
   display:inline-flex;
   align-items:center;
