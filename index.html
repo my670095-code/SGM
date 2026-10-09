@@ -948,7 +948,7 @@ details.group>summary::-webkit-details-marker{display:none}
             <small>Store</small>
             <span id="entryStoreLabel">—</span>
           </div>
-          <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
+          <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">           <input type="hidden" id="f-date">
           <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
           <span class="entry-status new" id="entryStatus">
             <span class="dot"></span><span id="entryStatusText">New entry</span>
@@ -1517,7 +1517,6 @@ var LIVE_KEYS = {
 
   var GROUPS = [
   { id:"dateTarget", label:"Entry Date & Revenue Targets", hint:"Target first, then actual", accent:true, fields:[
-    { key:"date", label:"Date", type:"date", cls:"input-date" },
     { key:"targetSales", label:"Target Sales (SAR)" },
     { key:"targetAdt", label:"Target ADT" },
     { key:"targetAt", label:"Target AT (SAR)" }
@@ -2030,6 +2029,7 @@ function applyRoleUi(){
       */
       var n = g.fields.length;
       var colCount;
+       if(n === 3)       colCount = 3;
       if(n === 4)       colCount = 4;
       else if(n === 8)  colCount = 4;
       else if(n === 9)  colCount = 3;
@@ -2046,7 +2046,10 @@ function applyRoleUi(){
       grid.style.gap = "8px 10px";
       grid.style.gridTemplateColumns = "repeat(" + colCount + ", minmax(0, 1fr))";
 
-      g.fields.forEach(function(f){ grid.appendChild(makeField(f, g.id)); });
+     g.fields.forEach(function(f){
+  if(g.id === "dateTarget" && f.key === "date") return;  // hero owns the date
+  grid.appendChild(makeField(f, g.id));
+});
       body.appendChild(grid);
 
       /* Inline live summary for this section (only for groups that have calc outputs) */
