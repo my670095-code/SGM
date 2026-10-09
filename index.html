@@ -1010,7 +1010,6 @@ details.group>summary::-webkit-details-marker{display:none}
         <button class="nav-btn" data-view="weekly">Weekly</button>
         <button class="nav-btn" data-view="monthly">Monthly</button>
         <button class="nav-btn" data-view="dashboard">KPI Dashboard</button>
-        <button class="nav-btn" data-view="actions">Action Tracker</button>
         <button class="nav-btn" data-view="stores" data-roles="admin,op,am">Stores</button>
         <button class="nav-btn" data-view="users" data-roles="admin">Users</button>
         <button class="nav-btn" data-view="backup" data-roles="admin">Backup &amp; Settings</button>
@@ -1184,49 +1183,6 @@ details.group>summary::-webkit-details-marker{display:none}
         </div>
       </div>
       <div class="table-card"><table id="dashboardTable"></table></div>
-    </section>
-
-    <!-- ============ ACTIONS ============ -->
-    <section id="view-actions" class="view">
-      <div class="page-head">
-        <div><h2>Action Closure Tracker</h2><p>Record each operational gap, owner, deadline and closure status.</p></div>
-      </div>
-
-      <div class="action-form">
-        <div class="field">
-          <label for="actionCategory">Category</label>
-          <select id="actionCategory">
-            <option>Financial</option><option>Cost &amp; Inventory</option><option>Execution</option>
-            <option>QA</option><option>Guest Feedback</option><option>Breakdown</option>
-            <option>Availability</option><option>Maintenance</option><option>Other</option>
-          </select>
-        </div>
-        <div class="field wide"><label for="actionText">Required action</label><input id="actionText" type="text" placeholder="What must be corrected?"></div>
-        <div class="field"><label for="actionOwner">Responsible person</label><input id="actionOwner" type="text" placeholder="Name"></div>
-        <div class="field"><label for="actionDue">Closure deadline</label><input id="actionDue" type="date"></div>
-        <button class="btn primary" id="addActionBtn">Add</button>
-      </div>
-
-      <div class="action-toolbar">
-        <div class="field"><label for="actionStatusFilter">Status</label>
-          <select class="control-input" id="actionStatusFilter">
-            <option value="">All statuses</option>
-            <option>Open</option><option>In Progress</option><option>Closed</option>
-          </select>
-        </div>
-        <div class="field"><label for="actionCategoryFilter">Category</label>
-          <select class="control-input" id="actionCategoryFilter">
-            <option value="">All categories</option>
-            <option>Financial</option><option>Cost &amp; Inventory</option><option>Execution</option>
-            <option>QA</option><option>Guest Feedback</option><option>Breakdown</option>
-            <option>Availability</option><option>Maintenance</option><option>Other</option>
-          </select>
-        </div>
-        <div class="field search-field"><label for="actionSearch">Search</label><input class="control-input" type="text" id="actionSearch" placeholder="Search action, owner, category, deadline…"></div>
-        <button class="btn small" id="actionClearBtn" type="button">Clear</button>
-      </div>
-
-      <div class="table-card"><table id="actionsTable"></table></div>
     </section>
 
     <!-- ============ STORES ============ -->
@@ -3818,72 +3774,6 @@ function exportTxCsv(){
     "text/csv;charset=utf-8");
 }
 
-/* ============================================================
-   ACTIONS
-   ============================================================ */
-function addAction(){
-  var txt = q("actionText").value.trim();
-  if(!txt){ showToast("Enter the required action."); return; }
-  state.actions.push({
-    id: uid("act"), storeId: normalizeStoreId(state.selectedStore),
-    category: q("actionCategory").value, text: txt,
-    owner: q("actionOwner").value.trim(), due: q("actionDue").value,
-    status: "Open", created: todayIso()
-  });
-  saveState("Action added.");
-  q("actionText").value = ""; q("actionOwner").value = ""; q("actionDue").value = "";
-  renderActions();
-}
-function getFilteredActions(){
-  var status = q("actionStatusFilter") ? q("actionStatusFilter").value : "";
-  var cat = q("actionCategoryFilter") ? q("actionCategoryFilter").value : "";
-  var search = q("actionSearch") ? (q("actionSearch").value||"").trim().toLowerCase() : "";
-  return state.actions.filter(function(a){
-    if(normalizeStoreId(a.storeId) !== normalizeStoreId(state.selectedStore)) return false;
-    if(status && a.status !== status) return false;
-    if(cat && a.category !== cat) return false;
-    if(search){
-      var hay = [a.category, a.text, a.owner||"", a.due||"", a.status||""].join(" ").toLowerCase();
-      if(hay.indexOf(search) === -1) return false;
-    }
-    return true;
-  });
-}
-function renderActions(){
-  var list = getFilteredActions();
-  var total = state.actions.filter(function(a){     return normalizeStoreId(a.storeId) === normalizeStoreId(state.selectedStore);   }).length;
-  var table = q("actionsTable");
-  if(!list.length){
-    var emptyMsg = total ? "No actions match the current filters." : "No actions recorded for this store.";
-    table.innerHTML = '<thead><tr><th>Category</th><th>Required Action</th><th>Owner</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr><td colspan="6" class="empty">'+escapeHtml(emptyMsg)+'</td></tr></tbody>';
-    return;
-  }
-  table.innerHTML =
-    "<thead><tr><th>Category</th><th>Required Action</th><th>Owner</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+
-    list.map(function(a){
-      var css = a.status==="Closed"?"closed":a.status==="In Progress"?"progress":"open";
-      return "<tr><td>"+escapeHtml(a.category)+"</td><td style=\"text-align:left;white-space:normal;min-width:260px\">"+escapeHtml(a.text)+"</td><td>"+escapeHtml(a.owner||"—")+"</td><td>"+escapeHtml(dateLabel(a.due))+"</td>"+
-        "<td><select class=\"control-input action-status\" data-id=\""+escapeAttr(a.id)+"\">"+
-        ["Open","In Progress","Closed"].map(function(s){return '<option'+(a.status===s?" selected":"")+'>'+s+'</option>';}).join("")+
-        "</select><span class=\"status "+css+"\">"+escapeHtml(a.status)+"</span></td>"+
-        "<td><button class=\"btn small danger delete-action\" data-id=\""+escapeAttr(a.id)+"\">Delete</button></td></tr>";
-    }).join("")+"</tbody>";
-  table.querySelectorAll(".action-status").forEach(function(sel){
-    sel.addEventListener("change", function(){
-      var a = state.actions.find(function(x){return x.id===sel.dataset.id;});
-      if(a) a.status = sel.value;
-      saveState("Action status updated.");
-      renderActions();
-    });
-  });
-  table.querySelectorAll(".delete-action").forEach(function(b){
-    b.addEventListener("click", function(){
-      state.actions = state.actions.filter(function(x){return x.id!==b.dataset.id;});
-      saveState("Action removed.");
-      renderActions();
-    });
-  });
-}
 
 /* ============================================================
    SALARY
@@ -4246,7 +4136,7 @@ function renderStores(){
       if(!window.confirm("Delete store "+id+"?"+warn)) return;
       state.stores = state.stores.filter(function(s){return s.id !== id;});
       state.records = state.records.filter(function(r){return r.storeId !== id;});
-      state.actions = state.actions.filter(function(a){return a.storeId !== id;});
+
       state.users.forEach(function(u){
         u.storeIds = (u.storeIds||[]).filter(function(x){return x !== id;});
       });
@@ -4997,7 +4887,6 @@ function refreshCurrentView(){
   if(name==="weekly") renderWeekly();
   if(name==="monthly") renderMonthly();
   if(name==="dashboard") renderDashboard();
-  if(name==="actions") renderActions();
   if(name==="backup") updateStorageStat();
   if(name==="stores"){ renderStoreFilters(); renderStores(); }
   if(name==="users") renderUsers();
@@ -5166,21 +5055,6 @@ if(grossSalesEl){
   if(dSearch) dSearch.addEventListener("input", renderDashboard);
   var dClear = q("dashClearBtn");
   if(dClear) dClear.addEventListener("click", function(){ if(dSearch) dSearch.value = ""; renderDashboard(); });
-
-  q("addActionBtn").addEventListener("click", addAction);
-  var aStatus = q("actionStatusFilter");
-  if(aStatus) aStatus.addEventListener("change", renderActions);
-  var aCat = q("actionCategoryFilter");
-  if(aCat) aCat.addEventListener("change", renderActions);
-  var aSearch = q("actionSearch");
-  if(aSearch) aSearch.addEventListener("input", renderActions);
-  var aClear = q("actionClearBtn");
-  if(aClear) aClear.addEventListener("click", function(){
-    if(aStatus) aStatus.value = "";
-    if(aCat) aCat.value = "";
-    if(aSearch) aSearch.value = "";
-    renderActions();
-  });
 
   document.querySelectorAll("[data-export]").forEach(function(b){
     b.addEventListener("click", function(){ exportReport(b.dataset.export); });
