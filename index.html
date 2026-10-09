@@ -1106,7 +1106,7 @@ details.group>summary::-webkit-details-marker{display:none}
       </div>
       <div class="report-shell">
         <div class="report-top">
-          <div class="field" style="min-width:150px"><label for="weekDate">Any date in week</label><input class="control-input" type="date" id="weekDate"></div>
+          <div class="field" style="min-width:150px"><label for="weekDate">Any date (Sat–Fri week)</label><input class="control-input" type="date" id="weekDate"></div>
           <div class="field" style="min-width:170px"><label for="weekCompareMode">Comparison</label>
             <select class="control-input" id="weekCompareMode">
               <option value="single">Single week</option>
@@ -1751,6 +1751,25 @@ function todayIso(){return isoDate(new Date());}
 function currentMonthIso(){return todayIso().slice(0,7);}
 function addDays(s,d){var x=typeof s==="string"?parseDate(s):new Date(s);x.setDate(x.getDate()+d);return isoDate(x);}
 function weekStart(s){var d=parseDate(s);var off=(d.getDay()+1)%7;d.setDate(d.getDate()-off);return isoDate(d);}
+/* ISO-like week number, but week starts Saturday (Sat→Fri). Week 1 contains Jan 4. */
+function weekNumberOf(saturdayIso){
+  var curSat = parseDate(saturdayIso);
+  var year = curSat.getFullYear();
+  /* Find the Saturday of week 1 for this year (week containing Jan 4). */
+  var jan4 = new Date(year, 0, 4, 12, 0, 0);
+  var startSat = parseDate(weekStart(isoDate(jan4)));
+  var wk = Math.floor(Math.round((curSat - startSat) / 86400000) / 7) + 1;
+  /* Roll backward if we're at the very start of a year — belongs to previous year's last week */
+  if(wk < 1){
+    var prevJan4 = new Date(year - 1, 0, 4, 12, 0, 0);
+    var prevStartSat = parseDate(weekStart(isoDate(prevJan4)));
+    wk = Math.floor(Math.round((curSat - prevStartSat) / 86400000) / 7) + 1;
+  }
+  return wk;
+}
+function weekLabel(saturdayIso){
+  return "W" + String(weekNumberOf(saturdayIso)).padStart(2, "0");
+}
 function dateLabel(s){if(!s)return "—";return parseDate(s).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"2-digit"});}
 function uid(p){return p+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);}
 function escapeHtml(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];});}
@@ -3195,10 +3214,12 @@ function buildWeeklyPeriods(){
     var e = addDays(s, 6);
     var ids = resolveStoreScope();
     var agg = aggregate(recordsBetweenStores(ids, s, e));
-    agg._periodStartLabel = dateLabel(s);
+    agg._periodStartLabel = weekLabel(s) + " · " + dateLabel(s);
     agg._periodEndLabel   = dateLabel(e);
       periods.push({
-      shortLabel: (mode === "single") ? dateLabel(s)+" – "+dateLabel(e) : (labels[i]+" ("+dateLabel(s)+")"),
+      shortLabel: (mode === "single")
+        ? (weekLabel(s) + " · " + dateLabel(s) + " – " + dateLabel(e))
+        : (labels[i] + " · " + weekLabel(s)),
       start: s, end: e, agg: agg
     });
   }
