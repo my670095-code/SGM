@@ -1572,7 +1572,7 @@ var LIVE_KEYS = {
     { key:"taxAmount", label:"Tax Amount (SAR)" },
     { key:"complimentaryDiscount", label:"Complimentary Discount (SAR)" },
     { key:"promotionDiscount", label:"Promotion Discount (SAR)" },
-    { key:"openingDays", label:"Opening Days (auto = 1)", step:"1" },
+    { key:"openingDays", label:"Opening Days (auto = 1 · locked)", step:"1" },
     { key:"transactions", label:"Guest Count / Transactions", step:"1" },
     { key:"modifierSales", label:"Modifier Sales Amount (SAR)" }
   ]},
@@ -2300,6 +2300,15 @@ function makeField(def, groupId){
     if(def.max) input.max = def.max;
     input.inputMode = "decimal";
     input.placeholder = "0";
+  }
+  /* Lock the Opening Days field — it auto-fills to 1 and must not be edited */
+  if(def.key === "openingDays"){
+    input.readOnly = true;
+    input.tabIndex = -1;
+    input.title = "Auto-set to 1";
+    input.style.background = "#f4f8f7";
+    input.style.color = "#6b7d82";
+    input.style.cursor = "not-allowed";
   }
   if(def.cls) input.className = (input.className?input.className+" ":"") + def.cls;
   input.addEventListener("input", function(){
