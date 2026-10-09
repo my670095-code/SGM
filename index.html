@@ -1328,10 +1328,12 @@ details.group>summary::-webkit-details-marker{display:none}
             <li><strong>Modifier %</strong> = Modifier Sales ÷ Sales W/O Tax.</li>
             <li><strong>Upsize %</strong> = (Grande + Jumbo) ÷ (Tall + Grande + Jumbo).</li>
             <li><strong>DC App variance</strong> = App total − POS total.</li>
-            <li><strong>Cash variance</strong> = Actual Cash − Cash Sales as per POS.</li>
+                       <li><strong>Cash Deposited Variance</strong> = Cash Deposited − Cash Sales as per POS.</li>
+            <li><strong>Google Review Qty</strong> = Google Positive Review Qty + Google Negative Review Qty.</li>
+            <li><strong>DC App Sales %</strong> = (DC App POS + DC App App) ÷ Sales W/O Tax.</li>
             <li><strong>Employee Cost</strong> = Σ (headcount × monthly CTC ÷ 30) + Σ (OT hours × role rate).</li>
             <li><strong>COGS / Wastage / Employee %</strong> = amount ÷ Sales W/O Tax.</li>
-            <li><strong>Inventory variance %</strong> = |variance| ÷ Closing SOH.</li>
+            <li><strong>Inventory variance %</strong> = |variance| ÷ Sales W/O Tax.</li>
             <li><strong>Estimated Lost Sales</strong> = Breakdown Hours × Daily Sales Target ÷ Planned Hours.</li>
           </ul>
         </div>
@@ -1545,10 +1547,10 @@ function buildDefaultUsers(){
 var TARGETS = {
   foodMix:15, grabGoMix:5, merchandiseMix:1, retailBeansMix:2,
   waterAttachment:25, modifierMix:2, upsize:25,
-  cogs:25.2, employee:17, wastage:1, inventory:0,
-  cancelledBill:0, unpunchedSales:0, cashVariance:0,
-  smartCompleted:95, smartOnTime:90,
-  qa:90, googleRating:4.5, dcAppRating:4.5, complaintClosure:90
+  employee:17, wastage:1, inventory:0,
+  cancelledBill:0, cashVariance:0,
+  smartCompleted:95,
+  qa:90, googleRating:4.5, dcAppRating:4.5
 };
 
 var DEFAULT_SALARY = [
@@ -1582,11 +1584,11 @@ var GG_SKUS = [
   ["dateBox","Date Box"],["premiumDates","Premium Dates"]
 ];
 var MERCH_SKUS = [
-  ["blends","Blends"],["brewInBag","Brew In The Bag"],["cocoaNutty","Cocoa / Nutty"],
+  ["blends","Blends & Beans"],["brewInBag","Brew In The Bag"],["cocoaNutty","Cocoa / Nutty"],
   ["coffeeAccessories","Coffee Accessories"],["coffeeContainers","Coffee Containers"],
   ["coffeeFilter","Coffee Filter"],["cutlery","Cutlery"],["darkRoast","Dark Roast"],
   ["decaf","Decaf"],["dripPacket","Drip Packet"],["greenTea","Green Tea"],["herbTea","Herb Tea"],
-  ["keyChain","Key Chain"],["mugs","Mugs"],["toteBag","Tote Bag"],["tumbler","Tumbler"]
+  ["keyChain","Key Chain & Stationery"],["mugs","Mugs"],["toteBag","Tote Bag"],["tumbler","Tumbler"]
 ];
   /* Live summary keys shown under each input section */
 var LIVE_KEYS = {
@@ -1596,9 +1598,9 @@ var LIVE_KEYS = {
   merchMix:    ["merchSales","merchandiseMix"],
   cupMix:      ["cupsTotal","upsizeQty","upsizePct"],
   dcApp:       ["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"],
-  controls:    ["cancelledBillPct","unpunchedPct","cashVariancePct"],
-  costEmployee:["employeeCost","employeePct","cogsPct","wastagePct","inventoryVariancePct"],
-  performance: ["checklistPct","positiveReviewPct","complaintClosurePct"],
+  controls:    ["cancelledBillPct"],
+  costEmployee:["employeeCost","employeePct","wastagePct","inventoryVariancePct"],
+  performance: ["positiveReviewPct","negativeReviewPct"],
 };
 
   var GROUPS = [
@@ -1616,8 +1618,6 @@ var LIVE_KEYS = {
     { key:"promotionDiscount", label:"Promotion Discount (SAR)" },
     { key:"openingDays", label:"Opening Days (auto = 1)", step:"1" },
     { key:"transactions", label:"Guest Count / Transactions", step:"1" },
-    { key:"waterQty", label:"Water Sold Qty", step:"1" },
-    { key:"waterSales", label:"Water Sales Amount (SAR)" },
     { key:"modifierSales", label:"Modifier Sales Amount (SAR)" }
   ]},
 
@@ -1634,7 +1634,10 @@ var LIVE_KEYS = {
 
   { id:"grabGoMix", label:"Grab & Go Product Mix (INPUT)", hint:"Subtotal auto-computed", fields: GG_SKUS.map(function(s){
     return { key:"gg_"+s[0], label:s[1] };
-  })},
+  }).concat([
+    { key:"waterQty", label:"Water Sold Qty", step:"1" },
+    { key:"waterSales", label:"Water Sales Amount (SAR)" }
+  ])},
   { id:"grabGoMixCalc", label:"Grab & Go — Calculated (LOCKED)", hint:"Subtotal and %", special:"calc", calcKeys:["grabGoSales","grabGoMix"] },
 
   { id:"merchMix", label:"Merchandise Product Mix (INPUT)", hint:"Subtotal auto-computed", fields: MERCH_SKUS.map(function(s){
@@ -1643,7 +1646,7 @@ var LIVE_KEYS = {
   { id:"merchMixCalc", label:"Merchandise — Calculated (LOCKED)", hint:"Subtotal and %", special:"calc", calcKeys:["merchSales","merchandiseMix"] },
 
   { id:"cupMix", label:"Cup Size Mix (INPUT — sold qty)", hint:"Tall / Grande / Jumbo", fields:[
-    { key:"cupsTall", label:"Tall Qty (Hot & Cold)", step:"1" },
+    { key:"cupsTall", label:"Tall Qty (Hot & Cold) - Exc NB Bev", step:"1" },
     { key:"cupsGrande", label:"Grande Qty (Hot & Cold)", step:"1" },
     { key:"cupsJumbo", label:"Jumbo Qty (Hot & Cold)", step:"1" }
   ]},
@@ -1654,35 +1657,28 @@ var LIVE_KEYS = {
     { key:"dcPayPos", label:"DC Pay — POS (SAR)" },
     { key:"dcAppOnlineApp", label:"DC App Online — App (SAR)" },
     { key:"dcPayApp", label:"DC Pay — App (SAR)" },
-    { key:"dcAppSalesWoTax", label:"DC App Sales W/O Tax (SAR)" },
     { key:"dcAppOrders", label:"DC App Total Orders Qty", step:"1" },
     { key:"dcAppDeliveryOrders", label:"DC App Delivery Orders Qty", step:"1" },
     { key:"cardSales", label:"Card Sales — SPAN/Mada/Visa/MC/Amex (SAR)" },
     { key:"myListSales", label:"My List Sales (SAR)" },
     { key:"cashSalesPos", label:"Cash Sales — POS (SAR)" },
-    { key:"cashDeposited", label:"Cash Deposited (SAR)" },
-    { key:"actualCashCollected", label:"Actual Cash Collected (SAR)" }
+    { key:"cashDeposited", label:"Cash Deposited (SAR)" }
   ]},
   { id:"dcAppCalc", label:"DC App — Calculated (LOCKED)", hint:"POS/App totals, variance, %", special:"calc", calcKeys:[
     "dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct","dcAppOrderMix","dcAppDeliveryPct","dcAppAt"
   ]},
   { id:"cashCalc", label:"Cash — Calculated (LOCKED)", hint:"Cash variance", special:"calc", calcKeys:["cashVariance"] },
 
-  { id:"controls", label:"Control Actuals (INPUT)", hint:"Cancelled bills, unpunched sales", fields:[
-    { key:"cancelledBillAmount", label:"Cancelled Bill Amount (SAR)" },
-    { key:"unpunchedIncidents", label:"Unpunched Sale Incidents", step:"1" },
-    { key:"unpunchedValue", label:"Unpunched Sales Value (SAR)" },
-    { key:"cashVarianceAbsolute", label:"Cash Variance — Absolute (SAR)" }
+  { id:"controls", label:"Control Actuals (INPUT)", hint:"Cancelled bills", fields:[
+    { key:"cancelledBillAmount", label:"Cancelled Bill Amount (SAR)" }
   ]},
   { id:"controlsCalc", label:"Control — Calculated (LOCKED)", hint:"Percentages", special:"calc", calcKeys:[
-    "cancelledBillPct","unpunchedPct","cashVariancePct"
+    "cancelledBillPct","cashVariancePct"
   ]},
 
-  { id:"costEmployee", label:"Cost Efficiency & Employee Cost (INPUT)", hint:"COGS, wastage, headcounts, OT", fields:[
-    { key:"cogs", label:"COGS Value (SAR)" },
+  { id:"costEmployee", label:"Cost Efficiency & Employee Cost (INPUT)", hint:"Wastage, headcounts, OT", fields:[
     { key:"wastage", label:"Wastage Amount (SAR)" },
-    { key:"closingSoh", label:"Closing SOH Book Value (SAR)" },
-    { key:"inventoryVariance", label:"Inventory Variance (SAR)", allowNegative:true }
+    { key:"inventoryVariance", label:"Inventory Variance (SAR) / Surprise", allowNegative:true }
   ].concat(DEFAULT_SALARY.map(function(s){
     return { key:s.key, label:s.label+" Headcount", step:"1" };
   })).concat([
@@ -1692,26 +1688,21 @@ var LIVE_KEYS = {
     { key:"baristaOt", label:"Barista Overtime Hours" },
     { key:"cleanerOt", label:"Cleaner Overtime Hours" }
   ])},
-  { id:"costCalc", label:"Cost — Calculated (LOCKED)", hint:"COGS %, Wastage %, Employee Cost", special:"calc", calcKeys:[
-    "cogsPct","wastagePct","employeeCost","employeePct","inventoryVariancePct"
+  { id:"costCalc", label:"Cost — Calculated (LOCKED)", hint:"Wastage %, Employee Cost", special:"calc", calcKeys:[
+    "wastagePct","employeeCost","employeePct","inventoryVariancePct"
   ]},
 
   { id:"performance", label:"Smart Brew, QA & Guest Feedback (INPUT)", hint:"Percentages and ratings", fields:[
     { key:"smartCompletedPct", label:"Smart Brew Completed (%)", max:"100" },
-    { key:"smartOnTimePct", label:"Smart Brew On-Time (%)", max:"100" },
-    { key:"checklistPlanned", label:"Checklist Planned Qty", step:"1" },
-    { key:"checklistCompleted", label:"Checklist Completed Qty", step:"1" },
     { key:"qaScore", label:"QA Score (%)", max:"100" },
     { key:"googleRating", label:"Google Rating", max:"5", step:"0.1" },
     { key:"dcAppRating", label:"DC App Rating", max:"5", step:"0.1" },
-    { key:"googleReviews", label:"Google Review Qty", step:"1" },
     { key:"positiveReviews", label:"Google Positive Review Qty", step:"1" },
     { key:"negativeReviews", label:"Google Negative Review Qty", step:"1" },
-    { key:"complaints", label:"Guest Complaints", step:"1" },
-    { key:"complaintsClosed", label:"Complaints Closed On Time", step:"1" }
+    { key:"complaints", label:"Guest Complaints", step:"1" }
   ]},
-  { id:"performanceCalc", label:"Performance — Calculated (LOCKED)", hint:"Review %, closure %, availability", special:"calc", calcKeys:[
-    "checklistPct","positiveReviewPct","negativeReviewPct","complaintClosurePct"
+  { id:"performanceCalc", label:"Performance — Calculated (LOCKED)", hint:"Review %", special:"calc", calcKeys:[
+    "positiveReviewPct","negativeReviewPct"
   ]},
 
   { id:"breakdowns", label:"Breakdowns", hint:"Add one row per breakdown event", special:"breakdowns", fields:[] }
@@ -1735,19 +1726,15 @@ var KPI_DEFS = [
   { cat:"Sales Mix", name:"Merchandise Mix %",      key:"merchandiseMix",   target:TARGETS.merchandiseMix,   fmt:"pct" },
   { cat:"Sales Mix", name:"Modifier Contribution %",key:"modifierMix",      target:TARGETS.modifierMix,      fmt:"pct" },
   { cat:"Sales Mix", name:"Upsize Conversion %",    key:"upsizePct",        target:TARGETS.upsize,           fmt:"pct" },
-  { cat:"Cost Efficiency", name:"COGS %",             key:"cogsPct",             target:TARGETS.cogs,       fmt:"pct", lower:true },
   { cat:"Cost Efficiency", name:"Employee Cost %",    key:"employeePct",         target:TARGETS.employee,   fmt:"pct", lower:true },
   { cat:"Cost Efficiency", name:"Wastage %",          key:"wastagePct",          target:TARGETS.wastage,    fmt:"pct", lower:true },
   { cat:"Cost Efficiency", name:"Inventory Variance %",key:"inventoryVariancePct",target:TARGETS.inventory, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cancelled Bill Value %", key:"cancelledBillPct", target:TARGETS.cancelledBill, fmt:"pct", lower:true },
-  { cat:"Controls", name:"Unpunched Sales Value %",key:"unpunchedPct",     target:TARGETS.unpunchedSales, fmt:"pct", lower:true },
-  { cat:"Controls", name:"Cash Variance %",        key:"cashVariancePct",  target:TARGETS.cashVariance,   fmt:"pct", lower:true },
+  { cat:"Controls", name:"Cash Deposited Variance %", key:"cashVariancePct", target:TARGETS.cashVariance, fmt:"pct", lower:true },
   { cat:"Smart Brew", name:"Completion %", key:"smartCompletedPct", target:TARGETS.smartCompleted, fmt:"pct" },
-  { cat:"Smart Brew", name:"On-Time %",    key:"smartOnTimePct",    target:TARGETS.smartOnTime,    fmt:"pct" },
   { cat:"QA & Guest", name:"QA Score %",       key:"qaScore",          target:TARGETS.qa,              fmt:"pct" },
   { cat:"QA & Guest", name:"Google Rating",    key:"googleRating",     target:TARGETS.googleRating,    fmt:"rating" },
-  { cat:"QA & Guest", name:"DC App Rating",    key:"dcAppRating",      target:TARGETS.dcAppRating,     fmt:"rating" },
-  { cat:"QA & Guest", name:"Complaint Closure %",key:"complaintClosurePct",target:TARGETS.complaintClosure,fmt:"pct" }
+  { cat:"QA & Guest", name:"DC App Rating",    key:"dcAppRating",      target:TARGETS.dcAppRating,     fmt:"rating" }
 ];
 
 function q(id){return document.getElementById(id);}
@@ -2131,16 +2118,20 @@ function applyRoleUi(){
       */
 var n = g.fields.length;
 var colCount;
-if(n === 3)       colCount = 3;
+if(n === 1)       colCount = 1;
+else if(n === 2)  colCount = 2;
+else if(n === 3)  colCount = 3;
 else if(n === 4)  colCount = 4;
+else if(n === 6)  colCount = 3;
+else if(n === 7)  colCount = 4;
 else if(n === 8)  colCount = 4;
 else if(n === 9)  colCount = 3;
 else if(n === 10) colCount = 5;
 else if(n === 12) colCount = 4;
+else if(n === 14) colCount = 5;
 else if(n === 15) colCount = 5;
 else if(n === 16) colCount = 4;
-else if(n === 20) colCount = 5;
-else if(n === 22) colCount = 5;
+else if(n === 18) colCount = 5;
 else              colCount = 5;
 
       grid.className = "grid";
@@ -2210,19 +2201,15 @@ else              colCount = 5;
     dcAppOrderMix:"DC App Order Mix %",
     dcAppDeliveryPct:"DC App Delivery Orders %",
     dcAppAt:"DC App AT (SAR)",
-    cashVariance:"Cash Short / (Excess) (SAR)",
+    cashVariance:"Cash Deposited Variance (SAR)",
     cancelledBillPct:"Cancelled Bill Value % (Tgt 0.0%)",
-    unpunchedPct:"Unpunched Sales Value % (Tgt 0.0%)",
-    cashVariancePct:"Cash Variance % (Tgt 0.0%)",
-    cogsPct:"COGS % (Tgt 25.2%)",
+    cashVariancePct:"Cash Deposited Variance % (Tgt 0.0%)",
     wastagePct:"Wastage % (Tgt 1.0%)",
     inventoryVariancePct:"Inventory Variance % (Tgt 0.0%)",
     employeeCost:"Employee Cost (SAR)",
     employeePct:"Employee Cost % (Tgt 17.0%)",
-    checklistPct:"Checklist Completion %",
     positiveReviewPct:"Google Positive Review %",
     negativeReviewPct:"Google Negative Review %",
-    complaintClosurePct:"Complaint Closure % (Tgt 90.0%)",
     breakdownHours:"Breakdown Hours",
     estimatedLostSales:"Estimated Lost Sales (SAR)"
   };
@@ -2240,7 +2227,7 @@ function fmtCalcValue(v, key){
 }
 function fmtSidebarValue(key, v){
   if(v === null || v === undefined || isNaN(v)) return "—";
-  if(/Pct|Mix|Closure|Availability|DiscountPct|PositiveReview|NegativeReview|Checklist|Complaint/.test(key)) return pct(v);
+  if(/Pct|Mix|DiscountPct|PositiveReview|NegativeReview/.test(key)) return pct(v);
   if(/Hours/.test(key)) return round(v,2) + " h";
   if(/Qty|Reviews|Complaints|Checks|Tickets|Incidents|adt$/.test(key)) return integer(v);
   if(/Variance|Loss|Cost|Discount|Sales|At$|AT$|NetSales|WithoutTax|employeeCost|estimatedLostSales/.test(key)) return "SAR " + money(v);
@@ -2259,14 +2246,11 @@ function statusForSidebar(key, v, c){
     merchandiseMix:   { target:TARGETS.merchandiseMix,   lower:false },
     modifierMix:      { target:TARGETS.modifierMix,      lower:false },
     upsizePct:        { target:TARGETS.upsize,           lower:false },
-    cogsPct:          { target:TARGETS.cogs,             lower:true  },
     wastagePct:       { target:TARGETS.wastage,          lower:true  },
     employeePct:      { target:TARGETS.employee,         lower:true  },
     inventoryVariancePct:{ target:TARGETS.inventory,     lower:true  },
     cancelledBillPct: { target:TARGETS.cancelledBill,    lower:true  },
-    unpunchedPct:     { target:TARGETS.unpunchedSales,   lower:true  },
-    cashVariancePct:  { target:TARGETS.cashVariance,     lower:true  },
-    complaintClosurePct:   { target:TARGETS.complaintClosure,    lower:false }
+    cashVariancePct:  { target:TARGETS.cashVariance,     lower:true  }
   };
   var r = rules[key];
   if(!r) return "";
@@ -2286,14 +2270,13 @@ function recalcAllCalcFields(){
   /* New sidebar */
   var body = q("calcSidebarBody");
   if(!body) return;
-
   var groups = [
     { title:"Sales & Mix",  keys:["salesWithoutTax","netSales","totalDiscount","adt","at","salesVsTargetPct"] },
     { title:"Mix %",        keys:["foodMix","grabGoMix","merchandiseMix","modifierMix","upsizePct"] },
-    { title:"Cost",         keys:["cogsPct","wastagePct","employeeCost","employeePct","inventoryVariancePct"] },
-    { title:"Controls",     keys:["cancelledBillPct","unpunchedPct","cashVariancePct"] },
+    { title:"Cost",         keys:["wastagePct","employeeCost","employeePct","inventoryVariancePct"] },
+    { title:"Controls",     keys:["cancelledBillPct","cashVariancePct"] },
     { title:"DC App",       keys:["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"] },
-    { title:"QA & Guest",   keys:["checklistPct","positiveReviewPct","complaintClosurePct"] },
+    { title:"QA & Guest",   keys:["positiveReviewPct","negativeReviewPct"] },
     { title:"Breakdowns",   keys:["breakdownHours","estimatedLostSales"] }
   ];
 
@@ -2440,6 +2423,8 @@ function calculate(record){
   var upsizeQty    = n(record.cupsGrande) + n(record.cupsJumbo);
   var dcPosTotal = n(record.dcAppOnlinePos) + n(record.dcPayPos);
   var dcAppTotal = n(record.dcAppOnlineApp) + n(record.dcPayApp);
+  var googleReviewsAuto = n(record.positiveReviews) + n(record.negativeReviews);
+  var cashVarianceCalc = n(record.cashDeposited) - n(record.cashSalesPos);
   var employeeBase = 0;
   state.salary.forEach(function(r){ employeeBase += n(record[r.key]) * n(r.ctc) / 30; });
   var overtime = 0;
@@ -2474,22 +2459,19 @@ function calculate(record){
     upsizePct: safeDiv(upsizeQty, cupsTotal) * 100,
     dcPosTotal: dcPosTotal, dcAppTotal: dcAppTotal,
     dcVariance: dcAppTotal - dcPosTotal,
-    dcAppSalesPct: safeDiv(record.dcAppSalesWoTax, salesWoTax) * 100,
+    dcAppSalesPct: safeDiv(dcPosTotal + dcAppTotal, salesWoTax) * 100,
     dcAppOrderMix: safeDiv(record.dcAppOrders, record.transactions) * 100,
     dcAppDeliveryPct: safeDiv(record.dcAppDeliveryOrders, record.dcAppOrders) * 100,
-    dcAppAt: safeDiv(record.dcAppSalesWoTax, record.dcAppOrders),
-    cashVariance: n(record.actualCashCollected) - n(record.cashSalesPos),
-    cogsPct: safeDiv(record.cogs, salesWoTax) * 100,
+    dcAppAt: safeDiv(dcPosTotal + dcAppTotal, record.dcAppOrders),
+    cashVariance: cashVarianceCalc,
     wastagePct: safeDiv(record.wastage, salesWoTax) * 100,
-    inventoryVariancePct: safeDiv(Math.abs(n(record.inventoryVariance)), record.closingSoh) * 100,
+    inventoryVariancePct: safeDiv(Math.abs(n(record.inventoryVariance)), salesWoTax) * 100,
     employeeCost: employeeCost, employeePct: safeDiv(employeeCost, salesWoTax) * 100,
-    checklistPct: safeDiv(record.checklistCompleted, record.checklistPlanned) * 100,
-    positiveReviewPct: safeDiv(record.positiveReviews, record.googleReviews) * 100,
-    negativeReviewPct: safeDiv(record.negativeReviews, record.googleReviews) * 100,
-    complaintClosurePct: safeDiv(record.complaintsClosed, record.complaints) * 100,
+    googleReviews: googleReviewsAuto,
+    positiveReviewPct: safeDiv(record.positiveReviews, googleReviewsAuto) * 100,
+    negativeReviewPct: safeDiv(record.negativeReviews, googleReviewsAuto) * 100,
     cancelledBillPct: safeDiv(record.cancelledBillAmount, salesWoTax) * 100,
-    unpunchedPct: safeDiv(record.unpunchedValue, salesWoTax) * 100,
-    cashVariancePct: safeDiv(Math.abs(n(record.cashVarianceAbsolute)), salesWoTax) * 100,
+    cashVariancePct: safeDiv(Math.abs(cashVarianceCalc), salesWoTax) * 100,
     breakdownHours: breakHours, estimatedLostSales: lostSales
   };
 }
@@ -2675,7 +2657,7 @@ function submitDailyRecord(){
     '</div>'+
     '<div class="summary-section">'+
       'Food '+escapeHtml(pct(c.foodMix))+' · G&amp;G '+escapeHtml(pct(c.grabGoMix))+' · Merch '+escapeHtml(pct(c.merchandiseMix))+
-      '<br>COGS '+escapeHtml(pct(c.cogsPct))+' · Wastage '+escapeHtml(pct(c.wastagePct))+' · Employee '+escapeHtml(pct(c.employeePct))+
+      '<br>Wastage '+escapeHtml(pct(c.wastagePct))+' · Employee '+escapeHtml(pct(c.employeePct))+
       (currentBreakdowns.length ? '<br>Breakdowns: '+currentBreakdowns.length+' event(s) · '+round(c.breakdownHours,2)+' hrs · Lost sales SAR '+escapeHtml(money(c.estimatedLostSales)) : '')+
     '</div>';
   q("confirmSummary").innerHTML = html;
@@ -2780,8 +2762,8 @@ function normalizeStoreId(id){
   return String(id == null ? "" : id).toUpperCase().replace(/^DC\s+/, "DC").trim();
 }
 
-var AVG_KEYS = ["targetAdt","targetAt","smartCompletedPct","smartOnTimePct","qaScore","googleRating","dcAppRating"];
-var LAST_KEYS = ["closingSoh","inventoryVariance"];
+var AVG_KEYS = ["targetAdt","targetAt","smartCompletedPct","qaScore","googleRating","dcAppRating"];
+var LAST_KEYS = ["inventoryVariance"];
 
 function aggregate(records){
   var res = { storeId: state.selectedStore, breakdowns: [], _records: records };
@@ -2811,9 +2793,13 @@ function aggregate(records){
   });
   AVG_KEYS.forEach(function(k){ res[k] = avgCount[k] ? res[k]/avgCount[k] : 0; });
   LAST_KEYS.forEach(function(k){ res[k] = lastRec[k]!=null ? n(lastRec[k]) : 0; });
-  res._days = records.length;
+
+   res._days = records.length;
+  /* Google Reviews is derived, not summed */
+  res.googleReviews = n(res.positiveReviews) + n(res.negativeReviews);
   var aggRecord = {};
   NUMERIC_KEYS.forEach(function(k){ aggRecord[k] = res[k]; });
+  aggRecord.googleReviews = res.googleReviews;
   aggRecord.breakdowns = res.breakdowns;
   var baseCalc = calculate(aggRecord);
   var bh = 0, ls = 0;
@@ -2896,34 +2882,22 @@ function reportRows(){
     R("Sales & Mix", "Total Hot & Cold Sold Qty"),
     R("Sales & Mix", "Upsize Sold Qty"),
     R("Sales & Mix", "Upsize Conversion %"),
-    R("Sales & Mix", "DC App Sales Without Tax (SAR)"),
-    R("Sales & Mix", "DC App Sales %"),
+       R("Sales & Mix", "DC App Sales %"),
     R("Sales & Mix", "DC App Total Orders Qty"),
     R("Sales & Mix", "DC App Order Mix %"),
     R("Sales & Mix", "DC App AT (SAR)"),
     R("Sales & Mix", "DC App Delivery Orders Qty"),
     R("Sales & Mix", "DC App Delivery Orders %"),
-
-    R("Cost Efficiency", "COGS Value (SAR)"),
-    R("Cost Efficiency", "COGS %"),
     R("Cost Efficiency", "Employee Cost (SAR)"),
     R("Cost Efficiency", "Employee Cost %"),
     R("Cost Efficiency", "Wastage Amount (SAR)"),
     R("Cost Efficiency", "Wastage %"),
     R("Cost Efficiency", "Inventory Variance Amount (SAR)"),
     R("Cost Efficiency", "Inventory Variance %"),
-
     R("Control Actuals", "Cancelled Bill Amount (SAR)"),
-    R("Control Actuals", "Unpunched Sale Incidents"),
-    R("Control Actuals", "Unpunched Sales Value (SAR)"),
-    R("Control Actuals", "Cash Variance - Absolute (SAR)"),
     R("Control Actuals", "Cancelled Bill Value %"),
-    R("Control Actuals", "Unpunched Sales Value %"),
-    R("Control Actuals", "Cash Variance %"),
-
+    R("Control Actuals", "Cash Deposited Variance %"),
     R("Smart Brew & Execution", "Smart Brew Completion %"),
-    R("Smart Brew & Execution", "Smart Brew On-Time %"),
-
     R("QA, Guest & Availability", "QA Score %"),
     R("QA, Guest & Availability", "Google Rating"),
     R("QA, Guest & Availability", "DC App Rating"),
@@ -2932,9 +2906,7 @@ function reportRows(){
     R("QA, Guest & Availability", "Google Positive Review %"),
     R("QA, Guest & Availability", "Google Negative Reviews"),
     R("QA, Guest & Availability", "Google Negative Review %"),
-    R("QA, Guest & Availability", "Guest Complaints"),
-    R("QA, Guest & Availability", "Complaints Closed On Time"),
-    R("QA, Guest & Availability", "Complaint Closure %")
+    R("QA, Guest & Availability", "Guest Complaints")
   ];
 }
 
@@ -2977,7 +2949,6 @@ function sectionValue(agg, label){
     case "Total Hot & Cold Sold Qty":        return { value: c.cupsTotal, fmt:"number" };
     case "Upsize Sold Qty":                  return { value: c.upsizeQty, fmt:"number" };
     case "Upsize Conversion %":              return { value: c.upsizePct, fmt:"pct", target: TARGETS.upsize };
-    case "DC App Sales Without Tax (SAR)":   return { value: n(agg.dcAppSalesWoTax), fmt:"money" };
     case "DC App Sales %":                   return { value: c.dcAppSalesPct, fmt:"pct" };
     case "DC App Total Orders Qty":          return { value: n(agg.dcAppOrders), fmt:"number" };
     case "DC App Order Mix %":               return { value: c.dcAppOrderMix, fmt:"pct" };
@@ -2986,8 +2957,6 @@ function sectionValue(agg, label){
     case "DC App Delivery Orders %":         return { value: c.dcAppDeliveryPct, fmt:"pct" };
 
     /* Cost Efficiency */
-    case "COGS Value (SAR)":                 return { value: n(agg.cogs), fmt:"money" };
-    case "COGS %":                           return { value: c.cogsPct, fmt:"pct", target: TARGETS.cogs, lower:true };
     case "Employee Cost (SAR)":              return { value: c.employeeCost, fmt:"money" };
     case "Employee Cost %":                  return { value: c.employeePct, fmt:"pct", target: TARGETS.employee, lower:true };
     case "Wastage Amount (SAR)":             return { value: n(agg.wastage), fmt:"money" };
@@ -2996,17 +2965,12 @@ function sectionValue(agg, label){
     case "Inventory Variance %":             return { value: c.inventoryVariancePct, fmt:"pct", target: TARGETS.inventory, lower:true };
 
     /* Control Actuals */
-    case "Cancelled Bill Amount (SAR)":      return { value: n(agg.cancelledBillAmount), fmt:"money" };
-    case "Unpunched Sale Incidents":         return { value: n(agg.unpunchedIncidents), fmt:"number" };
-    case "Unpunched Sales Value (SAR)":      return { value: n(agg.unpunchedValue), fmt:"money" };
-    case "Cash Variance - Absolute (SAR)":   return { value: Math.abs(c.cashVariance), fmt:"money" };
+      case "Cancelled Bill Amount (SAR)":      return { value: n(agg.cancelledBillAmount), fmt:"money" };
     case "Cancelled Bill Value %":           return { value: c.cancelledBillPct, fmt:"pct", target: TARGETS.cancelledBill, lower:true };
-    case "Unpunched Sales Value %":          return { value: c.unpunchedPct, fmt:"pct", target: TARGETS.unpunchedSales, lower:true };
-    case "Cash Variance %":                  return { value: c.cashVariancePct, fmt:"pct", target: TARGETS.cashVariance, lower:true };
+    case "Cash Deposited Variance %":        return { value: c.cashVariancePct, fmt:"pct", target: TARGETS.cashVariance, lower:true };
 
     /* Smart Brew */
-    case "Smart Brew Completion %":          return { value: n(agg.smartCompletedPct), fmt:"pct", target: TARGETS.smartCompleted };
-    case "Smart Brew On-Time %":             return { value: n(agg.smartOnTimePct), fmt:"pct", target: TARGETS.smartOnTime };
+      case "Smart Brew Completion %":          return { value: n(agg.smartCompletedPct), fmt:"pct", target: TARGETS.smartCompleted };
 
     /* QA Guest Availability */
     case "QA Score %":                       return { value: n(agg.qaScore), fmt:"pct", target: TARGETS.qa };
@@ -3018,8 +2982,6 @@ function sectionValue(agg, label){
     case "Google Negative Reviews":          return { value: n(agg.negativeReviews), fmt:"number" };
     case "Google Negative Review %":         return { value: c.negativeReviewPct, fmt:"pct", lower:true };
     case "Guest Complaints":                 return { value: n(agg.complaints), fmt:"number" };
-    case "Complaints Closed On Time":        return { value: n(agg.complaintsClosed), fmt:"number" };
-    case "Complaint Closure %":              return { value: c.complaintClosurePct, fmt:"pct", target: TARGETS.complaintClosure };
   }
   return { value: "", fmt:"text" };
 }
@@ -3048,7 +3010,6 @@ function renderKpis(host, agg){
     { name:"AT",            val:"SAR "+money(c.at),              sub:"Target SAR "+money(agg.targetAt), cls:"" },
     { name:"Food Mix %",    val:pct(c.foodMix),                  sub:"Target "+pct(TARGETS.foodMix),   cls:statusClass(c.foodMix, TARGETS.foodMix, false) },
     { name:"G&G Mix %",     val:pct(c.grabGoMix),                sub:"Target "+pct(TARGETS.grabGoMix), cls:statusClass(c.grabGoMix, TARGETS.grabGoMix, false) },
-    { name:"COGS %",        val:pct(c.cogsPct),                  sub:"Target "+pct(TARGETS.cogs),      cls:statusClass(c.cogsPct, TARGETS.cogs, true) },
     { name:"Employee %",    val:pct(c.employeePct),              sub:"Target "+pct(TARGETS.employee),  cls:statusClass(c.employeePct, TARGETS.employee, true) },
     { name:"Wastage %",     val:pct(c.wastagePct),               sub:"Target "+pct(TARGETS.wastage),   cls:statusClass(c.wastagePct, TARGETS.wastage, true) },
     { name:"QA Score %",    val:pct(agg.qaScore),                sub:"Target "+pct(TARGETS.qa),        cls:statusClass(agg.qaScore, TARGETS.qa, false) },
@@ -3366,18 +3327,15 @@ var TX_COLUMNS = [
   { key:"merchandiseMix",      label:"Merch Mix %",          fmt:"pct",  target:TARGETS.merchandiseMix,   lower:false },
   { key:"waterAttachment",     label:"Water Attach %",       fmt:"pct",  target:TARGETS.waterAttachment,  lower:false },
   { key:"upsizePct",           label:"Upsize %",             fmt:"pct",  target:TARGETS.upsize,           lower:false },
-  { key:"cogsPct",             label:"COGS %",               fmt:"pct",  target:TARGETS.cogs,             lower:true  },
   { key:"wastagePct",          label:"Wastage %",            fmt:"pct",  target:TARGETS.wastage,          lower:true  },
   { key:"employeePct",         label:"Employee %",           fmt:"pct",  target:TARGETS.employee,         lower:true  },
   { key:"inventoryVariancePct",label:"Inv Var %",            fmt:"pct",  target:TARGETS.inventory,        lower:true  },
   { key:"cashVariance",        label:"Cash Var",             fmt:"money", target:0,                        lower:true, abs:true },
   { key:"dcVariance",          label:"DC App Var",           fmt:"money", target:0,                        lower:true, abs:true },
   { key:"cancelledBillPct",    label:"Cancelled Bill %",     fmt:"pct",  target:TARGETS.cancelledBill,    lower:true  },
-  { key:"unpunchedPct",        label:"Unpunched %",          fmt:"pct",  target:TARGETS.unpunchedSales,   lower:true  },
   { key:"qaScore",             label:"QA %",                 fmt:"pct",  target:TARGETS.qa,               lower:false },
   { key:"googleRating",        label:"Google",               fmt:"rating",target:TARGETS.googleRating,     lower:false },
   { key:"dcAppRating",         label:"DC App",               fmt:"rating",target:TARGETS.dcAppRating,      lower:false },
-  { key:"complaintClosurePct", label:"Complaints %",         fmt:"pct",  target:TARGETS.complaintClosure, lower:false },
   { key:"breakdownHours",      label:"Breakdown hrs",        fmt:"hours", target:0,                       lower:true  },
   { key:"estimatedLostSales",  label:"Lost Sales",           fmt:"money", target:0,                       lower:true  }
 ];
@@ -3533,7 +3491,7 @@ var GRID_ROWS = [
   { type:"metric", key:"at",               label:"AT",                     fmt:"money"  },
   { type:"metric", key:"salesVsTargetPct", label:"Sales vs Target %",      fmt:"pct"    },
   { type:"category", label:"Sales Mix" },
-  { type:"metric", key:"foodSales",        label:"Food Sales Amount (SAR)",fmt:"money" },
+   { type:"metric", key:"foodSales",        label:"Food Sales Amount (SAR)",fmt:"money" },
   { type:"metric", key:"foodMix",          label:"Food Mix %",             fmt:"pct", target:TARGETS.foodMix,          lower:false },
   { type:"metric", key:"grabGoSales",      label:"Grab & Go Sales (SAR)",  fmt:"money" },
   { type:"metric", key:"grabGoMix",        label:"Grab & Go Mix %",        fmt:"pct", target:TARGETS.grabGoMix,        lower:false },
@@ -3554,24 +3512,19 @@ var GRID_ROWS = [
   { type:"category", label:"Controls" },
   { type:"metric", key:"cashVariance",     label:"Cash Excess / (Short)",  fmt:"money", target:0, lower:true, abs:true },
   { type:"metric", key:"cancelledBillPct", label:"Cancelled Bill %",       fmt:"pct", target:TARGETS.cancelledBill,  lower:true },
-  { type:"metric", key:"unpunchedPct",     label:"Unpunched Sales %",      fmt:"pct", target:TARGETS.unpunchedSales, lower:true },
   { type:"category", label:"Cost Efficiency" },
-  { type:"metric", key:"cogsPct",          label:"COGS %",                 fmt:"pct", target:TARGETS.cogs,      lower:true },
   { type:"metric", key:"wastagePct",       label:"Wastage %",              fmt:"pct", target:TARGETS.wastage,   lower:true },
   { type:"metric", key:"employeeCost",     label:"Employee Cost (SAR)",    fmt:"money" },
   { type:"metric", key:"employeePct",      label:"Employee Cost %",        fmt:"pct", target:TARGETS.employee,  lower:true },
   { type:"metric", key:"inventoryVariancePct", label:"Inventory Variance %", fmt:"pct", target:TARGETS.inventory, lower:true },
   { type:"category", label:"Smart Brew & Execution" },
-  { type:"metric", key:"smartCompletedPct",label:"Smart Brew Completed %", fmt:"pct", target:TARGETS.smartCompleted,lower:false },
-  { type:"metric", key:"smartOnTimePct",   label:"Smart Brew On-Time %",   fmt:"pct", target:TARGETS.smartOnTime,   lower:false },
-  { type:"metric", key:"checklistPct",     label:"Checklist Completion %", fmt:"pct", target:100,                   lower:false },
+    { type:"metric", key:"smartCompletedPct",label:"Smart Brew Completed %", fmt:"pct", target:TARGETS.smartCompleted,lower:false },
   { type:"category", label:"QA & Guest" },
   { type:"metric", key:"qaScore",          label:"QA Score %",             fmt:"pct", target:TARGETS.qa,          lower:false },
   { type:"metric", key:"googleRating",     label:"Google Rating",          fmt:"rating",target:TARGETS.googleRating,lower:false },
   { type:"metric", key:"dcAppRating",      label:"DC App Rating",          fmt:"rating",target:TARGETS.dcAppRating, lower:false },
   { type:"metric", key:"positiveReviewPct",label:"Positive Review %",      fmt:"pct" },
   { type:"metric", key:"negativeReviewPct",label:"Negative Review %",      fmt:"pct", lower:true },
-  { type:"metric", key:"complaintClosurePct", label:"Complaint Closure %", fmt:"pct", target:TARGETS.complaintClosure, lower:false },
   { type:"category", label:"Breakdown" },
   { type:"metric", key:"breakdownHours",   label:"Breakdown Hours",        fmt:"hours", lower:true },
   { type:"metric", key:"estimatedLostSales", label:"Estimated Lost Sales", fmt:"money", lower:true }
@@ -3998,9 +3951,9 @@ function exportAllDailyCsv(){
     "Sales W/O Tax","Net Sales","ADT","AT","Food Sales","Grab & Go Sales","Merchandise Sales",
     "Food Mix %","Grab & Go Mix %","Merchandise Mix %","Water Attachment %","Modifier Mix %","Upsize %",
     "DC App Sales %","DC App Order Mix %","DC App Delivery %","DC App AT",
-    "COGS %","Wastage %","Employee Cost","Employee Cost %","Cash Variance","DC App Variance",
-    "Complaint Closure %","Cancelled Bill %","Unpunched Sales %","Cash Variance %",
-    "Breakdown Hours","Estimated Lost Sales"
+    "Wastage %","Employee Cost","Employee Cost %","Cash Deposited Variance","DC App Variance",
+    "Cancelled Bill %","Cash Deposited Variance %",
+    "Breakdown Hours","Estimated Lost Sales","Google Reviews"
   ]);
   var csv = [headers];
   state.records.slice().sort(function(a,b){return (a.storeId+a.date).localeCompare(b.storeId+b.date);}).forEach(function(r){
@@ -4010,9 +3963,9 @@ function exportAllDailyCsv(){
       .concat([c.salesWithoutTax,c.netSales,c.adt,c.at,c.foodSales,c.grabGoSales,c.merchSales,
         c.foodMix,c.grabGoMix,c.merchandiseMix,c.waterAttachment,c.modifierMix,c.upsizePct,
         c.dcAppSalesPct,c.dcAppOrderMix,c.dcAppDeliveryPct,c.dcAppAt,
-        c.cogsPct,c.wastagePct,c.employeeCost,c.employeePct,c.cashVariance,c.dcVariance,
-        c.complaintClosurePct,c.cancelledBillPct,c.unpunchedPct,c.cashVariancePct,
-        c.breakdownHours,c.estimatedLostSales]));
+        c.wastagePct,c.employeeCost,c.employeePct,c.cashVariance,c.dcVariance,
+        c.cancelledBillPct,c.cashVariancePct,
+        c.breakdownHours,c.estimatedLostSales,c.googleReviews]));
   });
   download("SGM_All_Daily_Data_"+todayIso()+".csv",
     "\ufeff"+csv.map(function(r){return r.map(csvEscape).join(",");}).join("\r\n"),
