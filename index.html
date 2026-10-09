@@ -1327,6 +1327,27 @@ details.group>summary::-webkit-details-marker{display:none}
     </div>
   </div>
 </div>
+  <!-- ============ POST-SUBMIT MODAL ============ -->
+<div class="modal-backdrop" id="submittedModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head"><h3>✓ Entry Submitted</h3><button class="modal-x" id="submittedModalClose" type="button">×</button></div>
+    <div class="modal-body" style="grid-template-columns:1fr">
+      <div>
+        <div class="confirm-icon">✓</div>
+        <p style="text-align:center;margin:0 0 8px;color:var(--muted);font-size:12.5px">Your entry has been saved. You can send the summary to WhatsApp now.</p>
+      </div>
+      <div id="submittedSummary"></div>
+    </div>
+    <div class="modal-foot" style="gap:8px">
+      <button class="btn" id="submittedModalClose2" type="button">Close</button>
+      <button class="btn" id="submittedCopyBtn" type="button">Copy</button>
+      <button class="btn" id="submittedWhatsappBtn" type="button"
+        style="border-color:#25D366;background:#25D366;color:#fff;font-weight:900">
+        Send to WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ STORE MODAL ============ -->
 <div class="modal-backdrop" id="storeModal">
@@ -2748,6 +2769,91 @@ function submitDailyRecord(){
   q("confirmSummary").innerHTML = html;
   q("confirmModal").classList.add("show");
 }
+  /* Build the WhatsApp text for a specific saved record (not the live form) */
+function buildSubmittedText(rec, c){
+  var store = state.stores.find(function(x){ return x.id === rec.storeId; });
+  var storeLabel = rec.storeId + (store && store.area ? " · " + store.area : "");
+  var lines = [];
+  lines.push("*SGM Daily Entry — SUBMITTED*");
+  lines.push("Store: " + storeLabel);
+  lines.push("Date: " + dateLabel(rec.date));
+  lines.push("");
+  lines.push("*Sales & Mix*");
+  lines.push("Sales W/O Tax: SAR " + money(c.salesWithoutTax));
+  lines.push("Net Sales: SAR " + money(c.netSales));
+  lines.push("Transactions: " + integer(rec.transactions));
+  lines.push("ADT: " + integer(c.adt));
+  lines.push("AT: SAR " + money(c.at));
+  lines.push("vs Target: " + pct(c.salesVsTargetPct));
+  lines.push("");
+  lines.push("*Mix %*");
+  lines.push("Food: " + pct(c.foodMix) + " (Tgt 15%)");
+  lines.push("Grab & Go: " + pct(c.grabGoMix) + " (Tgt 5%)");
+  lines.push("Merch: " + pct(c.merchandiseMix) + " (Tgt 1%)");
+  lines.push("Modifier: " + pct(c.modifierMix) + " (Tgt 2%)");
+  lines.push("Upsize: " + pct(c.upsizePct) + " (Tgt 25%)");
+  lines.push("");
+  lines.push("*Cost*");
+  lines.push("Wastage: " + pct(c.wastagePct) + " (Tgt 1%)");
+  lines.push("Employee: " + pct(c.employeePct) + " (Tgt 17%)");
+  lines.push("Inventory Var: " + pct(c.inventoryVariancePct));
+  lines.push("");
+  lines.push("*Controls*");
+  lines.push("Cancelled Bill: " + pct(c.cancelledBillPct));
+  lines.push("Cash Deposited Var: SAR " + money(c.cashVariance));
+  lines.push("");
+  lines.push("*DC App*");
+  lines.push("POS: SAR " + money(c.dcPosTotal));
+  lines.push("App: SAR " + money(c.dcAppTotal));
+  lines.push("Variance: SAR " + money(c.dcVariance));
+  lines.push("Sales %: " + pct(c.dcAppSalesPct));
+  lines.push("");
+  lines.push("*QA & Guest*");
+  lines.push("Positive Reviews: " + pct(c.positiveReviewPct));
+  lines.push("Negative Reviews: " + pct(c.negativeReviewPct));
+  if(c.breakdownHours){
+    lines.push("");
+    lines.push("*Breakdown*");
+    lines.push("Hours: " + round(c.breakdownHours, 2) + " h");
+    lines.push("Lost Sales: SAR " + money(c.estimatedLostSales));
+  }
+  return lines.join("\n");
+}
+
+/* Close the post-submit modal */
+function closeSubmittedModal(){
+  q("submittedModal").classList.remove("show");
+}
+
+/* Send the submitted entry to WhatsApp */
+function sendSubmittedToWhatsApp(){
+  var text = window.__lastSubmittedText || "";
+  if(!text.trim()){
+    showToast("Nothing to send.");
+    return;
+  }
+  /* Optional: put a fixed recipient number here (no +, no spaces), e.g. "966501234567" */
+  var fixedNumber = "";
+  var url = (fixedNumber ? "https://wa.me/" + fixedNumber : "https://wa.me/") + "?text=" + encodeURIComponent(text);
+  window.open(url, "_blank");
+}
+
+/* Copy the submitted entry text */
+function copySubmittedToClipboard(){
+  var text = window.__lastSubmittedText || "";
+  if(!text.trim()){
+    showToast("Nothing to copy.");
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      showToast("✓ Copied — paste into WhatsApp.", "success");
+    }).catch(function(){ fallbackCopy(text); });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
 function closeConfirmModal(){
   q("confirmModal").classList.remove("show");
 }
@@ -2780,8 +2886,35 @@ function closeConfirmModal(){
 
   if(saveState()){
     closeConfirmModal();
-    showToast("✓ Entry submitted successfully — form cleared. Date kept for the next entry.", "success");
 
+    /* Build the post-submit summary BEFORE we clear the form */
+    var c = calculate(rec);
+    var store = state.stores.find(function(x){ return x.id === rec.storeId; });
+    var storeLabel = rec.storeId + (store && store.area ? " · " + store.area : "");
+    var summaryHtml =
+      '<div class="summary-grid">'+
+        '<div class="row"><span>Store</span><strong>'+escapeHtml(storeLabel)+'</strong></div>'+
+        '<div class="row"><span>Date</span><strong>'+escapeHtml(dateLabel(rec.date))+'</strong></div>'+
+        '<div class="row"><span>Sales W/O Tax</span><strong>SAR '+escapeHtml(money(c.salesWithoutTax))+'</strong></div>'+
+        '<div class="row"><span>Net Sales</span><strong>SAR '+escapeHtml(money(c.netSales))+'</strong></div>'+
+        '<div class="row"><span>Transactions</span><strong>'+escapeHtml(integer(rec.transactions))+'</strong></div>'+
+        '<div class="row"><span>ADT</span><strong>'+escapeHtml(integer(c.adt))+'</strong></div>'+
+        '<div class="row"><span>AT</span><strong>SAR '+escapeHtml(money(c.at))+'</strong></div>'+
+        '<div class="row"><span>Sales vs Target</span><strong>'+escapeHtml(pct(c.salesVsTargetPct))+'</strong></div>'+
+      '</div>'+
+      '<div class="summary-section">'+
+        'Food '+escapeHtml(pct(c.foodMix))+' · G&amp;G '+escapeHtml(pct(c.grabGoMix))+' · Merch '+escapeHtml(pct(c.merchandiseMix))+
+        '<br>Wastage '+escapeHtml(pct(c.wastagePct))+' · Employee '+escapeHtml(pct(c.employeePct))+
+        (currentBreakdowns.length ? '<br>Breakdowns: '+currentBreakdowns.length+' event(s) · '+round(c.breakdownHours,2)+' hrs · Lost sales SAR '+escapeHtml(money(c.estimatedLostSales)) : '')+
+      '</div>';
+
+    /* Store the built message text so the WhatsApp button can send it */
+    window.__lastSubmittedText = buildSubmittedText(rec, c);
+
+    q("submittedSummary").innerHTML = summaryHtml;
+    q("submittedModal").classList.add("show");
+
+    /* Now clear the form */
     var keptDate = rec.date;
     q("f-date").value = keptDate;
     q("f-date-hero").value = keptDate;
@@ -2800,7 +2933,7 @@ function closeConfirmModal(){
     updateTopSubmitBtn();
     dirty = false;
     updateEntryStatus("saved");
-    window.scrollTo({ top:0, behavior:"smooth" });
+    showToast("✓ Entry submitted successfully.", "success");
   }
 }
 function getMissingFields(){
@@ -5026,6 +5159,18 @@ function bindEvents(){
   q("logoutBtn").addEventListener("click", logout);
     var copyCalcBtn = q("copyCalcBtn");
   if(copyCalcBtn) copyCalcBtn.addEventListener("click", copyCalcToClipboard);
+    var subClose  = q("submittedModalClose");
+  var subClose2 = q("submittedModalClose2");
+  var subCopy   = q("submittedCopyBtn");
+  var subWa     = q("submittedWhatsappBtn");
+  if(subClose)  subClose.addEventListener("click", closeSubmittedModal);
+  if(subClose2) subClose2.addEventListener("click", closeSubmittedModal);
+  if(subCopy)   subCopy.addEventListener("click", copySubmittedToClipboard);
+  if(subWa)     subWa.addEventListener("click", sendSubmittedToWhatsApp);
+  var subBackdrop = q("submittedModal");
+  if(subBackdrop) subBackdrop.addEventListener("click", function(e){
+    if(e.target === subBackdrop) closeSubmittedModal();
+  });
     /* ---- AM multi-select wiring ---- */
   var shell = q("amMsShell");
   var dd = q("amMsDropdown");
@@ -5202,6 +5347,7 @@ if(grossSalesEl){
   document.addEventListener("keydown", function(e){
     if(e.key === "Escape"){
       if(q("confirmModal").classList.contains("show")) closeConfirmModal();
+            if(q("submittedModal").classList.contains("show")) closeSubmittedModal();
       if(q("storeModal").classList.contains("show")) closeStoreModal();
       if(q("importModal").classList.contains("show")) closeImportModal();
       if(q("userModal").classList.contains("show")) closeUserModal();
