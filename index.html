@@ -26,12 +26,29 @@ button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 .app-shell{min-height:100vh}
 .topbar{position:sticky;top:0;z-index:20;color:#fff;background:linear-gradient(110deg,#082c37,#0f4958);box-shadow:0 6px 18px rgba(5,35,43,.2)}
-.topbar-main{max-width:1480px;margin:0 auto;min-height:74px;max-height:74px;padding:12px 22px;display:flex;align-items:center;gap:18px;flex-wrap:nowrap;overflow:visible}
+.topbar-main{
+  max-width:1480px;margin:0 auto;
+  min-height:74px;max-height:74px;
+  padding:10px 22px;
+  display:flex;align-items:center;gap:14px;
+  flex-wrap:nowrap;overflow:visible;
+}
+.store-control{
+  margin-left:auto;
+  display:flex;align-items:center;gap:10px;
+  flex-wrap:nowrap;
+  min-width:0;
+  overflow:visible;
+}
+.user-cluster{
+  display:flex;align-items:center;gap:8px;
+  flex-shrink:0;
+  margin-left:6px;
+}
 .brand{display:flex;align-items:center;gap:12px;min-width:285px}
 .brand-mark{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#193941;background:var(--gold);font-weight:900;letter-spacing:-.5px}
 .brand h1{margin:0;font-size:18px;letter-spacing:.2px}
 .brand p{margin:3px 0 0;opacity:.75;font-size:12px}
-.store-control{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .store-control label{font-size:12px;opacity:.8}
 .store-control select{min-width:210px;border:1px solid rgba(255,255,255,.25);color:#fff;background:rgba(255,255,255,.1);border-radius:10px;padding:9px 34px 9px 11px}
 .store-control select option{color:var(--ink);background:#fff}
@@ -722,26 +739,37 @@ details.group>summary::-webkit-details-marker{display:none}
   align-items:center;
   gap:8px;
 }
+.am-multiselect{
+  flex-shrink:0;
+}
 .am-multiselect label{
-  font-size:12px;
-  opacity:.8;
+  font-size:11px;
+  font-weight:600;
+  color:rgba(255,255,255,.75);
   white-space:nowrap;
+  letter-spacing:.2px;
+  flex-shrink:0;
 }
 .am-ms-shell{
   display:flex;
   align-items:center;
-  gap:6px;
-  min-width:240px;
-  max-width:520px;
-  min-height:38px;
-  max-height:38px;
-  padding:5px 10px;
+  gap:5px;
+  min-width:170px;
+  max-width:260px;
+  min-height:34px;
+  max-height:34px;
+  padding:4px 9px;
   border:1px solid rgba(255,255,255,.25);
-  background:rgba(255,255,255,.1);
-  border-radius:10px;
+  background:rgba(255,255,255,.08);
+  border-radius:9px;
   flex-wrap:nowrap;
   overflow:hidden;
   cursor:text;
+  transition:border-color .15s, background .15s;
+}
+.am-ms-shell:hover{
+  background:rgba(255,255,255,.14);
+  border-color:rgba(255,255,255,.4);
 }
 .am-ms-shell.open{
   border-color:var(--gold);
@@ -751,23 +779,27 @@ details.group>summary::-webkit-details-marker{display:none}
   display:flex;
   gap:4px;
   flex-wrap:nowrap;
-  overflow-x:auto;
-  overflow-y:hidden;
+  overflow:hidden;
   max-width:100%;
-  scrollbar-width:none;
+  align-items:center;
 }
-.am-ms-tags::-webkit-scrollbar{ display:none; }
 .am-ms-tag{
   display:inline-flex;
   align-items:center;
-  gap:4px;
-  padding:2px 8px;
+  gap:3px;
+  padding:2px 7px;
   border-radius:999px;
   background:var(--gold);
   color:#193941;
-  font-size:11px;
+  font-size:10.5px;
   font-weight:800;
   white-space:nowrap;
+  flex-shrink:0;
+}
+.am-ms-tag.more{
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  font-weight:900;
 }
 .am-ms-tag .x{
   cursor:pointer;
@@ -776,15 +808,17 @@ details.group>summary::-webkit-details-marker{display:none}
 }
 .am-ms-tag .x:hover{ opacity:1; }
 .am-ms-search{
-  flex:1;
-  min-width:120px;
+  flex:1 1 40px;
+  min-width:40px;
   border:0;
   background:transparent;
   color:#fff;
   outline:none;
-  font-size:12.5px;
-  padding:3px 2px;
+  font-size:12px;
+  padding:2px;
+  text-overflow:ellipsis;
 }
+.am-ms-search::placeholder{ color:rgba(255,255,255,.5); }
 .am-ms-search::placeholder{ color:rgba(255,255,255,.55); }
 .am-ms-dropdown{
   position:absolute;
@@ -930,12 +964,14 @@ details.group>summary::-webkit-details-marker{display:none}
         <!-- Hidden fallback so legacy code that reads #globalStore keeps working -->
         <select id="globalStore" style="display:none"></select>
 
-        <span class="user-pill" id="userPill">
-          <span id="userName">—</span>
-          <span class="role-tag" id="userRole">—</span>
-        </span>
-        <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
-        <span class="local-pill"><span class="local-dot"></span>Saved on this device</span>
+        <div class="user-cluster">
+          <span class="user-pill" id="userPill">
+            <span id="userName">—</span>
+            <span class="role-tag" id="userRole">—</span>
+          </span>
+          <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
+          <span class="local-pill"><span class="local-dot"></span>Saved</span>
+        </div>
       </div>
     </div>
     <div class="nav-wrap">
@@ -4664,14 +4700,21 @@ function renderAmMultiSelect(){
   }
   wrap.style.display = "";
 
-  /* Render tag chips */
+  /* Render tag chips (max 2 visible, then "+N more") */
+  var MAX_CHIPS = 2;
+  var chips = topFilter.areaManagers;
+  var visible = chips.slice(0, MAX_CHIPS);
+  var extra = chips.length - visible.length;
   var tagsHtml = "";
-  topFilter.areaManagers.forEach(function(a){
+  visible.forEach(function(a){
     tagsHtml += '<span class="am-ms-tag" data-am="'+escapeAttr(a)+'">'+
                   escapeHtml(a)+
                   '<span class="x" data-am-remove="'+escapeAttr(a)+'">×</span>'+
                 '</span>';
   });
+  if(extra > 0){
+    tagsHtml += '<span class="am-ms-tag more" title="'+escapeAttr(chips.slice(MAX_CHIPS).join(", "))+'">+'+extra+' more</span>';
+  }
   host.innerHTML = tagsHtml;
 
   /* Refresh dropdown list */
@@ -4785,14 +4828,21 @@ function renderStoreMultiSelect(){
   /* Also mirror into legacy single-store field for other code paths */
   topFilter.storeId = (topFilter.storeIds.length === 1) ? topFilter.storeIds[0] : "";
 
-  /* Render tag chips */
+  /* Render tag chips (max 2 visible, then "+N more") */
+  var MAX_CHIPS = 2;
+  var chips = topFilter.storeIds;
+  var visible = chips.slice(0, MAX_CHIPS);
+  var extra = chips.length - visible.length;
   var tagsHtml = "";
-  topFilter.storeIds.forEach(function(id){
+  visible.forEach(function(id){
     tagsHtml += '<span class="am-ms-tag" data-store="'+escapeAttr(id)+'">'+
                   escapeHtml(id)+
                   '<span class="x" data-store-remove="'+escapeAttr(id)+'">×</span>'+
                 '</span>';
   });
+  if(extra > 0){
+    tagsHtml += '<span class="am-ms-tag more" title="'+escapeAttr(chips.slice(MAX_CHIPS).join(", "))+'">+'+extra+' more</span>';
+  }
   host.innerHTML = tagsHtml;
 
   /* Refresh dropdown list */
