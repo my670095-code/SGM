@@ -88,15 +88,16 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   /* ============ DAILY ENTRY (simplified) ============ */
 .entry-hero{
   display:flex;gap:16px;align-items:center;justify-content:space-between;
-  flex-wrap:nowrap;                 /* ← keeps it on ONE line */
-  padding:14px 20px;margin-bottom:14px;
+  flex-wrap:wrap;
+  padding:12px 18px;margin-bottom:14px;
   background:linear-gradient(110deg,#082c37,#0f4958);color:#fff;
   border-radius:var(--radius);box-shadow:0 10px 28px rgba(11,51,64,.18);
 }
 .entry-hero .hero-right{
-  display:flex;gap:10px;align-items:center;
-  flex-wrap:nowrap;                 /* ← also keeps items in the right group on one line */
+  display:flex;gap:8px;align-items:center;
+  flex-wrap:nowrap;
   flex-shrink:0;
+  margin-left:auto;
 }
 .entry-hero .hero-left{display:flex;align-items:center;gap:14px;min-width:0}
 .entry-hero .hero-mark{
@@ -113,6 +114,11 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 .entry-date-input{
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;
   border-radius:10px;padding:9px 12px;font-weight:800;font-size:13px;outline:none;
+  min-width:150px;
+}
+.entry-date-input:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(213,156,58,.25);
 }
 .entry-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.8;cursor:pointer}
 
@@ -120,8 +126,8 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;
   font-weight:800;font-size:12px;white-space:nowrap;
 }
-  .entry-hero .hero-progress{
-  display:flex;flex-direction:column;gap:4px;min-width:120px;
+.entry-hero .hero-progress{
+  display:none;   /* hidden — progress shown inside Submit button */
 }
 .entry-hero .hero-progress strong{
   font-size:11px;font-weight:900;
@@ -135,6 +141,21 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 }
 .entry-hero .hero-progress .progress-fill.partial{
   background:linear-gradient(90deg,#d59c3a,#e8b769);
+}
+  .entry-icon-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:10px;padding:9px 12px;
+  font-weight:800;font-size:12px;white-space:nowrap;
+  cursor:pointer;transition:background .15s,border-color .15s;
+}
+.entry-icon-btn.danger{
+  border:1px solid rgba(255,255,255,.28);
+  background:rgba(191,74,73,.22);
+  color:#ffd4d3;
+}
+.entry-icon-btn.danger:hover{
+  background:rgba(191,74,73,.4);
+  border-color:rgba(255,180,180,.5);
 }
 .entry-status .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
 .entry-status.new{background:rgba(213,156,58,.25);color:#ffe1a8;border:1px solid rgba(213,156,58,.5)}
@@ -239,10 +260,11 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 
 /* Narrower submit button in the hero */
 .entry-submit-btn{
-  display:inline-flex;align-items:center;gap:8px;
+  display:inline-flex;align-items:center;gap:10px;
   border:1px solid #c58c2c;background:var(--gold);color:#2d2b22;
-  border-radius:10px;padding:9px 16px;font-weight:900;font-size:13px;
+  border-radius:10px;padding:10px 18px;font-weight:900;font-size:13px;
   box-shadow:0 4px 12px rgba(213,156,58,.35);cursor:pointer;
+  min-width:130px;justify-content:center;
 }
 .entry-submit-btn:hover{background:#e0a948;transform:translateY(-1px)}
 .entry-submit-btn .entry-submit-pill{
@@ -1022,36 +1044,31 @@ details.group>summary::-webkit-details-marker{display:none}
   <main>
         <!-- ============ DAILY ENTRY ============ -->
     <section id="view-daily" class="view active">
-      <div class="entry-hero" id="entryHero">
-        <div class="hero-left">
-          <div class="hero-mark">SGM</div>
-          <div class="hero-text">
-            <h3>Daily Operations Entry</h3>
-            <p>Fill in what you have — blanks are treated as zero.</p>
-          </div>
-        </div>
-        <div class="hero-right">
-          <div class="entry-store-chip">
-            <small>Store</small>
-            <span id="entryStoreLabel">—</span>
-          </div>
-          <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">           <input type="hidden" id="f-date">
-          <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
-          <span class="entry-status new" id="entryStatus">
-            <span class="dot"></span><span id="entryStatusText">New entry</span>
-          </span>
-          <div class="hero-progress" title="Entry completeness">
-            <strong id="progText">Filled 0 / 0</strong>
-            <div class="progress-track">
-              <div class="progress-fill partial" id="progFill" style="width:0%"></div>
-            </div>
-          </div>
-          <button class="entry-submit-btn" id="submitDayBtn" type="button">
-            ✓ Submit
-            <span class="entry-submit-pill" id="topSubmitPill2">0 / 0</span>
-          </button>
-        </div>
-      </div>
+ <div class="entry-hero" id="entryHero">
+  <div class="hero-left">
+    <div class="hero-mark">SGM</div>
+    <div class="hero-text">
+      <h3>Daily Operations Entry</h3>
+      <p>Fill in what you have — blanks are treated as zero.</p>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="entry-store-chip">
+      <small>Store</small>
+      <span id="entryStoreLabel">—</span>
+    </div>
+    <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
+    <input type="hidden" id="f-date">
+    <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
+    <span class="entry-status new" id="entryStatus">
+      <span class="dot"></span><span id="entryStatusText">New entry</span>
+    </span>
+    <button class="entry-submit-btn" id="submitDayBtn" type="button">
+      ✓ Submit
+      <span class="entry-submit-pill" id="topSubmitPill2">0 / 0</span>
+    </button>
+  </div>
+</div>
 
            <div class="entry-layout">
         <div class="entry-main">
