@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 
 #weekCompareMode,#monthCompareMode{min-width:180px}
@@ -793,6 +794,41 @@ details.group>summary::-webkit-details-marker{display:none}
   width: 110px;
   text-align: center;
 }
+  /* ===== KPI DASHBOARD CHARTS ===== */
+.chart-panel{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:18px;
+}
+.chart-panel.hidden{ display:none; }
+.chart-card{
+  background:#fff;
+  border:1px solid #e0e8e6;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:14px 16px;
+}
+.chart-card h4{
+  margin:0 0 12px;
+  color:var(--navy);
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.2px;
+  padding-bottom:8px;
+  border-bottom:1px solid #e5ecea;
+}
+.chart-card-wide{ grid-column:1 / -1; }
+.chart-wrap{
+  position:relative;
+  width:100%;
+  height:260px;
+}
+.chart-card-wide .chart-wrap{ height:280px; }
+@media (max-width:900px){
+  .chart-panel{ grid-template-columns:1fr; }
+  .chart-wrap{ height:220px; }
+}
   /* ===== TOP-BAR AREA MANAGER MULTI-SELECT ===== */
 .am-multiselect{
   position:relative;
@@ -1234,11 +1270,27 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="field search-field"><label for="dashSearch">Search KPIs</label><input class="control-input" type="text" id="dashSearch" placeholder="Filter by category or KPI name…"></div>
           <button class="btn small" id="dashClearBtn" type="button">Clear search</button>
         </div>
-        <div class="report-count">
+                <div class="report-count">
           <span>Showing <strong id="dashCount">0</strong> KPIs</span>
           <span id="dashScope"></span>
+          <button class="btn small" id="dashToggleCharts" type="button" style="margin-left:auto">Hide Charts</button>
         </div>
       </div>
+      <div class="chart-panel" id="dashCharts">
+        <div class="chart-card">
+          <h4>Actual vs Target</h4>
+          <div class="chart-wrap"><canvas id="chartActualTarget"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Status Breakdown</h4>
+          <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+        </div>
+        <div class="chart-card chart-card-wide">
+          <h4>Sales Mix % — Actual vs Target</h4>
+          <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
+        </div>
+      </div>
+
       <div class="table-card"><table id="dashboardTable"></table></div>
     </section>
 
@@ -3317,6 +3369,190 @@ function renderKpis(host, agg){
   });
   host.innerHTML = html;
 }
+  /* ============================================================
+   KPI DASHBOARD CHARTS
+   ============================================================ */
+var dashCharts = {
+  actualTarget: null,
+  status: null,
+  mix: null
+};
+
+function destroyDashCharts(){
+  Object.keys(dashCharts).forEach(function(k){
+    if(dashCharts[k]){
+      try{ dashCharts[k].destroy(); }catch(e){}
+      dashCharts[k] = null;
+    }
+  });
+}
+
+function renderDashboardCharts(agg, visibleRows){
+  if(typeof window.Chart === "undefined"){
+    var panel = q("dashCharts");
+    if(panel) panel.classList.add("hidden");
+    return;
+  }
+  var panel = q("dashCharts");
+  if(panel) panel.classList.remove("hidden");
+
+  destroyDashCharts();
+
+  if(!agg._records.length){
+    return;
+  }
+
+  var c = agg._calc;
+
+  /* ---------- Chart 1: Actual vs Target (top 8 visible KPIs that have targets) ---------- */
+  var atRows = visibleRows.filter(function(k){
+    var t = k.target;
+    if(k.key === "salesWithoutTax") t = n(agg.targetSales);
+    else if(k.key === "adt") t = n(agg.targetAdt);
+    else if(k.key === "at") t = n(agg.targetAt);
+    return t != null && t !== 0;
+  }).slice(0, 8);
+
+  var atLabels = [], atActual = [], atTarget = [];
+  atRows.forEach(function(k){
+    var v = c[k.key];
+    var t = k.target;
+    if(k.key === "salesWithoutTax") t = n(agg.targetSales);
+    else if(k.key === "adt") t = n(agg.targetAdt);
+    else if(k.key === "at") t = n(agg.targetAt);
+    atLabels.push(k.name);
+    /* percentages all stay as-is; money & rating & number stay as-is for visual compare */
+    atActual.push(round(v, 2));
+    atTarget.push(round(t, 2));
+  });
+
+  if(atLabels.length){
+    var el1 = q("chartActualTarget");
+    if(el1){
+      dashCharts.actualTarget = new Chart(el1, {
+        type: "bar",
+        data: {
+          labels: atLabels,
+          datasets: [
+            { label: "Actual", data: atActual, backgroundColor: "#0b3340", borderRadius: 4 },
+            { label: "Target", data: atTarget, backgroundColor: "#d59c3a", borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
+            tooltip: { mode:"index", intersect:false }
+          },
+          scales: {
+            x: { ticks:{ font:{ size:10 }, maxRotation:40, minRotation:0 } },
+            y: { beginAtZero:true, ticks:{ font:{ size:10 } } }
+          }
+        }
+      });
+    }
+  }
+
+  /* ---------- Chart 2: Status breakdown (donut) ---------- */
+  var statusCounts = { ACHIEVED:0, WATCH:0, ACTION:0 };
+  visibleRows.forEach(function(k){
+    var v = c[k.key];
+    var t = k.target;
+    if(k.key === "salesWithoutTax") t = n(agg.targetSales);
+    else if(k.key === "adt") t = n(agg.targetAdt);
+    else if(k.key === "at") t = n(agg.targetAt);
+    if(t == null || t === 0) return;
+    var lbl = statusLabel(v, t, !!k.lower);
+    if(statusCounts[lbl] != null) statusCounts[lbl]++;
+  });
+
+  var el2 = q("chartStatus");
+  if(el2){
+    var total = statusCounts.ACHIEVED + statusCounts.WATCH + statusCounts.ACTION;
+    var empty = total === 0;
+    dashCharts.status = new Chart(el2, {
+      type: "doughnut",
+      data: {
+        labels: empty ? ["No targets"] : ["Achieved","Watch","Action"],
+        datasets: [{
+          data: empty ? [1] : [statusCounts.ACHIEVED, statusCounts.WATCH, statusCounts.ACTION],
+          backgroundColor: empty ? ["#d7e1df"] : ["#238264","#d59c3a","#bf4a49"],
+          borderWidth: 2,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "60%",
+        plugins: {
+          legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                if(empty) return "No targets set";
+                var v = ctx.parsed;
+                var p = total ? Math.round((v/total)*100) : 0;
+                return ctx.label + ": " + v + " (" + p + "%)";
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /* ---------- Chart 3: Sales Mix % — Actual vs Target ---------- */
+  var mixKeys = [
+    { name:"Food Mix %",           key:"foodMix",        target:TARGETS.foodMix },
+    { name:"Grab & Go Mix %",      key:"grabGoMix",      target:TARGETS.grabGoMix },
+    { name:"Merchandise Mix %",    key:"merchandiseMix", target:TARGETS.merchandiseMix },
+    { name:"Modifier %",           key:"modifierMix",    target:TARGETS.modifierMix },
+    { name:"Upsize %",             key:"upsizePct",      target:TARGETS.upsize },
+    { name:"Water Attachment %",   key:"waterAttachment",target:TARGETS.waterAttachment }
+  ];
+
+  var mixLabels = [], mixActual = [], mixTarget = [];
+  mixKeys.forEach(function(m){
+    mixLabels.push(m.name);
+    mixActual.push(round(c[m.key], 1));
+    mixTarget.push(m.target);
+  });
+
+  var el3 = q("chartMix");
+  if(el3){
+    dashCharts.mix = new Chart(el3, {
+      type: "bar",
+      data: {
+        labels: mixLabels,
+        datasets: [
+          { label: "Actual %", data: mixActual, backgroundColor: "#124a59", borderRadius: 4 },
+          { label: "Target %", data: mixTarget, backgroundColor: "#d59c3a", borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                return ctx.dataset.label + ": " + ctx.parsed.y.toFixed(1) + "%";
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks:{ font:{ size:10 }, maxRotation:30, minRotation:0 } },
+          y: { beginAtZero:true, ticks:{ font:{ size:10 }, callback:function(v){ return v + "%"; } } }
+        }
+      }
+    });
+  }
+}
+  
 
 /* ---------- KPI Dashboard ---------- */
 function renderDashboard(){
@@ -3379,6 +3615,10 @@ var thead = "<thead><tr>"+
     table.innerHTML = thead + '<tbody><tr><td colspan="6" class="empty">No saved daily entries for '+escapeHtml(mv)+'.</td></tr></tbody>';
     return;
   }
+    /* Draw the charts */
+  renderDashboardCharts(agg, rows);
+
+  var spans = {}; rows.forEach(function(r){ spans[r.cat] = (spans[r.cat]||0)+1; });
 
   var spans = {}; rows.forEach(function(r){ spans[r.cat] = (spans[r.cat]||0)+1; });
   var prevCat = null;
@@ -5657,6 +5897,15 @@ if(grossSalesEl){
 
 
   q("dashMonth").addEventListener("change", renderDashboard);
+    var toggleChartsBtn = q("dashToggleCharts");
+  if(toggleChartsBtn){
+    toggleChartsBtn.addEventListener("click", function(){
+      var panel = q("dashCharts");
+      if(!panel) return;
+      var hidden = panel.classList.toggle("hidden");
+      toggleChartsBtn.textContent = hidden ? "Show Charts" : "Hide Charts";
+    });
+  }
   q("dashKpi").addEventListener("change", renderDashboard);
 
 
