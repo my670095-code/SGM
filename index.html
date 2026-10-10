@@ -2816,7 +2816,6 @@ function submitDailyRecord(){
   if(badBd){ showToast("A breakdown row was started — finish it or remove it."); return; }
 
   var rec = getFormRecord();
-  ...
   var c = calculate(rec);
   var store = state.stores.find(function(x){return x.id === rec.storeId;});
   var storeLabel = rec.storeId + (store && store.area ? " · "+store.area : "");
