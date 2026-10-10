@@ -757,43 +757,70 @@ details.group>summary::-webkit-details-marker{display:none}
   .view{display:none !important}
   .view.active{display:block !important}
 }
-
-/* ===== KPI DASHBOARD COLUMN FIX ===== */
-#dashboardTable { table-layout: fixed; width: 100%; }
+  /* ===== KPI DASHBOARD COLUMN FIX ===== */
+#dashboardTable {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
 
 #dashboardTable th,
-#dashboardTable td { padding: 10px 12px; }
+#dashboardTable td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
 
-/* Category column — narrow, dark */
+/* Category column — narrow, dark, top-aligned */
 #dashboardTable th:first-child,
 #dashboardTable td:first-child {
   width: 120px;
   text-align: center;
+  vertical-align: top;              /* ← NEW: stops floating in the middle */
+  font-weight: 800;
+  color: var(--navy);
+  background-color: #f4f8f7;        /* ← NEW: light grey so it looks like a label */
+  border-right: 2px solid #e0e8e6;  /* ← NEW: separator line */
 }
 
-/* KPI name column — wide, left aligned */
+/* KPI name column — takes the middle space */
 #dashboardTable th.dash-kpi-name,
 #dashboardTable td.dash-kpi-name {
   width: auto;
   text-align: left;
   white-space: normal;
+  word-break: break-word;           /* ← NEW: long names wrap neatly */
 }
 
-/* Actual / Target columns — fixed width, right aligned */
+/* Actual / Target / Variance columns — fixed width, right aligned */
 #dashboardTable th.dash-col-actual,
 #dashboardTable td.dash-col-actual,
 #dashboardTable th.dash-col-target,
 #dashboardTable td.dash-col-target {
-  width: 150px;
+  width: 120px;                     /* ← CHANGED from 150 → 120 for a tighter look */
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Status column — fixed, centered */
 #dashboardTable th.dash-col-status,
 #dashboardTable td.dash-col-status {
-  width: 110px;
+  width: 100px;
   text-align: center;
 }
+
+/* Status badge styling */
+.dash-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.dash-status.good { background: #e9f6f1; color: #238264; }
+.dash-status.warn { background: #fff4dc; color: #ac7216; }
+.dash-status.bad  { background: #fff0ef; color: #bf4a49; }
+
   /* ===== KPI DASHBOARD CHARTS ===== */
 .chart-panel{
   display:grid;
@@ -3711,7 +3738,7 @@ if(dynamicTarget != null && typeof v === "number"){
 
 body += "<tr>";
 if(k.cat !== prevCat){
-  body += '<td rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
+  body += '<td rowspan="'+spans[k.cat]+'" style="vertical-align: top;">'+escapeHtml(k.cat)+'</td>';
   prevCat = k.cat;
 }
 body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
