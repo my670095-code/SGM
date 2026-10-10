@@ -1127,7 +1127,7 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="field" id="weekWrap2" style="display:none;min-width:150px"><label for="weekDate2">Week 2</label><input class="control-input" type="date" id="weekDate2"></div>
           <div class="field" id="weekWrap3" style="display:none;min-width:150px"><label for="weekDate3">Week 3</label><input class="control-input" type="date" id="weekDate3"></div>
           <div class="field" id="weekWrap4" style="display:none;min-width:150px"><label for="weekDate4">Week 4</label><input class="control-input" type="date" id="weekDate4"></div>
-          <div class="range-chip" id="weekRange">—</div>
+          
           <div class="field search-field"><label for="weeklySearch">Search</label><input class="control-input" type="text" id="weeklySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="weeklyClearBtn" type="button">Clear search</button>
         </div>
@@ -1155,7 +1155,7 @@ details.group>summary::-webkit-details-marker{display:none}
           </div>
           <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="month" id="monthDate2"></div>
           <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="month" id="monthDate3"></div>
-          <div class="range-chip" id="monthRangeChip">—</div>
+          
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
         </div>
@@ -3454,7 +3454,7 @@ function renderWeekly(){
 
   var periods = buildWeeklyPeriods();
   var range = periods.map(function(p){ return dateLabel(p.start)+" — "+dateLabel(p.end); }).join("  |  ");
-  q("weekRange").textContent = "Scope: " + scopeLabel();
+  
   
 
 
@@ -3480,7 +3480,7 @@ function renderMonthly(){
 
   var periods = buildMonthlyPeriods();
   var range = periods.map(function(p){ return p.shortLabel; }).join("  |  ");
-  q("monthRangeChip").textContent = "Scope: " + scopeLabel();
+  
   var total = periods.reduce(function(a,p){ return a + p.agg._records.length; }, 0);
   
 
