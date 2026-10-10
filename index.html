@@ -3559,6 +3559,127 @@ function renderDashboardCharts(agg, visibleRows){
       }
     });
   }
+    });
+  }
+
+  /* ---------- Chart 4: Store Comparison (bar) — focus KPI across stores ---------- */
+  var focusIdx = q("dashKpi") ? q("dashKpi").value : "";
+  var focusKpi = (focusIdx !== "" && KPI_DEFS[focusIdx]) ? KPI_DEFS[focusIdx] : KPI_DEFS[0];
+  var storeIds = resolveStoreScope();
+  var perStore = [];
+  storeIds.forEach(function(sid){
+    var recs = state.records.filter(function(r){
+      return normalizeStoreId(r.storeId) === normalizeStoreId(sid) && r.date >= agg._periodStartLabel && r.date <= isoDate(new Date(agg._periodStartLabel + "-01"));
+    });
+    /* Simpler: filter by the same period the dashboard is showing */
+    recs = recordsBetweenStores([sid], agg._dashStart, agg._dashEnd);
+    if(!recs.length) return;
+    var sa = aggregate(recs);
+    var v = sa._calc[focusKpi.key];
+    perStore.push({ store: sid, value: round(v, 2) });
+  });
+  perStore.sort(function(a,b){ return b.value - a.value; });
+  var topStores = perStore.slice(0, 12);
+
+  var el4 = q("chartStores");
+  if(el4 && topStores.length){
+    dashCharts.stores = new Chart(el4, {
+      type: "bar",
+      data: {
+        labels: topStores.map(function(x){ return x.store; }),
+        datasets: [{
+          label: focusKpi.name,
+          data: topStores.map(function(x){ return x.value; }),
+          backgroundColor: "#124a59",
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display:false },
+          title: { display:false }
+        },
+        scales: {
+          x: { ticks:{ font:{ size:10 }, maxRotation:60, minRotation:0 } },
+          y: { beginAtZero:true, ticks:{ font:{ size:10 } } }
+        }
+      }
+    });
+  }
+}
+
+/* ---------- Chart 5: Monthly Trend (line) ---------- */
+function renderMonthlyTrendChart(focusKpi){
+  var el5 = q("chartTrend");
+  if(!el5) return;
+
+  var mv = q("dashMonth") ? q("dashMonth").value : currentMonthIso();
+  var storeIds = resolveStoreScope();
+  var labels = [], actual = [], target = [];
+
+  /* Build last 6 months ending at the selected month */
+  for(var i = 5; i >= 0; i--){
+    var m = shiftMonth(mv, -i);
+    var start = m + "-01";
+    var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
+    var end = isoDate(d);
+    var agg = aggregate(recordsBetweenStores(storeIds, start, end));
+    labels.push(m);
+    actual.push(round(agg._calc[focusKpi.key], 2));
+
+    /* Get the target for this month */
+    var t = focusKpi.target;
+    if(focusKpi.key === "salesWithoutTax") t = n(agg.targetSales);
+    else if(focusKpi.key === "adt") t = n(agg.targetAdt);
+    else if(focusKpi.key === "at") t = n(agg.targetAt);
+    target.push(t != null && t !== 0 ? round(t, 2) : null);
+  }
+
+  if(dashCharts.trend){ try{ dashCharts.trend.destroy(); }catch(e){} }
+  dashCharts.trend = new Chart(el5, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Actual",
+          data: actual,
+          borderColor: "#0b3340",
+          backgroundColor: "rgba(11,51,64,.1)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#0b3340"
+        },
+        {
+          label: "Target",
+          data: target,
+          borderColor: "#d59c3a",
+          backgroundColor: "rgba(213,156,58,.15)",
+          borderDash: [6,4],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#d59c3a",
+          spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
+        tooltip: { mode:"index", intersect:false }
+      },
+      scales: {
+        x: { ticks:{ font:{ size:10 } } },
+        y: { beginAtZero:true, ticks:{ font:{ size:10 } } }
+      }
+    }
+  });
 }
   
 
