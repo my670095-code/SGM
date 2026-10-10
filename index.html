@@ -3385,28 +3385,42 @@ var thead = "<thead><tr>"+
   var body = "<tbody>";
   rows.forEach(function(k){
     var v = agg._calc[k.key];
-    var cls = k.target!=null ? statusClass(v, k.target, !!k.lower) : "";
-    var lbl = k.target!=null ? statusLabel(v, k.target, !!k.lower) : "—";
-    
-    /* Calculate variance from target */
-    var varianceText = "—";
-    if(k.target != null && typeof v === "number"){
-      var diff = v - k.target;
-      var sign = diff >= 0 ? "+" : "";
-      if(k.fmt === "pct") varianceText = sign + round(diff, 1) + "%";
-      else if(k.fmt === "money") varianceText = sign + "SAR " + money(Math.abs(diff));
-      else if(k.fmt === "rating") varianceText = sign + round(diff, 2);
-      else varianceText = sign + integer(diff);
-    }
-    
-    body += "<tr>";
-    if(k.cat !== prevCat){
-      body += '<td rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
-      prevCat = k.cat;
-    }
- body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
+
+/* ---- Resolve the target dynamically ---- */
+var dynamicTarget = k.target;
+if(k.key === "salesWithoutTax") dynamicTarget = n(agg.targetSales);
+else if(k.key === "adt"){
+  /* ADT target is per-day, so compare against the average daily target */
+  dynamicTarget = agg._days ? safeDiv(n(agg.targetAdt), 1) : 0;
+  dynamicTarget = n(agg.targetAdt);   /* agg.targetAdt is already averaged in aggregate() */
+}
+else if(k.key === "at") dynamicTarget = n(agg.targetAt);
+
+/* Only show target if it is a meaningful number */
+if(dynamicTarget === 0 || dynamicTarget === null || isNaN(dynamicTarget)) dynamicTarget = null;
+
+var cls = dynamicTarget!=null ? statusClass(v, dynamicTarget, !!k.lower) : "";
+var lbl = dynamicTarget!=null ? statusLabel(v, dynamicTarget, !!k.lower) : "—";
+
+/* Calculate variance from target */
+var varianceText = "—";
+if(dynamicTarget != null && typeof v === "number"){
+  var diff = v - dynamicTarget;
+  var sign = diff >= 0 ? "+" : "";
+  if(k.fmt === "pct") varianceText = sign + round(diff, 1) + "%";
+  else if(k.fmt === "money") varianceText = sign + "SAR " + money(Math.abs(diff));
+  else if(k.fmt === "rating") varianceText = sign + round(diff, 2);
+  else varianceText = sign + integer(diff);
+}
+
+body += "<tr>";
+if(k.cat !== prevCat){
+  body += '<td rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
+  prevCat = k.cat;
+}
+body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
   '<td class="dash-col-actual num '+cls+'">'+escapeHtml(fmtVal(v, k.fmt))+'</td>'+
-  '<td class="dash-col-target num">'+(k.target!=null?escapeHtml(fmtVal(k.target, k.fmt)):"—")+'</td>'+
+  '<td class="dash-col-target num">'+(dynamicTarget!=null?escapeHtml(fmtVal(dynamicTarget, k.fmt)):"—")+'</td>'+
   '<td class="dash-col-actual num variance">'+escapeHtml(varianceText)+'</td>'+
   '<td class="dash-col-status"><span class="dash-status '+cls+'">'+escapeHtml(lbl)+'</span></td>'+
 '</tr>';
@@ -4267,28 +4281,36 @@ function exportDashboardPdf(){
   var prevCat = null;
   var body = [];
   KPI_DEFS.forEach(function(k){
-    var v = agg._calc[k.key];
-    var cls = k.target!=null ? statusClass(v, k.target, !!k.lower) : "";
-    var lbl = k.target!=null ? statusLabel(v, k.target, !!k.lower) : "—";
-    var variance = "—";
-    if(k.target != null && typeof v === "number"){
-      var diff = v - k.target;
-      var sign = diff >= 0 ? "+" : "";
-      if(k.fmt === "pct") variance = sign + round(diff, 1) + "%";
-      else if(k.fmt === "money") variance = sign + "SAR " + money(Math.abs(diff));
-      else if(k.fmt === "rating") variance = sign + round(diff, 2);
-      else variance = sign + integer(diff);
-    }
-    var row = [];
-    if(k.cat !== prevCat){ row.push(k.cat); prevCat = k.cat; }
-    else { row.push(""); }
-    row.push(k.name);
-    row.push(fmtVal(v, k.fmt));
-    row.push(k.target!=null ? fmtVal(k.target, k.fmt) : "—");
-    row.push(variance);
-    row.push(lbl);
-    body.push(row);
-  });
+  var v = agg._calc[k.key];
+
+  /* Dynamic target resolution (same rules as the on-screen table) */
+  var dynamicTarget = k.target;
+  if(k.key === "salesWithoutTax") dynamicTarget = n(agg.targetSales);
+  else if(k.key === "adt") dynamicTarget = n(agg.targetAdt);
+  else if(k.key === "at") dynamicTarget = n(agg.targetAt);
+  if(dynamicTarget === 0 || dynamicTarget === null || isNaN(dynamicTarget)) dynamicTarget = null;
+
+  var cls = dynamicTarget!=null ? statusClass(v, dynamicTarget, !!k.lower) : "";
+  var lbl = dynamicTarget!=null ? statusLabel(v, dynamicTarget, !!k.lower) : "—";
+  var variance = "—";
+  if(dynamicTarget != null && typeof v === "number"){
+    var diff = v - dynamicTarget;
+    var sign = diff >= 0 ? "+" : "";
+    if(k.fmt === "pct") variance = sign + round(diff, 1) + "%";
+    else if(k.fmt === "money") variance = sign + "SAR " + money(Math.abs(diff));
+    else if(k.fmt === "rating") variance = sign + round(diff, 2);
+    else variance = sign + integer(diff);
+  }
+  var row = [];
+  if(k.cat !== prevCat){ row.push(k.cat); prevCat = k.cat; }
+  else { row.push(""); }
+  row.push(k.name);
+  row.push(fmtVal(v, k.fmt));
+  row.push(dynamicTarget!=null ? fmtVal(dynamicTarget, k.fmt) : "—");
+  row.push(variance);
+  row.push(lbl);
+  body.push(row);
+});
 
   doc.autoTable({
     startY: 22,
