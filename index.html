@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#0b3340">
 <title>SGM Operations Control</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <style>
 
 #weekCompareMode,#monthCompareMode{min-width:180px}
@@ -1081,10 +1083,10 @@ details.group>summary::-webkit-details-marker{display:none}
           <h2>Daily Report — All Transactions</h2>
           <p id="txScopeNote">Every saved daily entry for the stores you can access, in one wide report.</p>
         </div>
-        <div class="toolbar">
-          <button class="btn small" id="txExportBtn" type="button">Export CSV</button>
-          <button class="btn small" onclick="window.print()">Print / PDF</button>
-        </div>
+    <div class="toolbar">
+  <button class="btn small" id="txExportBtn" type="button">Export CSV</button>
+  <button class="btn small" id="txPdfBtn" type="button">Export PDF</button>
+</div>
       </div>
 
       <div class="tx-controls">
@@ -1108,10 +1110,10 @@ details.group>summary::-webkit-details-marker{display:none}
     <section id="view-weekly" class="view">
       <div class="page-head">
         <div><h2>Weekly Operations Report</h2><p>Saturday to Friday, calculated from saved daily entries.</p></div>
-        <div class="toolbar">
-          <button class="btn" data-export="weekly">Export CSV</button>
-          <button class="btn" onclick="window.print()">Print / PDF</button>
-        </div>
+     <div class="toolbar">
+  <button class="btn" data-export="weekly">Export CSV</button>
+  <button class="btn" id="weeklyPdfBtn" type="button">Export PDF</button>
+</div>
       </div>
       <div class="report-shell">
         <div class="report-top">
@@ -1139,9 +1141,9 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="page-head">
         <div><h2>Monthly Operations Report</h2><p>Automatic monthly consolidation from daily entries.</p></div>
         <div class="toolbar">
-          <button class="btn" data-export="monthly">Export CSV</button>
-          <button class="btn" onclick="window.print()">Print / PDF</button>
-        </div>
+  <button class="btn" data-export="monthly">Export CSV</button>
+  <button class="btn" id="monthlyPdfBtn" type="button">Export PDF</button>
+</div>
       </div>
       <div class="report-shell">
         <div class="report-top">
@@ -1166,10 +1168,10 @@ details.group>summary::-webkit-details-marker{display:none}
     <section id="view-dashboard" class="view">
       <div class="page-head">
         <div><h2>KPI Dashboard</h2><p>Current month vs target, last month and same month last year.</p></div>
-        <div class="toolbar">
-          <button class="btn" data-export="dashboard">Export CSV</button>
-          <button class="btn" onclick="window.print()">Print / PDF</button>
-        </div>
+    <div class="toolbar">
+  <button class="btn" data-export="dashboard">Export CSV</button>
+  <button class="btn" id="dashPdfBtn" type="button">Export PDF</button>
+</div>
       </div>
       <div class="report-shell">
               <div class="report-top">
@@ -3280,14 +3282,14 @@ function renderDashboard(){
   if(!table) return;
   /* ---- NEW: Enhanced table header with better column structure ---- */
 
-  var thead = "<thead><tr>"+
-    '<th class="dash-cat-col">Category</th>'+
-    '<th class="dash-kpi-col">KPI</th>'+
-    '<th class="dash-val-col">Actual</th>'+
-    '<th class="dash-val-col">Target</th>'+
-    '<th class="dash-val-col">Variance</th>'+
-    '<th class="dash-status-col">Status</th>'+
-  "</tr></thead>";
+var thead = "<thead><tr>"+
+  '<th>Category</th>'+
+  '<th class="dash-kpi-name">KPI</th>'+
+  '<th class="dash-col-actual">Actual</th>'+
+  '<th class="dash-col-target">Target</th>'+
+  '<th class="dash-col-actual">Variance</th>'+
+  '<th class="dash-col-status">Status</th>'+
+"</tr></thead>";
 
   if(!rows.length){
     table.innerHTML = thead + '<tbody><tr><td colspan="6" class="empty">No KPIs match your search.</td></tr></tbody>';
@@ -3319,15 +3321,15 @@ function renderDashboard(){
     
     body += "<tr>";
     if(k.cat !== prevCat){
-      body += '<td class="dash-cat-col" rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
+      body += '<td rowspan="'+spans[k.cat]+'">'+escapeHtml(k.cat)+'</td>';
       prevCat = k.cat;
     }
-   body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
-      '<td class="dash-val-col num '+cls+'">'+escapeHtml(fmtVal(v, k.fmt))+'</td>'+
-      '<td class="dash-val-col num">'+(k.target!=null?escapeHtml(fmtVal(k.target, k.fmt)):"—")+'</td>'+
-      '<td class="dash-val-col num variance">'+escapeHtml(varianceText)+'</td>'+
-      '<td class="dash-status-col"><span class="dash-status '+cls+'">'+escapeHtml(lbl)+'</span></td>'+
-    '</tr>';
+ body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
+  '<td class="dash-col-actual num '+cls+'">'+escapeHtml(fmtVal(v, k.fmt))+'</td>'+
+  '<td class="dash-col-target num">'+(k.target!=null?escapeHtml(fmtVal(k.target, k.fmt)):"—")+'</td>'+
+  '<td class="dash-col-actual num variance">'+escapeHtml(varianceText)+'</td>'+
+  '<td class="dash-col-status"><span class="dash-status '+cls+'">'+escapeHtml(lbl)+'</span></td>'+
+'</tr>';
   });
   body += "</tbody>";
   table.innerHTML = thead + body;
@@ -3969,6 +3971,266 @@ function bindTxFilters(){
   document.querySelectorAll("#txViewToggle button").forEach(function(b){
     b.addEventListener("click", function(){ setTxView(b.dataset.view); });
   });
+}
+  /* ============================================================
+   PDF EXPORT
+   ============================================================ */
+function getPdfContext(title, subtitle){
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+  var pageW = doc.internal.pageSize.getWidth();
+
+  /* Header band */
+  doc.setFillColor(11, 51, 64);
+  doc.rect(0, 0, pageW, 18, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("SGM Operations Control", 10, 8);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(title, 10, 14);
+
+  /* Subtitle on the right */
+  doc.setFontSize(8);
+  doc.text(subtitle || "", pageW - 10, 8, { align:"right" });
+  doc.text("Generated: " + new Date().toLocaleString("en-GB"), pageW - 10, 14, { align:"right" });
+
+  doc.setTextColor(0, 0, 0);
+  return doc;
+}
+
+function savePdfDoc(doc, filename){
+  doc.save(filename);
+  showToast("✓ PDF downloaded.", "success");
+}
+
+/* ---------- Daily Report PDF ---------- */
+function exportDailyReportPdf(){
+  if(typeof window.jspdf === "undefined"){
+    showToast("PDF library not loaded. Check internet connection.");
+    return;
+  }
+  var records = getTxRecords().map(function(r){ return { record:r, calc:calculate(r) }; });
+  records.sort(function(a,b){
+    var d = a.record.date.localeCompare(b.record.date);
+    if(d !== 0) return d;
+    return a.record.storeId.localeCompare(b.record.storeId);
+  });
+  if(!records.length){ showToast("Nothing to export."); return; }
+
+  var subtitle = "Scope: " + scopeLabel() + " · " + records.length + " entries";
+  var doc = getPdfContext("Daily Report — All Transactions", subtitle);
+
+  var head = [["Date","Store","Sales W/O Tax","Net Sales","Txns","ADT","AT","vs Tgt %",
+               "Food %","G&G %","Merch %","Emp %","Wastage %","QA %","Google","DC App"]];
+
+  var body = records.map(function(it){
+    var r = it.record, c = it.calc;
+    return [
+      dateLabel(r.date),
+      r.storeId,
+      money(c.salesWithoutTax),
+      money(c.netSales),
+      integer(r.transactions),
+      integer(c.adt),
+      money(c.at),
+      pct(c.salesVsTargetPct),
+      pct(c.foodMix),
+      pct(c.grabGoMix),
+      pct(c.merchandiseMix),
+      pct(c.employeePct),
+      pct(c.wastagePct),
+      pct(r.qaScore),
+      rating(r.googleRating),
+      rating(r.dcAppRating)
+    ];
+  });
+
+  doc.autoTable({
+    startY: 22,
+    head: head,
+    body: body,
+    theme: "grid",
+    styles: { fontSize:7.5, cellPadding:1.8, overflow:"linebreak" },
+    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:8 },
+    alternateRowStyles: { fillColor:[244,248,247] },
+    columnStyles: {
+      0:{ cellWidth:20 }, 1:{ cellWidth:18 },
+      2:{ halign:"right" }, 3:{ halign:"right" },
+      4:{ halign:"right" }, 5:{ halign:"right" },
+      6:{ halign:"right" }, 7:{ halign:"right" },
+      8:{ halign:"right" }, 9:{ halign:"right" },
+      10:{ halign:"right" }, 11:{ halign:"right" },
+      12:{ halign:"right" }, 13:{ halign:"right" },
+      14:{ halign:"right" }, 15:{ halign:"right" }
+    },
+    didDrawPage: function(){
+      var pageW = doc.internal.pageSize.getWidth();
+      var pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7.5);
+      doc.setTextColor(120);
+      doc.text("SGM Operations Control", 10, pageH - 5);
+      doc.text("Page " + doc.internal.getNumberOfPages(), pageW - 10, pageH - 5, { align:"right" });
+    }
+  });
+
+  savePdfDoc(doc, "SGM_Daily_Report_" + todayIso() + ".pdf");
+}
+
+/* ---------- Weekly / Monthly report PDF ---------- */
+function exportPeriodReportPdf(kind){
+  if(typeof window.jspdf === "undefined"){
+    showToast("PDF library not loaded. Check internet connection.");
+    return;
+  }
+  var periods, title;
+  if(kind === "weekly"){
+    periods = buildWeeklyPeriods();
+    title = "Weekly Operations Report";
+  } else if(kind === "monthly"){
+    periods = buildMonthlyPeriods();
+    title = "Monthly Operations Report";
+  } else { return; }
+
+  var subtitle = "Scope: " + scopeLabel() + " · " +
+                 periods.map(function(p){ return p.shortLabel; }).join(" | ");
+
+  var doc = getPdfContext(title, subtitle);
+
+  /* Header: Category | Section | P1 | P2 | ... */
+  var head = [["Category","Section"]];
+  periods.forEach(function(p){ head[0].push(p.shortLabel); });
+
+  var allRows = reportRows();
+  var body = [];
+  var spans = {};
+  allRows.forEach(function(r){ spans[r.cat] = (spans[r.cat]||0) + 1; });
+
+  var prevCat = null;
+  allRows.forEach(function(r){
+    var row = [];
+    if(r.cat !== prevCat){
+      row.push(r.cat);
+      prevCat = r.cat;
+    } else {
+      row.push("");
+    }
+    row.push(r.name);
+    periods.forEach(function(p){
+      var sv = sectionValue(p.agg, r.name);
+      row.push(fmtSectionValue(sv.value, sv.fmt));
+    });
+    body.push(row);
+  });
+
+  /* Column widths */
+  var colStyles = { 0:{ cellWidth:24, fontStyle:"bold" }, 1:{ cellWidth:70 } };
+  periods.forEach(function(_, i){ colStyles[i+2] = { halign:"right", cellWidth:"auto" }; });
+
+  doc.autoTable({
+    startY: 22,
+    head: head,
+    body: body,
+    theme: "grid",
+    styles: { fontSize:7.5, cellPadding:1.6, overflow:"linebreak" },
+    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:8 },
+    alternateRowStyles: { fillColor:[244,248,247] },
+    columnStyles: colStyles,
+    didParseCell: function(data){
+      /* Bold the AUTO SUMMARY rows */
+      if(data.section === "body" && data.row.raw[0] === "AUTO SUMMARY"){
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [230, 240, 245];
+      }
+    },
+    didDrawPage: function(){
+      var pageW = doc.internal.pageSize.getWidth();
+      var pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7.5);
+      doc.setTextColor(120);
+      doc.text("SGM Operations Control", 10, pageH - 5);
+      doc.text("Page " + doc.internal.getNumberOfPages(), pageW - 10, pageH - 5, { align:"right" });
+    }
+  });
+
+  var fname = (kind === "weekly" ? "SGM_Weekly_" : "SGM_Monthly_") + todayIso() + ".pdf";
+  savePdfDoc(doc, fname);
+}
+
+/* ---------- KPI Dashboard PDF ---------- */
+function exportDashboardPdf(){
+  if(typeof window.jspdf === "undefined"){
+    showToast("PDF library not loaded. Check internet connection.");
+    return;
+  }
+  var mv = q("dashMonth").value || currentMonthIso();
+  var start = mv + "-01";
+  var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
+  var end = isoDate(d);
+
+  var ids = resolveStoreScope();
+  var agg = aggregate(recordsBetweenStores(ids, start, end));
+  if(!agg._records.length){ showToast("No data to export for " + mv + "."); return; }
+
+  var subtitle = "Scope: " + scopeLabel() + " · Month: " + mv + " · " + agg._records.length + " entries";
+  var doc = getPdfContext("KPI Dashboard", subtitle);
+
+  var head = [["Category","KPI","Actual","Target","Variance","Status"]];
+  var spans = {}; KPI_DEFS.forEach(function(k){ spans[k.cat] = (spans[k.cat]||0)+1; });
+  var prevCat = null;
+  var body = [];
+  KPI_DEFS.forEach(function(k){
+    var v = agg._calc[k.key];
+    var cls = k.target!=null ? statusClass(v, k.target, !!k.lower) : "";
+    var lbl = k.target!=null ? statusLabel(v, k.target, !!k.lower) : "—";
+    var variance = "—";
+    if(k.target != null && typeof v === "number"){
+      var diff = v - k.target;
+      var sign = diff >= 0 ? "+" : "";
+      if(k.fmt === "pct") variance = sign + round(diff, 1) + "%";
+      else if(k.fmt === "money") variance = sign + "SAR " + money(Math.abs(diff));
+      else if(k.fmt === "rating") variance = sign + round(diff, 2);
+      else variance = sign + integer(diff);
+    }
+    var row = [];
+    if(k.cat !== prevCat){ row.push(k.cat); prevCat = k.cat; }
+    else { row.push(""); }
+    row.push(k.name);
+    row.push(fmtVal(v, k.fmt));
+    row.push(k.target!=null ? fmtVal(k.target, k.fmt) : "—");
+    row.push(variance);
+    row.push(lbl);
+    body.push(row);
+  });
+
+  doc.autoTable({
+    startY: 22,
+    head: head,
+    body: body,
+    theme: "grid",
+    styles: { fontSize:8, cellPadding:2 },
+    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:9 },
+    alternateRowStyles: { fillColor:[244,248,247] },
+    columnStyles: {
+      0:{ cellWidth:35, fontStyle:"bold" },
+      1:{ cellWidth:"auto" },
+      2:{ halign:"right", cellWidth:35 },
+      3:{ halign:"right", cellWidth:35 },
+      4:{ halign:"right", cellWidth:35 },
+      5:{ halign:"center", cellWidth:25, fontStyle:"bold" }
+    },
+    didDrawPage: function(){
+      var pageW = doc.internal.pageSize.getWidth();
+      var pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7.5);
+      doc.setTextColor(120);
+      doc.text("SGM Operations Control", 10, pageH - 5);
+      doc.text("Page " + doc.internal.getNumberOfPages(), pageW - 10, pageH - 5, { align:"right" });
+    }
+  });
+
+  savePdfDoc(doc, "SGM_KPI_Dashboard_" + mv + ".pdf");
 }
 function exportTxCsv(){
   if(txViewMode === "grid"){
@@ -5315,6 +5577,10 @@ if(grossSalesEl){
   q("saveStorePinBtn").addEventListener("click", saveStorePin);
   q("clearAllBtn").addEventListener("click", clearAll);
   q("saveSalaryBtn").addEventListener("click", saveSalaryTable);
+  var txPdfBtn = q("txPdfBtn"); if(txPdfBtn) txPdfBtn.addEventListener("click", exportDailyReportPdf);
+var wPdfBtn  = q("weeklyPdfBtn"); if(wPdfBtn) wPdfBtn.addEventListener("click", function(){ exportPeriodReportPdf("weekly"); });
+var mPdfBtn  = q("monthlyPdfBtn"); if(mPdfBtn) mPdfBtn.addEventListener("click", function(){ exportPeriodReportPdf("monthly"); });
+var dPdfBtn  = q("dashPdfBtn"); if(dPdfBtn) dPdfBtn.addEventListener("click", exportDashboardPdf);
   bindTxFilters();
   bindStoreFilters();
   bindImportModal();
