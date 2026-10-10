@@ -782,13 +782,15 @@ details.group>summary::-webkit-details-marker{display:none}
   border-right: 2px solid #e0e8e6;  /* ← NEW: separator line */
 }
 
-/* KPI name column — takes the middle space */
+/* KPI name column — fixed width, left aligned */
 #dashboardTable th.dash-kpi-name,
 #dashboardTable td.dash-kpi-name {
-  width: auto;
+  width: 260px;              /* ← fixed width so it stops hogging space */
+  min-width: 260px;
+  max-width: 260px;
   text-align: left;
   white-space: normal;
-  word-break: break-word;           /* ← NEW: long names wrap neatly */
+  word-break: break-word;
 }
 
 /* Actual / Target / Variance columns — fixed width, right aligned */
@@ -796,7 +798,7 @@ details.group>summary::-webkit-details-marker{display:none}
 #dashboardTable td.dash-col-actual,
 #dashboardTable th.dash-col-target,
 #dashboardTable td.dash-col-target {
-  width: 120px;                     /* ← CHANGED from 150 → 120 for a tighter look */
+  width: 150px;                     /* ← CHANGED from 150 → 120 for a tighter look */
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
