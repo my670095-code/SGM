@@ -106,6 +106,37 @@ main{max-width:1480px;margin:0 auto;padding:22px}
 }
 .entry-hero .hero-text h3{margin:0;font-size:18px;letter-spacing:.2px}
 .entry-hero .hero-text p{margin:3px 0 0;opacity:.75;font-size:12px}
+  /* ===== Unify all hero-right boxes to the same 40px height ===== */
+.entry-hero .hero-right > *{
+  height:40px;
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+}
+.entry-hero .entry-store-chip{
+  padding:0 14px;
+  font-weight:800;
+  font-size:13px;
+}
+.entry-hero .entry-date-input{
+  height:40px;
+  padding:0 12px;
+  min-width:150px;
+}
+.entry-hero .entry-icon-btn{
+  height:40px;
+  padding:0 14px;
+}
+.entry-hero .entry-status{
+  height:40px;
+  padding:0 14px;
+}
+.entry-hero .entry-submit-btn{
+  height:40px;
+  padding:0 18px;
+  min-width:130px;
+  justify-content:center;
+}
 .entry-store-chip{
   padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.2);font-weight:800;font-size:13px;letter-spacing:.3px;
@@ -1053,10 +1084,9 @@ details.group>summary::-webkit-details-marker{display:none}
     </div>
   </div>
   <div class="hero-right">
-    <div class="entry-store-chip">
-      <small>Store</small>
-      <span id="entryStoreLabel">—</span>
-    </div>
+  <div class="entry-store-chip" title="Store">
+  <span id="entryStoreLabel">—</span>
+</div>
     <input type="date" class="entry-date-input" id="f-date-hero" aria-label="Entry date">
     <input type="hidden" id="f-date">
     <button class="entry-icon-btn danger" id="clearDayBtn" type="button" title="Delete the saved entry for this date">🗑 Clear</button>
