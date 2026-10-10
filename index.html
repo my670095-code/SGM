@@ -332,6 +332,12 @@ main{max-width:1480px;margin:0 auto;padding:22px}
   border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(18,74,89,.1);
 }
 .field input.filled{border-color:#8dc6b1;background:#fbfffd}
+  .field input.missing,
+.field select.missing{
+  border-color:#e05252 !important;
+  background:#fff5f5 !important;
+  box-shadow:0 0 0 3px rgba(224,82,82,.15) !important;
+}
 .field input.input-date{border-left:4px solid var(--gold)}
 
 
@@ -2474,12 +2480,13 @@ function makeField(def, groupId){
     input.style.cursor = "not-allowed";
   }
   if(def.cls) input.className = (input.className?input.className+" ":"") + def.cls;
-  input.addEventListener("input", function(){
-    markDirty();
-    input.classList.toggle("filled", String(input.value||"").trim() !== "");
-    refreshGroupPills();
-    refreshProgress();
-  });
+input.addEventListener("input", function(){
+  markDirty();
+  input.classList.toggle("filled", String(input.value||"").trim() !== "");
+  input.classList.remove("missing");   /* ← clears red on typing */
+  refreshGroupPills();
+  refreshProgress();
+});
   input.addEventListener("change", function(){
     markDirty();
     input.classList.toggle("filled", String(input.value||"").trim() !== "");
@@ -2780,6 +2787,27 @@ function updateEntryHero(){
 }
 function submitDailyRecord(){
   syncBreakdownsFromDom();
+
+  /* ---- NEW: require ALL fields (except breakdown) to be filled ---- */
+  var missing = getMissingFields();
+  if(missing.length > 0){
+    var preview = missing.slice(0, 6).map(function(m){ return "• " + m.label; }).join("\n");
+    var more = missing.length > 6 ? "\n…and " + (missing.length - 6) + " more." : "";
+    alert("Please fill in all required fields before submitting:\n\n" + preview + more);
+    showToast(missing.length + " field(s) still empty — fill them to submit.");
+
+    /* Highlight the first empty field and scroll to it */
+    var firstKey = missing[0].key;
+    var firstEl = q("f-" + firstKey);
+    if(firstEl){
+      firstEl.classList.add("missing");
+      firstEl.focus();
+      firstEl.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+    return;  /* stop submission */
+  }
+  /* ---- END NEW ---- */
+
   var badBd = false;
   currentBreakdowns.forEach(function(b){
     var any = b.asset || b.start || b.end;
@@ -2788,6 +2816,7 @@ function submitDailyRecord(){
   if(badBd){ showToast("A breakdown row was started — finish it or remove it."); return; }
 
   var rec = getFormRecord();
+  ...
   var c = calculate(rec);
   var store = state.stores.find(function(x){return x.id === rec.storeId;});
   var storeLabel = rec.storeId + (store && store.area ? " · "+store.area : "");
