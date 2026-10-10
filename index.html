@@ -1289,6 +1289,14 @@ details.group>summary::-webkit-details-marker{display:none}
           <h4>Sales Mix % — Actual vs Target</h4>
           <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
         </div>
+        <div class="chart-card">
+          <h4>Store Comparison — Focus KPI</h4>
+          <div class="chart-wrap"><canvas id="chartStores"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Monthly Trend — Last 6 Months</h4>
+          <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+        </div>
       </div>
 
       <div class="table-card"><table id="dashboardTable"></table></div>
@@ -3566,6 +3574,8 @@ function renderDashboard(){
   var agg = aggregate(recordsBetweenStores(ids, start, end));
   agg._periodStartLabel = mv;
   agg._periodEndLabel = mv;
+    agg._dashStart = start;
+  agg._dashEnd = end;
 
   var scope = q("dashScope");
   if(scope) scope.textContent = scopeLabel()+" · "+mv+" · "+agg._records.length+" daily entries";
@@ -3593,6 +3603,10 @@ function renderDashboard(){
     if(box) box.textContent = focus.name+": "+fmtVal(fv, focus.fmt)+
       (focus.target!=null ? " / Target "+fmtVal(focus.target, focus.fmt) : "");
   }
+    /* Fire the trend chart for the focus KPI */
+  var activeFocusIdx = (focusSel && focusSel.value !== "") ? focusSel.value : "0";
+  var activeFocus = KPI_DEFS[activeFocusIdx] || KPI_DEFS[0];
+  renderMonthlyTrendChart(activeFocus);
 
   var table = q("dashboardTable");
   if(!table) return;
