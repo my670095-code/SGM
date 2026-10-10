@@ -1010,7 +1010,7 @@ details.group>summary::-webkit-details-marker{display:none}
         <button class="nav-btn" data-view="weekly">Weekly</button>
         <button class="nav-btn" data-view="monthly">Monthly</button>
         <button class="nav-btn" data-view="dashboard">KPI Dashboard</button>
-        <button class="nav-btn" data-view="stores" data-roles="admin,op,am">Stores</button>
+        <button class="nav-btn" data-view="stores" data-roles="admin">Stores</button>
         <button class="nav-btn" data-view="users" data-roles="admin">Users</button>
         <button class="nav-btn" data-view="backup" data-roles="admin">Backup &amp; Settings</button>
       </nav>
@@ -5107,7 +5107,7 @@ function switchView(name){
   if(currentUser){
     if(name === "users" && currentUser.role !== "admin"){ name = "daily"; }
     if(name === "backup" && currentUser.role !== "admin"){ name = "daily"; }
-    if(name === "stores" && !(currentUser.role === "admin" || currentUser.role === "op" || currentUser.role === "am")){ name = "daily"; }
+    if(name === "stores" && currentUser.role !== "admin"){ name = "daily"; }
   }
   document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.toggle("active", b.dataset.view===name);});
   document.querySelectorAll(".view").forEach(function(v){v.classList.toggle("active", v.id==="view-"+name);});
