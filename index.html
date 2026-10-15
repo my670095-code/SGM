@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 
 #weekCompareMode,#monthCompareMode{min-width:180px}
@@ -1617,6 +1618,27 @@ details.group>summary::-webkit-details-marker{display:none}
 
 var STORAGE_KEY = "sgm_ops_control_excel_v1";
 var SESSION_KEY = "sgm_ops_control_session_v1";
+  /* ============================================================
+   SUPABASE CONFIG — filled in for production
+   ============================================================ */
+var SUPABASE_URL  = "https://zbbojjgvryhsqzpuwcyq.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiYm9qamd2cnloc3F6cHV3Y3lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwODU2NjcsImV4cCI6MjEwNzY2MTY2N30.v2h0xe9T0raiCYmrSEljywKHwy6q-Ve5XFRXHF_gKUQ
+";
+
+var supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storageKey: "sgm_auth_session"
+    }
+  }
+);
+
+/* Convenience alias so we don't type supabaseClient everywhere */
+var sb = supabaseClient;
 
 /* ============================================================
    DEFAULT STORE MASTER LIST (69 outlets)
@@ -1948,6 +1970,83 @@ function dateLabel(s){if(!s)return "—";return parseDate(s).toLocaleDateString(
 function uid(p){return p+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);}
 function escapeHtml(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];});}
 function escapeAttr(v){return escapeHtml(v);}
+  /* ============================================================
+   SUPABASE HELPERS
+   ============================================================ */
+
+/* Fetch all stores from Supabase (replaces DEFAULT_STORES) */
+async function sbFetchStores(){
+  const { data, error } = await sb.from("stores").select("*").order("id");
+  if(error) throw error;
+  /* Map snake_case columns back to the camelCase used in existing code */
+  return data.map(function(row){
+    return {
+      id: row.id,
+      name: row.name || row.id,
+      area: row.area || "",
+      type: row.type || "",
+      storeManager: row.store_manager || "",
+      areaManager: row.area_manager || "",
+      opManager: row.op_manager || "",
+      status: row.status || "Active"
+    };
+  });
+}
+
+/* Fetch salary config */
+async function sbFetchSalary(){
+  const { data, error } = await sb.from("salary_config").select("*").order("id");
+  if(error) throw error;
+  return data.map(function(r){
+    return { key: r.role_key, label: r.label, ctc: Number(r.ctc), ot: Number(r.ot_rate) };
+  });
+}
+
+/* Fetch the profile of the logged-in user */
+async function sbFetchProfile(userId){
+  const { data, error } = await sb.from("profiles").select("*").eq("id", userId).single();
+  if(error) throw error;
+  return {
+    id: data.id,
+    username: data.username,
+    display: data.display_name,
+    role: data.role,
+    storeIds: data.store_ids || []
+  };
+}
+
+/* Save a daily record (upsert — insert or update) */
+async function sbSaveDailyRecord(record){
+  const payload = {
+    store_id: record.storeId,
+    date: record.date,
+    data: record,
+    breakdowns: record.breakdowns || [],
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb
+    .from("daily_records")
+    .upsert(payload, { onConflict: "store_id,date" });
+  if(error) throw error;
+}
+
+/* Load daily records in a date range for a set of stores */
+async function sbLoadRecords(storeIds, fromDate, toDate){
+  let query = sb.from("daily_records").select("*");
+  if(storeIds && storeIds.length) query = query.in("store_id", storeIds);
+  if(fromDate) query = query.gte("date", fromDate);
+  if(toDate)   query = query.lte("date", toDate);
+  const { data, error } = await query.order("date");
+  if(error) throw error;
+  /* Convert back to the record shape the app expects */
+  return data.map(function(row){
+    var rec = Object.assign({}, row.data);
+    rec.storeId = row.store_id;
+    rec.date = row.date;
+    rec.breakdowns = row.breakdowns || [];
+    return rec;
+  });
+}
   /* Can the current user manage (Load/Delete) entries in the Daily Report? */
 function canManageEntries(){
   if(!currentUser) return false;
