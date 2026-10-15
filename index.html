@@ -1976,7 +1976,7 @@ function loadState(){
     if(!raw) return defaultState();
     var s = JSON.parse(raw);
     if(!s || !Array.isArray(s.records)) return defaultState();
-
+    if(!Array.isArray(s.stores) || !s.stores.length) return defaultState();
        if(Array.isArray(s.records)) s.records.forEach(function(r){
       if(r.storeId) r.storeId = String(r.storeId).toUpperCase().replace(/^DC\s+/, "DC").trim();
     });
