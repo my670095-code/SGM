@@ -2684,41 +2684,130 @@ function calculate(record){
     var r = calculateBreakdown(b, record.targetSales);
     breakHours += r.hours; lostSales += r.loss;
   });
-  return {
-    salesWithoutTax: salesWoTax, totalDiscount: totalDiscount, netSales: netSales,
+
+  /* =========================================================
+     RAW PASSTHROUGH — every input from the form is echoed here
+     so GRID_ROWS / TX_COLUMNS / reportRows can read it back
+     ========================================================= */
+  var raw = {
+    /* Date & targets */
+    targetSales:              n(record.targetSales),
+    targetAdt:                n(record.targetAdt),
+    targetAt:                 n(record.targetAt),
+
+    /* Sales & mix */
+    grossSales:               n(record.grossSales),
+    voidAmount:               n(record.voidAmount),
+    taxAmount:                n(record.taxAmount),
+    complimentaryDiscount:    n(record.complimentaryDiscount),
+    promotionDiscount:        n(record.promotionDiscount),
+    openingDays:              n(record.openingDays) || 1,
+    transactions:             n(record.transactions),
+    modifierSales:            n(record.modifierSales),
+
+    /* Cup mix */
+    cupsTall:                 n(record.cupsTall),
+    cupsGrande:               n(record.cupsGrande),
+    cupsJumbo:                n(record.cupsJumbo),
+
+    /* DC App / Payment */
+    dcAppOnlinePos:           n(record.dcAppOnlinePos),
+    dcPayPos:                 n(record.dcPayPos),
+    dcAppOnlineApp:           n(record.dcAppOnlineApp),
+    dcPayApp:                 n(record.dcPayApp),
+    dcAppOrders:              n(record.dcAppOrders),
+    dcAppDeliveryOrders:      n(record.dcAppDeliveryOrders),
+    cardSales:                n(record.cardSales),
+    myListSales:              n(record.myListSales),
+    cashSalesPos:             n(record.cashSalesPos),
+    cashDeposited:            n(record.cashDeposited),
+    Baraka:                   n(record.Baraka),
+
+    /* Controls */
+    cancelledBillAmount:      n(record.cancelledBillAmount),
+
+    /* Cost */
+    wastage:                  n(record.wastage),
+    inventoryVariance:        n(record.inventoryVariance),
+
+    /* Performance */
+    smartCompletedPct:        n(record.smartCompletedPct),
+    qaScore:                  n(record.qaScore),
+    googleRating:             n(record.googleRating),
+    dcAppRating:              n(record.dcAppRating),
+    positiveReviews:          n(record.positiveReviews),
+    negativeReviews:          n(record.negativeReviews),
+    complaints:               n(record.complaints),
+
+    /* Water */
+    waterQty:                 n(record.waterQty),
+    waterSales:               n(record.waterSales),
+
+    /* Google review count derived */
+    googleReviews:            googleReviewsAuto
+  };
+
+  /* Headcounts and OT hours — pull every salary role key dynamically */
+  state.salary.forEach(function(r){
+    raw[r.key] = n(record[r.key]);
+  });
+  Object.keys(OT_KEYS).forEach(function(otKey){
+    raw[otKey] = n(record[otKey]);
+  });
+
+  /* =========================================================
+     Final returned object = raw + calculated
+     ========================================================= */
+  return Object.assign({}, raw, {
+    salesWithoutTax: salesWoTax,
+    totalDiscount: totalDiscount,
+    netSales: netSales,
     totalDiscountPct: safeDiv(totalDiscount, salesWoTax) * 100,
-    foodSales: foodSales, grabGoSales: grabGoSales, merchSales: merchSales,
-    cupsTotal: cupsTotal, upsizeQty: upsizeQty,
-    adt: safeDiv(record.transactions, record.openingDays),
-    at: safeDiv(salesWoTax, record.transactions),
+
+    foodSales: foodSales,
+    grabGoSales: grabGoSales,
+    merchSales: merchSales,
+    cupsTotal: cupsTotal,
+    upsizeQty: upsizeQty,
+
+    adt: safeDiv(n(record.transactions), n(record.openingDays)),
+    at:  safeDiv(salesWoTax, n(record.transactions)),
+
     salesVsTargetValue: salesWoTax - n(record.targetSales),
-    salesVsTargetPct: safeDiv(salesWoTax - n(record.targetSales), record.targetSales) * 100,
-    adtVsTargetPct: safeDiv(safeDiv(record.transactions, record.openingDays) - n(record.targetAdt), record.targetAdt) * 100,
-    atVsTargetPct: safeDiv(safeDiv(salesWoTax, record.transactions) - n(record.targetAt), record.targetAt) * 100,
-    foodMix: safeDiv(foodSales, salesWoTax) * 100,
-    grabGoMix: safeDiv(grabGoSales, salesWoTax) * 100,
+    salesVsTargetPct:   safeDiv(salesWoTax - n(record.targetSales), record.targetSales) * 100,
+    adtVsTargetPct:     safeDiv(safeDiv(record.transactions, record.openingDays) - n(record.targetAdt), record.targetAdt) * 100,
+    atVsTargetPct:      safeDiv(safeDiv(salesWoTax, record.transactions) - n(record.targetAt), record.targetAt) * 100,
+
+    foodMix:        safeDiv(foodSales, salesWoTax) * 100,
+    grabGoMix:      safeDiv(grabGoSales, salesWoTax) * 100,
     merchandiseMix: safeDiv(merchSales, salesWoTax) * 100,
-    waterAttachment: safeDiv(record.waterQty, record.transactions) * 100,
-    waterSalesMix: safeDiv(record.waterSales, salesWoTax) * 100,
-    modifierMix: safeDiv(record.modifierSales, salesWoTax) * 100,
-    upsizePct: safeDiv(upsizeQty, cupsTotal) * 100,
-    dcPosTotal: dcPosTotal, dcAppTotal: dcAppTotal,
-    dcVariance: dcAppTotal - dcPosTotal,
-    dcAppSalesPct: safeDiv(dcPosTotal + dcAppTotal, salesWoTax) * 100,
-    dcAppOrderMix: safeDiv(record.dcAppOrders, record.transactions) * 100,
-    dcAppDeliveryPct: safeDiv(record.dcAppDeliveryOrders, record.dcAppOrders) * 100,
-    dcAppAt: safeDiv(dcPosTotal + dcAppTotal, record.dcAppOrders),
-    cashVariance: cashVarianceCalc,
-    wastagePct: safeDiv(record.wastage, salesWoTax) * 100,
+    waterAttachment:safeDiv(record.waterQty, record.transactions) * 100,
+    waterSalesMix:  safeDiv(record.waterSales, salesWoTax) * 100,
+    modifierMix:    safeDiv(record.modifierSales, salesWoTax) * 100,
+    upsizePct:      safeDiv(upsizeQty, cupsTotal) * 100,
+
+    dcPosTotal:      dcPosTotal,
+    dcAppTotal:      dcAppTotal,
+    dcVariance:      dcAppTotal - dcPosTotal,
+    dcAppSalesPct:   safeDiv(dcPosTotal + dcAppTotal, salesWoTax) * 100,
+    dcAppOrderMix:   safeDiv(record.dcAppOrders, record.transactions) * 100,
+    dcAppDeliveryPct:safeDiv(record.dcAppDeliveryOrders, record.dcAppOrders) * 100,
+    dcAppAt:         safeDiv(dcPosTotal + dcAppTotal, record.dcAppOrders),
+
+    cashVariance:    cashVarianceCalc,
+    wastagePct:      safeDiv(record.wastage, salesWoTax) * 100,
     inventoryVariancePct: safeDiv(Math.abs(n(record.inventoryVariance)), salesWoTax) * 100,
-    employeeCost: employeeCost, employeePct: safeDiv(employeeCost, salesWoTax) * 100,
-    googleReviews: googleReviewsAuto,
+    employeeCost:    employeeCost,
+    employeePct:     safeDiv(employeeCost, salesWoTax) * 100,
+
     positiveReviewPct: safeDiv(record.positiveReviews, googleReviewsAuto) * 100,
     negativeReviewPct: safeDiv(record.negativeReviews, googleReviewsAuto) * 100,
-    cancelledBillPct: safeDiv(record.cancelledBillAmount, salesWoTax) * 100,
-    cashVariancePct: safeDiv(Math.abs(cashVarianceCalc), salesWoTax) * 100,
-    breakdownHours: breakHours, estimatedLostSales: lostSales
-  };
+    cancelledBillPct:  safeDiv(record.cancelledBillAmount, salesWoTax) * 100,
+    cashVariancePct:   safeDiv(Math.abs(cashVarianceCalc), salesWoTax) * 100,
+
+    breakdownHours: breakHours,
+    estimatedLostSales: lostSales
+  });
 }
 function calculateBreakdown(b, targetSales){
   if(!b.start || !b.end) return {hours:0, loss:0};
@@ -4156,8 +4245,6 @@ var GRID_ROWS = [
   { type:"metric", key:"inventoryVariancePct", label:"Inventory Variance %", fmt:"pct", target:TARGETS.inventory, lower:true },
   { type:"category", label:"Smart Brew & Execution" },
     { type:"metric", key:"smartCompletedPct",label:"Smart Brew Completed %", fmt:"pct", target:TARGETS.smartCompleted,lower:false },
-  { type:"category", label:"QA & Guest" },
-  { type:"metric", key:"qaScore",          label:"QA Score %",             fmt:"pct", target:TARGETS.qa,          lower:false },
   { type:"metric", key:"googleRating",     label:"Google Rating",          fmt:"rating",target:TARGETS.googleRating,lower:false },
   { type:"metric", key:"dcAppRating",      label:"DC App Rating",          fmt:"rating",target:TARGETS.dcAppRating, lower:false },
   { type:"metric", key:"positiveReviewPct",label:"Positive Review %",      fmt:"pct" },
@@ -4168,10 +4255,16 @@ var GRID_ROWS = [
 ];
 function fmtGridCell(row, calc){
   var v = calc[row.key];
-  if(row.fmt === "pct") return escapeHtml(pct(v));
+
+  /* Nothing stored AND no calculated value → show a dash, not "0" */
+  if(v === undefined || v === null){
+    return escapeHtml("—");
+  }
+
+  if(row.fmt === "pct")    return escapeHtml(pct(v));
   if(row.fmt === "rating") return escapeHtml(rating(v));
-  if(row.fmt === "money") return escapeHtml("SAR " + money(v));
-  if(row.fmt === "hours") return escapeHtml(round(v,2) + " h");
+  if(row.fmt === "money")  return escapeHtml("SAR " + money(v));
+  if(row.fmt === "hours")  return escapeHtml(round(v,2) + " h");
   return escapeHtml(integer(v));
 }
 function renderTxGrid(){
