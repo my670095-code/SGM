@@ -569,7 +569,7 @@ table.report-2col td.val-col.bad  .val-main{color:#b42318}
   display:block;
   width:100%;
   min-height:120px;
-  max-height:75vh;
+  max-height:none;
   overflow:auto;
   background:#f7faf9;
   position:relative;
@@ -585,34 +585,9 @@ table.report-2col td.val-col.bad  .val-main{color:#b42318}
 .tx-grid-wrap table.sgm-grid td.sticky-col{position:sticky;left:0;width:285px;min-width:285px;max-width:285px;z-index:6;text-align:left;white-space:normal;overflow:hidden;text-overflow:ellipsis;padding:10px 14px;border-right:2px solid #c9d8d4}
 .tx-grid-wrap table.sgm-grid th.date-cell,
 .tx-grid-wrap table.sgm-grid td.num{width:145px;min-width:145px;max-width:145px}
-  .tx-grid-wrap table.sgm-grid thead th{
-  position:sticky !important;
-  top:0;
-  z-index:5;
-  height:48px;
-  background:var(--navy);
-  color:#fff;
-  text-align:center;
-  font-size:12px;
-  font-weight:800;
-  padding:8px 10px;
-  border-right:1px solid rgba(255,255,255,.14);
-  border-bottom:2px solid var(--navy-2);
-  white-space:nowrap;
-}
-.tx-grid-wrap table.sgm-grid thead th.sticky-col{
-  z-index:9 !important;          /* ← higher than other header cells */
-  background:var(--navy-2);
-  text-align:left;
-  color:#fff;
-  position:sticky !important;
-  top:0;
-  left:0;
-}
-.tx-grid-wrap table.sgm-grid thead th.current-date{
-  background:var(--gold) !important;
-  color:#2d2b22 !important;
-}
+.tx-grid-wrap table.sgm-grid thead th{position:sticky;top:0;z-index:5;height:48px;background:var(--navy);color:#fff;text-align:center;font-size:12px;font-weight:800;padding:8px 10px;border-right:1px solid rgba(255,255,255,.14);border-bottom:2px solid var(--navy-2);white-space:nowrap}
+.tx-grid-wrap table.sgm-grid thead th.sticky-col{z-index:8;background:var(--navy-2);text-align:left;color:#fff}
+.tx-grid-wrap table.sgm-grid thead th.current-date{background:var(--gold) !important;color:#2d2b22 !important}
 .tx-grid-wrap table.sgm-grid thead th .date-main{display:block;font-size:12px;font-weight:900}
 .tx-grid-wrap table.sgm-grid thead th .date-status{display:block;margin-top:2px;font-size:9px;font-weight:800;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
 .tx-grid-wrap table.sgm-grid td{height:42px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;padding:9px 12px;border-bottom:1px solid #e5ecea;border-right:1px solid #edf2f0;background:#fff;font-size:12.5px;color:var(--ink)}
@@ -840,20 +815,7 @@ details.group>summary::-webkit-details-marker{display:none}
 .dash-status.good { background: #e9f6f1; color: #238264; }
 .dash-status.warn { background: #fff4dc; color: #ac7216; }
 .dash-status.bad  { background: #fff0ef; color: #bf4a49; }
-  #dashboardTable thead th{
-  position:sticky !important;
-  top:0 !important;
-  z-index:10 !important;
-  background:var(--navy) !important;
-  color:#fff !important;
-  box-shadow:0 2px 0 var(--navy-2);
-}
 
-#dashboardTable thead th:first-child{
-  background:#0b3340 !important;
-  color:#fff !important;
-  z-index:11 !important;
-}
 
 /* ===== KPI DASHBOARD CHARTS ===== */
 .chart-panel{
@@ -1378,8 +1340,7 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="chart-wrap"><canvas id="chartStores"></canvas></div>
         </div>
       </div>
-
-      <div class="table-card" style="max-height:75vh;overflow:auto"><table id="dashboardTable"></table></div>
+<div class="table-card"><table id="dashboardTable"></table></div>
     </section>
 
     <!-- ============ STORES ============ -->
