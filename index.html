@@ -823,40 +823,60 @@ details.group>summary::-webkit-details-marker{display:none}
 .dash-status.warn { background: #fff4dc; color: #ac7216; }
 .dash-status.bad  { background: #fff0ef; color: #bf4a49; }
 
-  /* ===== KPI DASHBOARD CHARTS ===== */
+/* ===== KPI DASHBOARD CHARTS ===== */
 .chart-panel{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:14px;
+  gap:16px;
   margin-bottom:18px;
 }
 .chart-panel.hidden{ display:none; }
+
 .chart-card{
   background:#fff;
   border:1px solid #e0e8e6;
   border-radius:var(--radius);
   box-shadow:var(--shadow);
-  padding:14px 16px;
+  padding:16px 18px 18px;
+  position:relative;
+  overflow:hidden;
+}
+.chart-card::before{
+  content:"";
+  position:absolute;
+  top:0; left:0; right:0;
+  height:3px;
+  background:linear-gradient(90deg, var(--navy), var(--gold));
 }
 .chart-card h4{
-  margin:0 0 12px;
+  margin:0 0 14px;
   color:var(--navy);
   font-size:13px;
   font-weight:800;
   letter-spacing:.2px;
-  padding-bottom:8px;
+  padding-bottom:9px;
   border-bottom:1px solid #e5ecea;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.chart-card h4::before{
+  content:"";
+  width:4px;
+  height:14px;
+  border-radius:2px;
+  background:var(--gold);
 }
 .chart-card-wide{ grid-column:1 / -1; }
 .chart-wrap{
   position:relative;
   width:100%;
-  height:260px;
+  height:280px;
 }
-.chart-card-wide .chart-wrap{ height:280px; }
+.chart-card-wide .chart-wrap{ height:300px; }
 @media (max-width:900px){
   .chart-panel{ grid-template-columns:1fr; }
-  .chart-wrap{ height:220px; }
+  .chart-wrap{ height:230px; }
 }
   /* ===== TOP-BAR AREA MANAGER MULTI-SELECT ===== */
 .am-multiselect{
@@ -1299,11 +1319,14 @@ details.group>summary::-webkit-details-marker{display:none}
           <div class="field search-field"><label for="dashSearch">Search KPIs</label><input class="control-input" type="text" id="dashSearch" placeholder="Filter by category or KPI name…"></div>
           <button class="btn small" id="dashClearBtn" type="button">Clear search</button>
         </div>
-                <div class="report-count">
-          <span>Showing <strong id="dashCount">0</strong> KPIs</span>
-          <span id="dashScope"></span>
-          <button class="btn small" id="dashToggleCharts" type="button" style="margin-left:auto">Hide Charts</button>
-        </div>
+              <div class="report-count">
+  <span>Showing <strong id="dashCount">0</strong> KPIs</span>
+  <span id="dashScope"></span>
+  <div class="tx-view-toggle" id="dashViewToggle" style="margin-left:auto">
+    <button type="button" data-view="chart" class="active">📊 Chart</button>
+    <button type="button" data-view="table">📋 Table</button>
+  </div>
+</div>
       </div>
       <div class="chart-panel" id="dashCharts">
         <div class="chart-card">
@@ -1666,8 +1689,8 @@ function buildDefaultUsers(){
 var TARGETS = {
   foodMix:15, grabGoMix:5, merchandiseMix:1, retailBeansMix:2,
   waterAttachment:25, modifierMix:2, upsize:25,
-  employee:17, wastage:1, inventory:0,
-  cancelledBill:0, cashVariance:0,
+  employee:17, wastage:1, inventory:0.1,
+  cancelledBill:0.1, cashVariance:0.1,
   smartCompleted:95,
   qa:90, googleRating:4.5, dcAppRating:4.5
 };
@@ -1745,6 +1768,24 @@ var LIVE_KEYS = {
     "salesWithoutTax","totalDiscount","netSales","adt","at",
     "salesVsTargetPct","adtVsTargetPct","atVsTargetPct","totalDiscountPct"
   ]},
+     { id:"dcApp", label:"DC App Payment (INPUT)", hint:"POS vs App entries", fields:[
+    { key:"dcAppOnlinePos", label:"DC App Online — POS (SAR)" },
+    { key:"dcPayPos", label:"DC Pay — POS (SAR)" },
+    { key:"dcAppOnlineApp", label:"DC App Online — App (SAR)" },
+    { key:"dcPayApp", label:"DC Pay — App (SAR)" },
+    { key:"dcAppOrders", label:"DC App Total Orders Qty", step:"1" },
+    { key:"dcAppDeliveryOrders", label:"DC App Delivery Orders Qty", step:"1" },
+    { key:"cardSales", label:"Card Sales — SPAN/Mada/Visa/MC/Amex (SAR)" },
+    { key:"myListSales", label:"My List Sales (SAR)" },
+    { key:"cashSalesPos", label:"Cash Sales — POS (SAR)" },
+    { key:"cashDeposited", label:"Cash Deposited (SAR)" },
+    { key:"Baraka", label:"Baraka" }
+  ]},
+  { id:"dcAppCalc", label:"DC App — Calculated (LOCKED)", hint:"POS/App totals, variance, %", special:"calc", calcKeys:[
+    "dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct","dcAppOrderMix","dcAppDeliveryPct","dcAppAt"
+  ]},
+  { id:"cashCalc", label:"Cash — Calculated (LOCKED)", hint:"Cash variance", special:"calc", calcKeys:["cashVariance"] },
+
 
   { id:"foodMix", label:"Food Product Mix (INPUT — sales amount per SKU)", hint:"Subtotal auto-computed", fields: FOOD_SKUS.map(function(s){
     return { key:"food_"+s[0], label:s[1] };
@@ -1771,24 +1812,7 @@ var LIVE_KEYS = {
   ]},
   { id:"cupMixCalc", label:"Cup Size — Calculated (LOCKED)", hint:"Totals and upsize %", special:"calc", calcKeys:["cupsTotal","upsizeQty","upsizePct"] },
 
-  { id:"dcApp", label:"DC App Payment (INPUT)", hint:"POS vs App entries", fields:[
-    { key:"dcAppOnlinePos", label:"DC App Online — POS (SAR)" },
-    { key:"dcPayPos", label:"DC Pay — POS (SAR)" },
-    { key:"dcAppOnlineApp", label:"DC App Online — App (SAR)" },
-    { key:"dcPayApp", label:"DC Pay — App (SAR)" },
-    { key:"dcAppOrders", label:"DC App Total Orders Qty", step:"1" },
-    { key:"dcAppDeliveryOrders", label:"DC App Delivery Orders Qty", step:"1" },
-    { key:"cardSales", label:"Card Sales — SPAN/Mada/Visa/MC/Amex (SAR)" },
-    { key:"myListSales", label:"My List Sales (SAR)" },
-    { key:"cashSalesPos", label:"Cash Sales — POS (SAR)" },
-    { key:"cashDeposited", label:"Cash Deposited (SAR)" },
-    { key:"Baraka", label:"Baraka" }
-  ]},
-  { id:"dcAppCalc", label:"DC App — Calculated (LOCKED)", hint:"POS/App totals, variance, %", special:"calc", calcKeys:[
-    "dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct","dcAppOrderMix","dcAppDeliveryPct","dcAppAt"
-  ]},
-  { id:"cashCalc", label:"Cash — Calculated (LOCKED)", hint:"Cash variance", special:"calc", calcKeys:["cashVariance"] },
-
+ 
   { id:"controls", label:"Control Actuals (INPUT)", hint:"Cancelled bills", fields:[
     { key:"cancelledBillAmount", label:"Cancelled Bill Amount (SAR)" }
   ]},
@@ -1814,7 +1838,6 @@ var LIVE_KEYS = {
 
   { id:"performance", label:"Smart Brew, QA & Guest Feedback (INPUT)", hint:"Percentages and ratings", fields:[
     { key:"smartCompletedPct", label:"Smart Brew Completed (%)", max:"100" },
-    { key:"qaScore", label:"QA Score (%)", max:"100" },
     { key:"googleRating", label:"Google Rating", max:"5", step:"0.1" },
     { key:"dcAppRating", label:"DC App Rating", max:"5", step:"0.1" },
     { key:"positiveReviews", label:"Google Positive Review Qty", step:"1" },
@@ -3521,14 +3544,16 @@ function renderDashboardCharts(agg, visibleRows){
   if(panel) panel.classList.remove("hidden");
 
   destroyDashCharts();
-
-  if(!agg._records.length){
-    return;
-  }
+  if(!agg._records.length) return;
 
   var c = agg._calc;
 
-  /* ---------- Chart 1: Actual vs Target (top 8 visible KPIs that have targets) ---------- */
+  /* Global Chart.js defaults */
+  Chart.defaults.font.family = "Inter, Aptos, 'Segoe UI', Arial, sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = "#3e545a";
+
+  /* ---------- Chart 1: Actual vs Target (horizontal bars, top 8) ---------- */
   var atRows = visibleRows.filter(function(k){
     var t = k.target;
     if(k.key === "salesWithoutTax") t = n(agg.targetSales);
@@ -3545,40 +3570,50 @@ function renderDashboardCharts(agg, visibleRows){
     else if(k.key === "adt") t = n(agg.targetAdt);
     else if(k.key === "at") t = n(agg.targetAt);
     atLabels.push(k.name);
-    /* percentages all stay as-is; money & rating & number stay as-is for visual compare */
     atActual.push(round(v, 2));
     atTarget.push(round(t, 2));
   });
 
-  if(atLabels.length){
-    var el1 = q("chartActualTarget");
-    if(el1){
-      dashCharts.actualTarget = new Chart(el1, {
-        type: "bar",
-        data: {
-          labels: atLabels,
-          datasets: [
-            { label: "Actual", data: atActual, backgroundColor: "#0b3340", borderRadius: 4 },
-            { label: "Target", data: atTarget, backgroundColor: "#d59c3a", borderRadius: 4 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
-            tooltip: { mode:"index", intersect:false }
-          },
-          scales: {
-            x: { ticks:{ font:{ size:10 }, maxRotation:40, minRotation:0 } },
-            y: { beginAtZero:true, ticks:{ font:{ size:10 } } }
+  var el1 = q("chartActualTarget");
+  if(el1 && atLabels.length){
+    dashCharts.actualTarget = new Chart(el1, {
+      type: "bar",
+      data: {
+        labels: atLabels,
+        datasets: [
+          { label:"Actual", data:atActual, backgroundColor:"#0b3340", borderRadius:6, barPercentage:0.75 },
+          { label:"Target", data:atTarget, backgroundColor:"#d59c3a", borderRadius:6, barPercentage:0.75 }
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position:"bottom", labels:{ boxWidth:12, padding:14, font:{ size:11, weight:"600" } } },
+          tooltip: {
+            backgroundColor:"#0b3340",
+            titleFont:{ size:12, weight:"700" },
+            bodyFont:{ size:11 },
+            padding:10,
+            cornerRadius:8,
+            callbacks: {
+              label: function(ctx){
+                var raw = ctx.parsed.x;
+                return ctx.dataset.label + ": " + new Intl.NumberFormat("en-SA",{maximumFractionDigits:2}).format(raw);
+              }
+            }
           }
+        },
+        scales: {
+          x: { beginAtZero:true, grid:{ color:"#eef3f2" }, ticks:{ font:{ size:10 } } },
+          y: { grid:{ display:false }, ticks:{ font:{ size:10.5, weight:"600" } } }
         }
-      });
-    }
+      }
+    });
   }
 
-  /* ---------- Chart 2: Status breakdown (donut) ---------- */
+  /* ---------- Chart 2: Status breakdown (doughnut, nicer) ---------- */
   var statusCounts = { ACHIEVED:0, WATCH:0, ACTION:0 };
   visibleRows.forEach(function(k){
     var v = c[k.key];
@@ -3602,17 +3637,21 @@ function renderDashboardCharts(agg, visibleRows){
         datasets: [{
           data: empty ? [1] : [statusCounts.ACHIEVED, statusCounts.WATCH, statusCounts.ACTION],
           backgroundColor: empty ? ["#d7e1df"] : ["#238264","#d59c3a","#bf4a49"],
-          borderWidth: 2,
-          borderColor: "#fff"
+          borderWidth: 3,
+          borderColor: "#fff",
+          hoverOffset: 8
         }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "60%",
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:"62%",
         plugins: {
-          legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
+          legend: { position:"bottom", labels:{ boxWidth:12, padding:14, font:{ size:11, weight:"600" } } },
           tooltip: {
+            backgroundColor:"#0b3340",
+            padding:10,
+            cornerRadius:8,
             callbacks: {
               label: function(ctx){
                 if(empty) return "No targets set";
@@ -3629,14 +3668,13 @@ function renderDashboardCharts(agg, visibleRows){
 
   /* ---------- Chart 3: Sales Mix % — Actual vs Target ---------- */
   var mixKeys = [
-    { name:"Food Mix %",           key:"foodMix",        target:TARGETS.foodMix },
-    { name:"Grab & Go Mix %",      key:"grabGoMix",      target:TARGETS.grabGoMix },
-    { name:"Merchandise Mix %",    key:"merchandiseMix", target:TARGETS.merchandiseMix },
-    { name:"Modifier %",           key:"modifierMix",    target:TARGETS.modifierMix },
-    { name:"Upsize %",             key:"upsizePct",      target:TARGETS.upsize },
-    { name:"Water Attachment %",   key:"waterAttachment",target:TARGETS.waterAttachment }
+    { name:"Food Mix %",         key:"foodMix",         target:TARGETS.foodMix },
+    { name:"Grab & Go Mix %",    key:"grabGoMix",       target:TARGETS.grabGoMix },
+    { name:"Merchandise Mix %",  key:"merchandiseMix",  target:TARGETS.merchandiseMix },
+    { name:"Modifier %",         key:"modifierMix",     target:TARGETS.modifierMix },
+    { name:"Upsize %",           key:"upsizePct",       target:TARGETS.upsize },
+    { name:"Water Attachment %", key:"waterAttachment", target:TARGETS.waterAttachment }
   ];
-
   var mixLabels = [], mixActual = [], mixTarget = [];
   mixKeys.forEach(function(m){
     mixLabels.push(m.name);
@@ -3651,16 +3689,19 @@ function renderDashboardCharts(agg, visibleRows){
       data: {
         labels: mixLabels,
         datasets: [
-          { label: "Actual %", data: mixActual, backgroundColor: "#124a59", borderRadius: 4 },
-          { label: "Target %", data: mixTarget, backgroundColor: "#d59c3a", borderRadius: 4 }
+          { label:"Actual %", data:mixActual, backgroundColor:"#124a59", borderRadius:6, barPercentage:0.7 },
+          { label:"Target %", data:mixTarget, backgroundColor:"#d59c3a", borderRadius:6, barPercentage:0.7 }
         ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive:true,
+        maintainAspectRatio:false,
         plugins: {
-          legend: { position:"bottom", labels:{ font:{ size:11 }, boxWidth:12 } },
+          legend: { position:"bottom", labels:{ boxWidth:12, padding:14, font:{ size:11, weight:"600" } } },
           tooltip: {
+            backgroundColor:"#0b3340",
+            padding:10,
+            cornerRadius:8,
             callbacks: {
               label: function(ctx){
                 return ctx.dataset.label + ": " + ctx.parsed.y.toFixed(1) + "%";
@@ -3669,34 +3710,31 @@ function renderDashboardCharts(agg, visibleRows){
           }
         },
         scales: {
-          x: { ticks:{ font:{ size:10 }, maxRotation:30, minRotation:0 } },
-          y: { beginAtZero:true, ticks:{ font:{ size:10 }, callback:function(v){ return v + "%"; } } }
+          x: { grid:{ display:false }, ticks:{ font:{ size:10.5, weight:"600" }, maxRotation:35 } },
+          y: { beginAtZero:true, grid:{ color:"#eef3f2" }, ticks:{ font:{ size:10 }, callback:function(v){ return v + "%"; } } }
         }
       }
     });
   }
 
-  /* ---------- Chart 4: Store Comparison (bar) — focus KPI across stores ---------- */
+  /* ---------- Chart 4: Store Comparison — focus KPI (horizontal) ---------- */
   var focusIdx = q("dashKpi") ? q("dashKpi").value : "";
   var focusKpi = (focusIdx !== "" && KPI_DEFS[focusIdx]) ? KPI_DEFS[focusIdx] : KPI_DEFS[0];
   var storeIds = resolveStoreScope();
   var perStore = [];
   storeIds.forEach(function(sid){
-    var recs = state.records.filter(function(r){
-      return normalizeStoreId(r.storeId) === normalizeStoreId(sid) && r.date >= agg._periodStartLabel && r.date <= isoDate(new Date(agg._periodStartLabel + "-01"));
-    });
-    /* Simpler: filter by the same period the dashboard is showing */
-    recs = recordsBetweenStores([sid], agg._dashStart, agg._dashEnd);
+    var recs = recordsBetweenStores([sid], agg._dashStart, agg._dashEnd);
     if(!recs.length) return;
     var sa = aggregate(recs);
-    var v = sa._calc[focusKpi.key];
-    perStore.push({ store: sid, value: round(v, 2) });
+    perStore.push({ store: sid, value: round(sa._calc[focusKpi.key], 2) });
   });
   perStore.sort(function(a,b){ return b.value - a.value; });
   var topStores = perStore.slice(0, 12);
 
   var el4 = q("chartStores");
   if(el4 && topStores.length){
+    var isPct = focusKpi.fmt === "pct";
+    var isMoney = focusKpi.fmt === "money";
     dashCharts.stores = new Chart(el4, {
       type: "bar",
       data: {
@@ -3704,27 +3742,46 @@ function renderDashboardCharts(agg, visibleRows){
         datasets: [{
           label: focusKpi.name,
           data: topStores.map(function(x){ return x.value; }),
-          backgroundColor: "#124a59",
-          borderRadius: 4
+          backgroundColor: topStores.map(function(_,i){
+            /* gradient from navy → gold by rank */
+            var t = topStores.length > 1 ? i/(topStores.length-1) : 0;
+            var r = Math.round(11 + (213-11)*t);
+            var g = Math.round(51 + (156-51)*t);
+            var b = Math.round(64 + (58-64)*t);
+            return "rgb("+r+","+g+","+b+")";
+          }),
+          borderRadius: 6,
+          barPercentage: 0.78
         }]
       },
       options: {
+        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: { display:false },
-          title: { display:false }
+          tooltip: {
+            backgroundColor:"#0b3340",
+            padding:10,
+            cornerRadius:8,
+            callbacks: {
+              label: function(ctx){
+                var v = ctx.parsed.x;
+                if(isPct)   return focusKpi.name + ": " + v.toFixed(1) + "%";
+                if(isMoney) return focusKpi.name + ": SAR " + new Intl.NumberFormat("en-SA",{maximumFractionDigits:2}).format(v);
+                return focusKpi.name + ": " + new Intl.NumberFormat("en-SA",{maximumFractionDigits:2}).format(v);
+              }
+            }
+          }
         },
         scales: {
-          x: { ticks:{ font:{ size:10 }, maxRotation:60, minRotation:0 } },
-          y: { beginAtZero:true, ticks:{ font:{ size:10 } } }
+          x: { beginAtZero:true, grid:{ color:"#eef3f2" }, ticks:{ font:{ size:10 } } },
+          y: { grid:{ display:false }, ticks:{ font:{ size:10.5, weight:"600" } } }
         }
       }
     });
   }
-}
-
-  
+}  
 
 /* ---------- KPI Dashboard ---------- */
 function renderDashboard(){
@@ -4041,7 +4098,6 @@ var TX_COLUMNS = [
   { key:"storeId",             label:"Store",                fmt:"store" },
   { key:"salesWithoutTax",     label:"Sales W/O Tax",        fmt:"money" },
   { key:"netSales",            label:"Net Sales",            fmt:"money" },
-  { key:"transactions",        label:"Transactions",         fmt:"number"},
   { key:"adt",                 label:"ADT",                  fmt:"number"},
   { key:"at",                  label:"AT",                   fmt:"money" },
   { key:"salesVsTargetPct",    label:"vs Target %",          fmt:"pct"   },
@@ -4097,7 +4153,7 @@ function renderTxList(){
     thead += '<th data-sort="' + col.key + '">' + escapeHtml(col.label) +
              '<span class="sort-ind">' + ind + '</span></th>';
   });
-  if(canManageEntries()) thead += "<th>Actions</th>"; thead += "</tr></thead>";
+  thead += "</tr></thead>";
   var currentDate = q("f-date") ? q("f-date").value : "";
   var currentStore = state.selectedStore;
   var tbody = "<tbody>";
@@ -4145,12 +4201,6 @@ function renderTxList(){
       }
       tbody += '<td class="num ' + cls + '">' + escapeHtml(text) + '</td>';
     });
-      if(canManageEntries()){
-      tbody += '<td class="actions-cell">' +
-        '<button class="row-btn tx-load" data-date="' + escapeAttr(rec.date) + '" data-store="' + escapeAttr(rec.storeId) + '" type="button">Load</button>' +
-        '<button class="row-btn danger tx-delete" data-date="' + escapeAttr(rec.date) + '" data-store="' + escapeAttr(rec.storeId) + '" type="button">Delete</button>' +
-        '</td>';
-    }
     tbody += '</tr>';
   });
   tbody += "</tbody>";
@@ -4212,7 +4262,6 @@ var GRID_ROWS = [
   { type:"metric", key:"salesWithoutTax",  label:"Sales W/O Tax",          fmt:"money" },
   { type:"metric", key:"netSales",         label:"Net Sales",              fmt:"money" },
   { type:"metric", key:"totalDiscount",    label:"Total Discount (SAR)",   fmt:"money" },
-  { type:"metric", key:"transactions",     label:"Guest Count / Transactions", fmt:"number" },
   { type:"metric", key:"adt",              label:"ADT",                    fmt:"number" },
   { type:"metric", key:"at",               label:"AT",                     fmt:"money"  },
   { type:"metric", key:"salesVsTargetPct", label:"Sales vs Target %",      fmt:"pct"    },
@@ -4331,14 +4380,6 @@ function renderTxGrid(){
     });
     tbody += '</tr>';
   });
-  if(canManageEntries()){
-    tbody += '<tr class="action-row"><td class="sticky-col">Actions</td>';
-    enriched.forEach(function(item){
-      tbody += '<td><button class="row-btn tx-load" data-date="' + escapeAttr(item.record.date) + '" data-store="' + escapeAttr(item.record.storeId) + '" type="button">Load</button>' +
-        '<button class="row-btn danger tx-delete" data-date="' + escapeAttr(item.record.date) + '" data-store="' + escapeAttr(item.record.storeId) + '" type="button">Delete</button></td>';
-    });
-    tbody += '</tr>';
-  }
   tbody += '</tbody>';
   table.innerHTML = colgroup + thead + tbody;
   table.querySelectorAll(".tx-load").forEach(function(btn){
@@ -6076,15 +6117,23 @@ if(grossSalesEl){
 
 
   q("dashMonth").addEventListener("change", renderDashboard);
-    var toggleChartsBtn = q("dashToggleCharts");
-  if(toggleChartsBtn){
-    toggleChartsBtn.addEventListener("click", function(){
-      var panel = q("dashCharts");
-      if(!panel) return;
-      var hidden = panel.classList.toggle("hidden");
-      toggleChartsBtn.textContent = hidden ? "Show Charts" : "Hide Charts";
+   document.querySelectorAll("#dashViewToggle button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll("#dashViewToggle button").forEach(function(x){
+      x.classList.toggle("active", x === b);
     });
-  }
+    var mode = b.dataset.view;              // "chart" or "table"
+    var chartPanel = q("dashCharts");
+    var tablePanel = document.querySelector("#view-dashboard .table-card");
+    if(mode === "chart"){
+      if(chartPanel) chartPanel.classList.remove("hidden");
+      if(tablePanel) tablePanel.style.display = "none";
+    } else {
+      if(chartPanel) chartPanel.classList.add("hidden");
+      if(tablePanel) tablePanel.style.display = "";
+    }
+  });
+});
   q("dashKpi").addEventListener("change", renderDashboard);
 
 
