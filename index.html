@@ -3812,7 +3812,23 @@ function renderDashboardCharts(agg, visibleRows){
       }
     });
   }
-}  
+} 
+  /* ---- applyDashView (moved outside so renderDashboard can call it) ---- */
+function applyDashView(){
+  var chartPanel = q("dashCharts");
+  var tablePanel = document.querySelector("#view-dashboard .table-card");
+  if(!chartPanel || !tablePanel) return;
+  if(dashViewMode === "chart"){
+    chartPanel.classList.remove("hidden");
+    tablePanel.style.display = "none";
+  } else {
+    chartPanel.classList.add("hidden");
+    tablePanel.style.display = "";
+  }
+  document.querySelectorAll("#dashViewToggle button").forEach(function(x){
+    x.classList.toggle("active", x.dataset.view === dashViewMode);
+  });
+}
 
 /* ---------- KPI Dashboard ---------- */
 function renderDashboard(){
@@ -6153,22 +6169,7 @@ document.querySelectorAll("#dashViewToggle button").forEach(function(b){
     applyDashView();
   });
 });
-
-function applyDashView(){
-  var chartPanel = q("dashCharts");
-  var tablePanel = document.querySelector("#view-dashboard .table-card");
-  if(!chartPanel || !tablePanel) return;
-  if(dashViewMode === "chart"){
-    chartPanel.classList.remove("hidden");
-    tablePanel.style.display = "none";
-  } else {
-    chartPanel.classList.add("hidden");
-    tablePanel.style.display = "";
-  }
-  document.querySelectorAll("#dashViewToggle button").forEach(function(x){
-    x.classList.toggle("active", x.dataset.view === dashViewMode);
-  });
-}
+  
 
 q("dashKpi").addEventListener("change", renderDashboard);
 
