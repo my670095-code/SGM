@@ -2208,59 +2208,130 @@ function computeVisibleStores(){
   var ids = currentUser.storeIds || [];
   visibleStores = state.stores.filter(function(s){ return ids.indexOf(s.id) >= 0; });
 }
-function tryStoreLogin(){
+/* ============================================================
+   AUTH — Supabase-backed
+   ============================================================ */
+
+async function tryStoreLogin(){
   var code = (q("loginStoreCode").value||"").trim().toUpperCase().replace(/^DC\s+/, "DC");
   var pin  = (q("loginStorePin").value||"").trim();
   var err = q("loginStoreError");
   err.textContent = "";
   if(!code){ err.textContent = "Enter a store code."; return; }
-  var s = state.stores.find(function(x){ return x.id === code; });
-  if(!s){ err.textContent = "Unknown store code."; return; }
-  if(s.status !== "Active"){ err.textContent = "This store is inactive. Contact admin."; return; }
-  if(pin !== (state.defaultStorePin || "0000")){ err.textContent = "Incorrect PIN."; return; }
-  currentUser = { role:"store", storeId:s.id, display: s.id + " — " + (s.storeManager || s.area || "") };
-  finalizeLogin();
+  if(!pin){ err.textContent = "Enter your PIN."; return; }
+
+  var email = code.toLowerCase() + "@drcafe.com";
+  var password = pin.length >= 6 ? pin : (pin + "00");
+
+  err.textContent = "Signing in…";
+
+  try {
+    var result = await sb.auth.signInWithPassword({ email: email, password: password });
+    if(result.error) throw result.error;
+
+    var profile = await sbFetchProfile(result.data.user.id);
+    if(profile.role !== "store"){
+      await sb.auth.signOut();
+      err.textContent = "This account is not a store login. Use the Manager tab.";
+      return;
+    }
+
+    currentUser = {
+      role: "store",
+      username: profile.username,
+      display: profile.display || profile.username,
+      storeId: (profile.storeIds && profile.storeIds[0]) || code,
+      storeIds: profile.storeIds || []
+    };
+    err.textContent = "";
+    await finalizeLogin();
+  } catch(e){
+    console.error("Store login failed:", e);
+    err.textContent = (e && e.message) ? e.message : "Sign-in failed. Check store code and PIN.";
+  }
 }
-function tryManagerLogin(){
+
+async function tryManagerLogin(){
   var u = (q("loginUsername").value||"").trim().toLowerCase();
   var p = (q("loginPassword").value||"");
   var err = q("loginManagerError");
   err.textContent = "";
   if(!u){ err.textContent = "Enter a username."; return; }
-  var found = state.users.find(function(x){ return String(x.username).toLowerCase() === u; });
-  if(!found){ err.textContent = "Unknown username."; return; }
-  if(String(found.password) !== p){ err.textContent = "Incorrect password."; return; }
-  currentUser = { role:found.role, username:found.username, display:found.display||found.username, storeIds:(found.storeIds||[]).slice() };
-  finalizeLogin();
+  if(!p){ err.textContent = "Enter your password."; return; }
+
+  var email = u.indexOf("@") >= 0 ? u : (u + "@drcafe.com");
+
+  err.textContent = "Signing in…";
+
+  try {
+    var result = await sb.auth.signInWithPassword({ email: email, password: p });
+    if(result.error) throw result.error;
+
+    var profile = await sbFetchProfile(result.data.user.id);
+
+    currentUser = {
+      role: profile.role,
+      username: profile.username,
+      display: profile.display || profile.username,
+      storeIds: profile.storeIds || []
+    };
+    err.textContent = "";
+    await finalizeLogin();
+  } catch(e){
+    console.error("Manager login failed:", e);
+    err.textContent = (e && e.message) ? e.message : "Sign-in failed. Check username and password.";
+  }
 }
-function finalizeLogin(){
+
+async function finalizeLogin(){
+  /* Load stores + salary from Supabase into in-memory state */
+  try {
+    state.stores = await sbFetchStores();
+  } catch(e){
+    console.error("Failed to load stores:", e);
+    showToast("Could not load stores from server. Please refresh.");
+    return;
+  }
+
+  try {
+    var salary = await sbFetchSalary();
+    if(salary && salary.length) state.salary = salary;
+  } catch(e){
+    console.warn("Could not load salary config — using defaults:", e);
+  }
+
   computeVisibleStores();
+
   if(!visibleStores.length && currentUser.role !== "admin"){
     showToast("This account has no assigned stores. Contact admin.");
+    await sb.auth.signOut();
     currentUser = null;
     return;
   }
-  var canSeeCurrent = visibleStores.some(function(s){return s.id === state.selectedStore;});
+
+  var canSeeCurrent = visibleStores.some(function(s){ return s.id === state.selectedStore; });
   if(!canSeeCurrent){
-    var firstActive = visibleStores.find(function(s){return s.status==="Active";}) || visibleStores[0];
+    var firstActive = visibleStores.find(function(s){ return s.status === "Active"; }) || visibleStores[0];
     state.selectedStore = firstActive ? firstActive.id : "";
   }
-  try{ sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser)); }catch(e){}
+
   applyRoleUi();
   q("loginScreen").classList.remove("show");
   q("appShell").style.display = "";
   switchView("daily");
-    setupStores();
+  setupStores();
   renderAmMultiSelect();
   renderStoreMultiSelect();
-  loadDailyRecord();
+  await loadDailyRecord();
   refreshCurrentView();
   renderTransactions();
 }
-function logout(){
-  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+
+async function logout(){
+  try { await sb.auth.signOut(); } catch(e){ console.warn("Sign-out error:", e); }
   currentUser = null;
   visibleStores = [];
+  state.records = [];
   q("loginStoreCode").value = "";
   q("loginStorePin").value = "";
   q("loginUsername").value = "";
@@ -2270,31 +2341,34 @@ function logout(){
   q("appShell").style.display = "none";
   q("loginScreen").classList.add("show");
 }
-function restoreSession(){
-  try{
-    var raw = sessionStorage.getItem(SESSION_KEY);
-    if(!raw) return false;
-    var u = JSON.parse(raw);
-    if(!u || !u.role) return false;
 
-    if(u.role === "store"){
-      var s = state.stores.find(function(x){return x.id === u.storeId;});
-      if(!s){ sessionStorage.removeItem(SESSION_KEY); return false; }
-      if(s.status !== "Active"){ sessionStorage.removeItem(SESSION_KEY); return false; }
-    } else {
-      var fresh = state.users.find(function(x){return x.username === u.username;});
-      if(!fresh){ sessionStorage.removeItem(SESSION_KEY); return false; }
-      if(String(fresh.password) !== String(u.password)){ sessionStorage.removeItem(SESSION_KEY); return false; }
-      u.display = fresh.display || u.display;
-      u.role = fresh.role;
-      u.storeIds = (fresh.storeIds||[]).slice();
-    }
+async function restoreSession(){
+  try {
+    var sess = await sb.auth.getSession();
+    if(!sess || !sess.data || !sess.data.session) return false;
 
-    currentUser = u;
+    var user = sess.data.session.user;
+    if(!user) return false;
+
+    var profile = await sbFetchProfile(user.id);
+    currentUser = {
+      role: profile.role,
+      username: profile.username,
+      display: profile.display || profile.username,
+      storeIds: profile.storeIds || [],
+      storeId: (profile.role === "store") ? (profile.storeIds[0] || null) : null
+    };
+
+    state.stores = await sbFetchStores();
+    try {
+      var salary = await sbFetchSalary();
+      if(salary && salary.length) state.salary = salary;
+    } catch(e){ /* keep defaults */ }
+
     computeVisibleStores();
 
     if(!visibleStores.length && currentUser.role !== "admin"){
-      sessionStorage.removeItem(SESSION_KEY);
+      await sb.auth.signOut();
       currentUser = null;
       return false;
     }
@@ -2303,8 +2377,8 @@ function restoreSession(){
     q("loginScreen").classList.remove("show");
     q("appShell").style.display = "";
     return true;
-  }catch(e){
-    sessionStorage.removeItem(SESSION_KEY);
+  } catch(e){
+    console.warn("Session restore failed:", e);
     return false;
   }
 }
@@ -3053,16 +3127,23 @@ function getFormRecord(){
   });
   return rec;
 }
-  function loadDailyRecord(){
+async function loadDailyRecord(){
   var dateEl = q("f-date");
   var wanted = (dateEl && dateEl.value) || todayIso();
   if(dateEl) dateEl.value = wanted;
   var heroDate = q("f-date-hero");
   if(heroDate) heroDate.value = wanted;
   var wantStore = normalizeStoreId(state.selectedStore);
-  var found = state.records.find(function(r){
-    return normalizeStoreId(r.storeId) === wantStore && r.date === wanted;
-  });
+
+  /* Fetch from Supabase instead of localStorage */
+  var found = null;
+  try {
+    var records = await sbLoadRecords([wantStore], wanted, wanted);
+    found = records && records.length ? records[0] : null;
+  } catch(e){
+    console.warn("Could not fetch daily record:", e);
+  }
+
   REQUIRED_FIELDS.forEach(function(f){
     var el = q("f-"+f.key);
     if(el){
@@ -3258,121 +3339,80 @@ function copySubmittedToClipboard(){
 function closeConfirmModal(){
   q("confirmModal").classList.remove("show");
 }
-  function commitDailyRecord(){
-  /* Always trust the hero date — it is the user-visible control */
+  async function commitDailyRecord(){
   var heroDate = q("f-date-hero") ? q("f-date-hero").value : "";
-  if(heroDate){
-    q("f-date").value = heroDate;
-  }
+  if(heroDate){ q("f-date").value = heroDate; }
   var rec = getFormRecord();
   rec.storeId = normalizeStoreId(rec.storeId);
   rec.date = String(rec.date || "").trim();
   if(!rec.date){ showToast("Select an entry date first."); return; }
   rec.id = rec.storeId + "_" + rec.date;
 
-  /* Normalize comparison so old records with different casing still match */
+  /* Save to Supabase */
+  try {
+    await sbSaveDailyRecord(rec);
+  } catch(e){
+    console.error("Save failed:", e);
+    showToast("Could not save to server: " + (e.message || "unknown error"));
+    return;
+  }
+
+  /* Keep an in-memory copy for reports until we migrate those */
   var idx = state.records.findIndex(function(r){
     return normalizeStoreId(r.storeId) === rec.storeId && String(r.date).trim() === rec.date;
   });
+  if(idx >= 0) state.records[idx] = rec;
+  else state.records.push(rec);
 
-  if(idx >= 0) {
-    state.records[idx] = rec;              /* replace existing */
-  } else {
-    state.records.push(rec);               /* add new */
-  }
+  closeConfirmModal();
 
-  state.records.sort(function(a,b){
-    return (normalizeStoreId(a.storeId)+a.date).localeCompare(normalizeStoreId(b.storeId)+b.date);
-  });
+  var c = calculate(rec);
+  var store = state.stores.find(function(x){ return x.id === rec.storeId; });
+  var storeLabel = rec.storeId + (store && store.area ? " · " + store.area : "");
+  var summaryHtml =
+    '<div class="summary-grid">'+
+      '<div class="row"><span>Store</span><strong>'+escapeHtml(storeLabel)+'</strong></div>'+
+      '<div class="row"><span>Date</span><strong>'+escapeHtml(dateLabel(rec.date))+'</strong></div>'+
+      '<div class="row"><span>Sales W/O Tax</span><strong>SAR '+escapeHtml(money(c.salesWithoutTax))+'</strong></div>'+
+      '<div class="row"><span>Net Sales</span><strong>SAR '+escapeHtml(money(c.netSales))+'</strong></div>'+
+      '<div class="row"><span>Transactions</span><strong>'+escapeHtml(integer(rec.transactions))+'</strong></div>'+
+      '<div class="row"><span>ADT</span><strong>'+escapeHtml(integer(c.adt))+'</strong></div>'+
+      '<div class="row"><span>AT</span><strong>SAR '+escapeHtml(money(c.at))+'</strong></div>'+
+      '<div class="row"><span>Sales vs Target</span><strong>'+escapeHtml(pct(c.salesVsTargetPct))+'</strong></div>'+
+    '</div>'+
+    '<div class="summary-section">'+
+      'Food '+escapeHtml(pct(c.foodMix))+' · G&amp;G '+escapeHtml(pct(c.grabGoMix))+' · Merch '+escapeHtml(pct(c.merchandiseMix))+
+      '<br>Wastage '+escapeHtml(pct(c.wastagePct))+' · Employee '+escapeHtml(pct(c.employeePct))+
+      (currentBreakdowns.length ? '<br>Breakdowns: '+currentBreakdowns.length+' event(s) · '+round(c.breakdownHours,2)+' hrs · Lost sales SAR '+escapeHtml(money(c.estimatedLostSales)) : '')+
+    '</div>';
 
-  if(saveState()){
-    closeConfirmModal();
+  window.__lastSubmittedText = buildSubmittedText(rec, c);
+  q("submittedSummary").innerHTML = summaryHtml;
+  q("submittedModal").classList.add("show");
 
-    /* Build the post-submit summary BEFORE we clear the form */
-    var c = calculate(rec);
-    var store = state.stores.find(function(x){ return x.id === rec.storeId; });
-    var storeLabel = rec.storeId + (store && store.area ? " · " + store.area : "");
-    var summaryHtml =
-      '<div class="summary-grid">'+
-        '<div class="row"><span>Store</span><strong>'+escapeHtml(storeLabel)+'</strong></div>'+
-        '<div class="row"><span>Date</span><strong>'+escapeHtml(dateLabel(rec.date))+'</strong></div>'+
-        '<div class="row"><span>Sales W/O Tax</span><strong>SAR '+escapeHtml(money(c.salesWithoutTax))+'</strong></div>'+
-        '<div class="row"><span>Net Sales</span><strong>SAR '+escapeHtml(money(c.netSales))+'</strong></div>'+
-        '<div class="row"><span>Transactions</span><strong>'+escapeHtml(integer(rec.transactions))+'</strong></div>'+
-        '<div class="row"><span>ADT</span><strong>'+escapeHtml(integer(c.adt))+'</strong></div>'+
-        '<div class="row"><span>AT</span><strong>SAR '+escapeHtml(money(c.at))+'</strong></div>'+
-        '<div class="row"><span>Sales vs Target</span><strong>'+escapeHtml(pct(c.salesVsTargetPct))+'</strong></div>'+
-      '</div>'+
-      '<div class="summary-section">'+
-        'Food '+escapeHtml(pct(c.foodMix))+' · G&amp;G '+escapeHtml(pct(c.grabGoMix))+' · Merch '+escapeHtml(pct(c.merchandiseMix))+
-        '<br>Wastage '+escapeHtml(pct(c.wastagePct))+' · Employee '+escapeHtml(pct(c.employeePct))+
-        (currentBreakdowns.length ? '<br>Breakdowns: '+currentBreakdowns.length+' event(s) · '+round(c.breakdownHours,2)+' hrs · Lost sales SAR '+escapeHtml(money(c.estimatedLostSales)) : '')+
-      '</div>';
+  var keptDate = rec.date;
+  q("f-date").value = keptDate;
+  q("f-date-hero").value = keptDate;
 
-    /* Store the built message text so the WhatsApp button can send it */
-    window.__lastSubmittedText = buildSubmittedText(rec, c);
-
-    q("submittedSummary").innerHTML = summaryHtml;
-    q("submittedModal").classList.add("show");
-
-    /* Now clear the form */
-    var keptDate = rec.date;
-    q("f-date").value = keptDate;
-    q("f-date-hero").value = keptDate;
-
-    REQUIRED_FIELDS.forEach(function(f){
-      var el = q("f-"+f.key);
-      if(el){ el.value=""; el.classList.remove("filled","missing"); }
-    });
-
-    currentBreakdowns = [];
-    renderBreakdowns();
-    refreshGroupPills();
-    refreshProgress();
-    recalcAllCalcFields();
-    updateEntryDateLabel();
-    updateTopSubmitBtn();
-    dirty = false;
-    updateEntryStatus("saved");
-    showToast("✓ Entry submitted successfully.", "success");
-  }
-}
-function getMissingFields(){
-  var out = [];
-  REQUIRED_FIELDS.forEach(function(f){
-    var el = q("f-"+f.key);
-    if(!el) return;
-    var v = String(el.value||"").trim();
-    if(v === "") out.push({ key:f.key, label:f.label });
-  });
-  return out;
-}
-function blankDailyRecord(){
   REQUIRED_FIELDS.forEach(function(f){
     var el = q("f-"+f.key);
     if(el){ el.value=""; el.classList.remove("filled","missing"); }
   });
+
   currentBreakdowns = [];
   renderBreakdowns();
   refreshGroupPills();
   refreshProgress();
   recalcAllCalcFields();
+  updateEntryDateLabel();
   updateTopSubmitBtn();
-}
-function clearDailyRecord(){
-  var date = q("f-date").value;
-  var wantStore = normalizeStoreId(state.selectedStore);
-  var idx = state.records.findIndex(function(r){
-    return normalizeStoreId(r.storeId) === wantStore && r.date === date;
-  });
-  if(idx<0){ blankDailyRecord(); dirty = false; updateEntryStatus("new"); return; }
-  if(!window.confirm("Delete the saved entry for "+dateLabel(date)+"?")) return;
-  state.records.splice(idx,1);
-  saveState("Daily entry removed.");
-  blankDailyRecord();
   dirty = false;
-  updateEntryStatus("new");
+  updateEntryStatus("saved");
+  showToast("✓ Entry saved to server.", "success");
 }
+
+
+ 
 
 /* ============================================================
    AGGREGATES
@@ -6064,14 +6104,14 @@ function setupStores(){
   sel.disabled = !!(currentUser && currentUser.role === "store");
 
   /* ---- Store dropdown drives the top filter ---- */
+    /* ---- Store dropdown drives the top filter ---- */
   sel.onchange = function(){
     state.selectedStore = sel.value;
     topFilter.storeIds = sel.value ? [ sel.value ] : [];
     topFilter.storeId  = sel.value || "";
     topFilter.areaManagers = [];
     pushFilterPersistence();
-    saveState();
-    loadDailyRecord();
+    loadDailyRecord().catch(function(e){ console.error(e); });
     updateEntryHero();
     renderAmMultiSelect();
     renderStoreMultiSelect();
@@ -6119,13 +6159,13 @@ function bindEvents(){
       q("loginManagerError").textContent = "";
     });
   });
-  q("loginStoreBtn").addEventListener("click", tryStoreLogin);
-  q("loginManagerBtn").addEventListener("click", tryManagerLogin);
-  q("loginStorePin").addEventListener("keydown", function(e){ if(e.key === "Enter") tryStoreLogin(); });
-  q("loginPassword").addEventListener("keydown", function(e){ if(e.key === "Enter") tryManagerLogin(); });
+    q("loginStoreBtn").addEventListener("click", function(){ tryStoreLogin().catch(function(e){ console.error(e); }); });
+  q("loginManagerBtn").addEventListener("click", function(){ tryManagerLogin().catch(function(e){ console.error(e); }); });
+  q("loginStorePin").addEventListener("keydown", function(e){ if(e.key === "Enter") tryStoreLogin().catch(function(x){ console.error(x); }); });
+  q("loginPassword").addEventListener("keydown", function(e){ if(e.key === "Enter") tryManagerLogin().catch(function(x){ console.error(x); }); });
   q("loginStoreCode").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginStorePin").focus(); });
   q("loginUsername").addEventListener("keydown", function(e){ if(e.key === "Enter") q("loginPassword").focus(); });
-  q("logoutBtn").addEventListener("click", logout);
+  q("logoutBtn").addEventListener("click", function(){ logout().catch(function(e){ console.error(e); }); });
     var copyCalcBtn = q("copyCalcBtn");
   if(copyCalcBtn) copyCalcBtn.addEventListener("click", copyCalcToClipboard);
     var subClose  = q("submittedModalClose");
@@ -6191,14 +6231,15 @@ function bindEvents(){
   }
 
     q("submitDayBtn").addEventListener("click", submitDailyRecord);
-    q("clearDayBtn").addEventListener("click", clearDailyRecord);
+    q("clearDayBtn").addEventListener("click", function(){
+      clearDailyRecord().catch(function(e){ console.error(e); });
+    });
     q("confirmModalClose").addEventListener("click", closeConfirmModal);
   q("confirmModalCancel").addEventListener("click", closeConfirmModal);
-  q("confirmModalSave").addEventListener("click", commitDailyRecord);
+  q("confirmModalSave").addEventListener("click", function(){ commitDailyRecord().catch(function(e){ console.error(e); }); });
   q("confirmModal").addEventListener("click", function(e){
     if(e.target === q("confirmModal")) closeConfirmModal();
   });
-    /* Unified date sync — only listen to `change` (not `input`), so the picker value is fully committed */
 function handleDateChange(source){
   var val = source.value || todayIso();
   var prev = q("f-date").value;
@@ -6212,10 +6253,11 @@ function handleDateChange(source){
   q("f-date").value = val;
   q("f-date-hero").value = val;
   dirty = false;
-  loadDailyRecord();
-  updateEntryDateLabel();
-  recalcAllCalcFields();
-  refreshProgress();
+  loadDailyRecord().then(function(){
+    updateEntryDateLabel();
+    recalcAllCalcFields();
+    refreshProgress();
+  }).catch(function(e){ console.error(e); });
 }
 
 q("f-date-hero").addEventListener("change", function(){ handleDateChange(q("f-date-hero")); });
@@ -6354,24 +6396,26 @@ var dPdfBtn  = q("dashPdfBtn"); if(dPdfBtn) dPdfBtn.addEventListener("click", ex
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
   bindEvents();
-  q("appShell").style.display = "none";
-  if(restoreSession()){
-    computeVisibleStores();
-    pullFilterPersistence();
-        setupStores();
-    renderAmMultiSelect();
-    renderStoreMultiSelect();
-    loadDailyRecord();
-    updateStorageStat();
-    renderStoreFilters();
-    renderStores();
-    renderUsers();
-    renderTransactions();
-    applyRoleUi();
-    switchView("daily");
-  } else {
-    q("loginScreen").classList.add("show");
-  }
+   q("appShell").style.display = "none";
+  restoreSession().then(async function(ok){
+    if(ok){
+      computeVisibleStores();
+      pullFilterPersistence();
+      setupStores();
+      renderAmMultiSelect();
+      renderStoreMultiSelect();
+      await loadDailyRecord();
+      updateStorageStat();
+      renderStoreFilters();
+      renderStores();
+      renderUsers();
+      renderTransactions();
+      applyRoleUi();
+      switchView("daily");
+    } else {
+      q("loginScreen").classList.add("show");
+    }
+  });
 }
 
 try {
