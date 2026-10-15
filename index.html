@@ -749,14 +749,7 @@ details.group>summary::-webkit-details-marker{display:none}
   .view{display:none !important}
   .view.active{display:block !important}
 }
-  @media print{
-  .topbar,.toolbar,.notice,.footer,.btn,.entry-toolbar,.submit-bar {display:none !important}
-  body{background:#fff}
-  main{max-width:none;padding:0}
-  .card,.report-shell,.table-card{box-shadow:none}
-  .view{display:none !important}
-  .view.active{display:block !important}
-}
+
   /* ===== KPI DASHBOARD COLUMN FIX ===== */
 #dashboardTable {
   table-layout: fixed;
@@ -3785,6 +3778,8 @@ function renderDashboardCharts(agg, visibleRows){
 
 /* ---------- KPI Dashboard ---------- */
 function renderDashboard(){
+    applyDashView();
+
   var monthEl = q("dashMonth");
   var mv = (monthEl && monthEl.value) || currentMonthIso();
   var start = mv+"-01";
@@ -3824,7 +3819,6 @@ function renderDashboard(){
     if(box) box.textContent = focus.name+": "+fmtVal(fv, focus.fmt)+
       (focus.target!=null ? " / Target "+fmtVal(focus.target, focus.fmt) : "");
   }
-    /* Fire the trend chart for the focus KPI */
 
   var table = q("dashboardTable");
   if(!table) return;
@@ -3850,7 +3844,6 @@ var thead = "<thead><tr>"+
     /* Draw the charts */
   renderDashboardCharts(agg, rows);
 
-  var spans = {}; rows.forEach(function(r){ spans[r.cat] = (spans[r.cat]||0)+1; });
 
   var spans = {}; rows.forEach(function(r){ spans[r.cat] = (spans[r.cat]||0)+1; });
   var prevCat = null;
@@ -4067,6 +4060,7 @@ function shiftMonth(monthIso, delta){
 var txSortKey = "date";
 var txSortDir = -1;
 var txViewMode = "list";
+  var dashViewMode = "chart";
 
 function getTxStoresForScope(){
   if(currentUser && currentUser.role === "store") return visibleStores.slice();
@@ -6052,7 +6046,6 @@ function bindEvents(){
   q("confirmModal").addEventListener("click", function(e){
     if(e.target === q("confirmModal")) closeConfirmModal();
   });
-    /* Unified date sync — both pickers stay in step and reload the record */
     /* Unified date sync — only listen to `change` (not `input`), so the picker value is fully committed */
 function handleDateChange(source){
   var val = source.value || todayIso();
@@ -6114,29 +6107,32 @@ if(grossSalesEl){
   q("monthDate3").addEventListener("change", renderMonthly);
   q("monthCompareMode").addEventListener("change", renderMonthly);
 
+q("dashMonth").addEventListener("change", renderDashboard);
 
-
-  q("dashMonth").addEventListener("change", renderDashboard);
-   document.querySelectorAll("#dashViewToggle button").forEach(function(b){
+document.querySelectorAll("#dashViewToggle button").forEach(function(b){
   b.addEventListener("click", function(){
-    document.querySelectorAll("#dashViewToggle button").forEach(function(x){
-      x.classList.toggle("active", x === b);
-    });
-    var mode = b.dataset.view;              // "chart" or "table"
-    var chartPanel = q("dashCharts");
-    var tablePanel = document.querySelector("#view-dashboard .table-card");
-    if(mode === "chart"){
-      if(chartPanel) chartPanel.classList.remove("hidden");
-      if(tablePanel) tablePanel.style.display = "none";
-    } else {
-      if(chartPanel) chartPanel.classList.add("hidden");
-      if(tablePanel) tablePanel.style.display = "";
-    }
+    dashViewMode = b.dataset.view;   // "chart" or "table"
+    applyDashView();
   });
 });
-  q("dashKpi").addEventListener("change", renderDashboard);
 
+function applyDashView(){
+  var chartPanel = q("dashCharts");
+  var tablePanel = document.querySelector("#view-dashboard .table-card");
+  if(!chartPanel || !tablePanel) return;
+  if(dashViewMode === "chart"){
+    chartPanel.classList.remove("hidden");
+    tablePanel.style.display = "none";
+  } else {
+    chartPanel.classList.add("hidden");
+    tablePanel.style.display = "";
+  }
+  document.querySelectorAll("#dashViewToggle button").forEach(function(x){
+    x.classList.toggle("active", x.dataset.view === dashViewMode);
+  });
+}
 
+q("dashKpi").addEventListener("change", renderDashboard);
 
   var wSearch = q("weeklySearch");
   if(wSearch) wSearch.addEventListener("input", renderWeekly);
