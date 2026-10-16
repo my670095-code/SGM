@@ -1421,6 +1421,7 @@ details.group>summary::-webkit-details-marker{display:none}
   <button class="btn primary" id="userAddBtn" type="button">+ Add user</button>
   <button class="btn gold" id="bulkCreateStoresBtn" type="button">🏪 Bulk-create store logins (69)</button>
   <button class="btn gold" id="bulkCreateManagersBtn" type="button">👤 Bulk-create managers</button>
+            <button class="btn gold" id="userImportBtn" type="button">📥 Import users from Excel</button>
   <button class="btn" id="usersExportBtn" type="button">Export users CSV</button>
 </div>
       </div>
@@ -1613,6 +1614,44 @@ details.group>summary::-webkit-details-marker{display:none}
     <div class="modal-foot">
       <button class="btn" id="userModalCancel" type="button">Cancel</button>
       <button class="btn primary" id="userModalSave" type="button">Save</button>
+    </div>
+  </div>
+</div>
+  <!-- ============ USER IMPORT MODAL ============ -->
+<div class="modal-backdrop" id="userImportModal">
+  <div class="modal" style="max-width:1080px">
+    <div class="modal-head">
+      <h3>Import Users from Excel / CSV</h3>
+      <button class="modal-x" id="userImportModalClose" type="button">×</button>
+    </div>
+    <div class="modal-body" style="grid-template-columns:1fr">
+
+      <div class="field wide">
+        <label for="userImportFile">Choose Excel (.xlsx, .xls) or CSV file</label>
+        <input id="userImportFile" type="file"
+          accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+      </div>
+
+      <div class="field wide">
+        <label>Download template</label>
+        <button type="button" class="btn small" id="userImportTemplateBtn">📄 Download sample Excel template</button>
+      </div>
+
+      <div class="field wide" id="userImportPreviewWrap" style="display:none">
+        <label>Preview</label>
+        <div class="import-stats" id="userImportStats"></div>
+        <div class="preview-table" id="userImportPreview"></div>
+      </div>
+
+      <div class="field wide" id="userImportProgressWrap" style="display:none">
+        <label>Progress</label>
+        <div id="userImportProgress" style="padding:10px 12px;background:#f4f8f7;border-radius:9px;font-size:13px;font-weight:600;color:#0b3340"></div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="userImportModalCancel" type="button">Cancel</button>
+      <button class="btn primary" id="userImportConfirmBtn" type="button" disabled>Import</button>
     </div>
   </div>
 </div>
@@ -5970,6 +6009,292 @@ async function bulkCreateStores(){
   await reloadProfiles();
   renderUsers();
 }
+  /* ============================================================
+   USER IMPORT FROM EXCEL
+   ============================================================ */
+var userImportParsedRows = null;
+
+function openUserImportModal(){
+  if(!(currentUser && currentUser.role === "admin")){
+    showToast("Only admin can import users.");
+    return;
+  }
+  userImportParsedRows = null;
+  q("userImportFile").value = "";
+  q("userImportPreviewWrap").style.display = "none";
+  q("userImportProgressWrap").style.display = "none";
+  q("userImportConfirmBtn").disabled = true;
+  q("userImportModal").classList.add("show");
+}
+function closeUserImportModal(){
+  q("userImportModal").classList.remove("show");
+  userImportParsedRows = null;
+}
+
+/* Normalize header keys to catch common variations */
+function normalizeUserHeader(h){
+  return String(h==null?"":h).trim().toLowerCase().replace(/[\s_\-]+/g,"");
+}
+var USER_IMPORT_FIELD_MAP = {
+  /* Username column */
+  "username":"username", "user":"username", "login":"username",
+  "email":"username", "useremail":"username", "userid":"username",
+
+  /* Display name column */
+  "displayname":"display_name", "display":"display_name", "name":"display_name",
+  "fullname":"display_name", "full_name":"display_name", "managername":"display_name",
+
+  /* Role column */
+  "role":"role", "type":"role", "usertype":"role", "userrole":"role",
+
+  /* Password column */
+  "password":"password", "pass":"password", "pin":"password", "pwd":"password",
+
+  /* Assigned stores column */
+  "storeids":"store_ids", "stores":"store_ids", "store":"store_ids",
+  "storeid":"store_ids", "storecodes":"store_ids", "assignedstores":"store_ids",
+  "assignedstore":"store_ids", "storecode":"store_ids"
+};
+function mapUserRow(raw){
+  var out = {
+    username: "",
+    display_name: "",
+    role: "",
+    password: "",
+    store_ids: []
+  };
+
+  Object.keys(raw).forEach(function(k){
+    var target = USER_IMPORT_FIELD_MAP[normalizeUserHeader(k)];
+    if(!target) return;
+    var val = raw[k] == null ? "" : String(raw[k]).trim();
+
+    if(target === "username"){
+      /* Strip email domain — convert admin@drcafe.com → admin */
+      val = val.replace(/@.*$/, "").trim().toLowerCase();
+      out.username = val;
+    } else if(target === "store_ids"){
+      /* Handle "All stores" specially */
+      if(/^all\s*stores?$/i.test(val) || val === "" || val === "—" || val === "-"){
+        out.store_ids = [];   /* leave empty for admin / viewer */
+      } else {
+        /* Accept commas, semicolons, spaces, pipes */
+        out.store_ids = val
+          .split(/[;,\s|]+/)
+          .map(function(x){ return x.trim().toUpperCase(); })
+          .filter(Boolean);
+      }
+    } else {
+      out[target] = val;
+    }
+  });
+
+  /* Normalize role — accepts short AND long forms */
+  var r = (out.role || "").toLowerCase().trim().replace(/[\s_\-]+/g, "");
+  if(r === "admin" || r === "administrator" || r === "a") out.role = "admin";
+  else if(r === "areamanager" || r === "area" || r === "am" || r === "am.") out.role = "am";
+  else if(r === "operationmanager" || r === "operationsmanager" || r === "operation" || r === "op" || r === "om") out.role = "op";
+  else if(r === "storemanager" || r === "store" || r === "s" || r === "shop" || r === "sm") out.role = "store";
+  else if(r === "viewer" || r === "viewonly" || r === "readonly") out.role = "viewer";
+  else out.role = "store"; /* safe default */
+
+  /* Display name falls back to username */
+  if(!out.display_name) out.display_name = out.username;
+
+  /* Password defaults to 0000 (will be padded to 000000) */
+  if(!out.password) out.password = "0000";
+
+  return out;
+}
+function parseUserFile(file, cb){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, {type:"array"});
+      var sheet = wb.Sheets[wb.SheetNames[0]];
+      var json = XLSX.utils.sheet_to_json(sheet, {defval:""});
+      cb(null, json);
+    }catch(err){ cb(err, null); }
+  };
+  reader.onerror = function(){ cb(new Error("Could not read file"), null); };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleUserImportFile(){
+  var inp = q("userImportFile");
+  if(!inp.files || !inp.files[0]){
+    userImportParsedRows = null;
+    q("userImportPreviewWrap").style.display = "none";
+    q("userImportConfirmBtn").disabled = true;
+    return;
+  }
+  if(typeof XLSX === "undefined"){
+    showToast("Excel parser not loaded. Check internet.");
+    return;
+  }
+  parseUserFile(inp.files[0], function(err, rows){
+    if(err){ showToast("Could not parse file."); return; }
+    if(!rows || !rows.length){ showToast("File is empty."); return; }
+
+    var mapped = rows.map(mapUserRow).filter(function(r){ return r.username; });
+
+    /* Filter out invalid rows */
+    var valid = [];
+    var skippedInvalid = [];
+    mapped.forEach(function(r){
+      if(!/^[a-z0-9._-]+$/i.test(r.username)){
+        skippedInvalid.push(r.username);
+        return;
+      }
+      if(["admin","am","op","store"].indexOf(r.role) < 0){
+        skippedInvalid.push(r.username);
+        return;
+      }
+      valid.push(r);
+    });
+
+    if(!valid.length){
+      showToast("No valid rows found. Check the template.");
+      return;
+    }
+    userImportParsedRows = valid;
+    if(skippedInvalid.length){
+      console.warn("Skipped invalid usernames:", skippedInvalid);
+    }
+    renderUserImportPreview();
+  });
+}
+
+function renderUserImportPreview(){
+  if(!userImportParsedRows) return;
+  q("userImportPreviewWrap").style.display = "";
+
+  var counts = { admin:0, am:0, op:0, store:0 };
+  userImportParsedRows.forEach(function(r){ counts[r.role] = (counts[r.role] || 0) + 1; });
+
+  q("userImportStats").innerHTML = [
+    '<span class="pill">Total: '+userImportParsedRows.length+'</span>',
+    counts.admin ? '<span class="pill">Admins: '+counts.admin+'</span>' : '',
+    counts.am ? '<span class="pill">Area Managers: '+counts.am+'</span>' : '',
+    counts.op ? '<span class="pill">Operation Managers: '+counts.op+'</span>' : '',
+    counts.store ? '<span class="pill ok">Stores: '+counts.store+'</span>' : ''
+  ].join("");
+
+  var shown = userImportParsedRows.slice(0, 100);
+  var thead = '<thead><tr><th>Username</th><th>Display Name</th><th>Role</th><th>Password</th><th>Store IDs</th></tr></thead>';
+  var tbody = '<tbody>' + shown.map(function(r){
+    return '<tr>'+
+      '<td>'+escapeHtml(r.username)+'</td>'+
+      '<td>'+escapeHtml(r.display_name)+'</td>'+
+      '<td>'+escapeHtml(r.role)+'</td>'+
+      '<td>'+escapeHtml(r.password)+'</td>'+
+      '<td style="text-align:left;white-space:normal">'+escapeHtml(r.store_ids.join(", ") || "—")+'</td>'+
+    '</tr>';
+  }).join("") + '</tbody>';
+
+  var more = userImportParsedRows.length > shown.length
+    ? '<div style="padding:8px 12px;color:#66787e;font-size:12px">Showing first '+shown.length+' of '+userImportParsedRows.length+' rows…</div>'
+    : '';
+
+  q("userImportPreview").innerHTML = '<table>'+thead+tbody+'</table>'+more;
+  q("userImportConfirmBtn").disabled = false;
+}
+
+async function applyUserImport(){
+  if(!(currentUser && currentUser.role === "admin")){
+    showToast("Only admin can import users.");
+    return;
+  }
+  if(!userImportParsedRows || !userImportParsedRows.length){
+    showToast("Load a file first.");
+    return;
+  }
+
+  if(!window.confirm(
+    "Create " + userImportParsedRows.length + " user accounts now?\n\n" +
+    "This may take 1–2 minutes. Existing accounts will be skipped."
+  )) return;
+
+  var session = (await sb.auth.getSession()).data.session;
+  if(!session){ showToast("Session expired. Please log in again."); return; }
+
+  q("userImportProgressWrap").style.display = "";
+  var progress = q("userImportProgress");
+  q("userImportConfirmBtn").disabled = true;
+
+  var created = 0, skipped = 0, failed = 0;
+  var errors = [];
+
+  for(var i = 0; i < userImportParsedRows.length; i++){
+    var u = userImportParsedRows[i];
+    var email = u.username + "@drcafe.com";
+    var password = (u.password.length >= 6) ? u.password : (u.password + "00");
+
+    progress.textContent = "Creating " + (i+1) + " / " + userImportParsedRows.length + " — " + u.username + " (" + u.role + ")…";
+
+    try {
+      var resp = await fetch(
+        "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            username: u.username,
+            display_name: u.display_name,
+            role: u.role,
+            store_ids: (u.role === "admin") ? [] : u.store_ids
+          })
+        }
+      );
+
+      var result = await resp.json();
+      if(result.success){
+        created++;
+      } else if(result.error && /already.*exists|duplicate|user.*already/i.test(result.error)){
+        skipped++;
+      } else {
+        failed++;
+        errors.push(u.username + ": " + (result.error || "unknown"));
+      }
+    } catch(e){
+      failed++;
+      errors.push(u.username + ": " + (e.message || "network error"));
+    }
+  }
+
+  progress.textContent = "Done. " + created + " created · " + skipped + " skipped · " + failed + " failed.";
+  showToast("Import: " + created + " created, " + skipped + " skipped, " + failed + " failed.", "success");
+
+  if(errors.length){
+    console.warn("User import errors:\n" + errors.join("\n"));
+    console.log("Full error list:", errors);
+  }
+
+  q("userImportConfirmBtn").disabled = false;
+  await reloadProfiles();
+  renderUsers();
+}
+
+/* Download a sample Excel template for user import */
+function downloadUserImportTemplate(){
+  /* Build with SheetJS so it produces a real .xlsx file */
+  var rows = [
+    { username:"amal",   display_name:"AMAL",                 role:"am",    password:"0000", store_ids:"DC072,DC112,DC156,DC246,DC247,DC266,DC306,DC307,DC294" },
+    { username:"juned",  display_name:"JUNED RAFIQUE BAGWAN", role:"op",    password:"0000", store_ids:"DC072,DC112,DC156" },
+    { username:"dc288",  display_name:"DC288 Store",          role:"store", password:"0000", store_ids:"DC288" },
+    { username:"dc101",  display_name:"DC101 Store",          role:"store", password:"0000", store_ids:"DC101" }
+  ];
+  var ws = XLSX.utils.json_to_sheet(rows, { header:["username","display_name","role","password","store_ids"] });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Users");
+  XLSX.writeFile(wb, "SGM_Users_Template.xlsx");
+  showToast("Template downloaded.");
+}
 
 /* ============================================================
    BULK CREATE — ALL MANAGERS (AM + OM)
@@ -6738,6 +7063,38 @@ if(bulkStoresBtn) bulkStoresBtn.addEventListener("click", function(){ bulkCreate
 var bulkMgrsBtn = q("bulkCreateManagersBtn");
 if(bulkMgrsBtn) bulkMgrsBtn.addEventListener("click", function(){ bulkCreateManagers().catch(function(e){ console.error(e); }); });
   q("usersExportBtn").addEventListener("click", exportUsersCsv);
+  var userImpBtn = q("userImportBtn");
+if(userImpBtn) userImpBtn.addEventListener("click", openUserImportModal);
+
+var userImpClose = q("userImportModalClose");
+if(userImpClose) userImpClose.addEventListener("click", closeUserImportModal);
+
+var userImpCancel = q("userImportModalCancel");
+if(userImpCancel) userImpCancel.addEventListener("click", closeUserImportModal);
+
+var userImpFile = q("userImportFile");
+if(userImpFile) userImpFile.addEventListener("change", handleUserImportFile);
+
+var userImpConfirm = q("userImportConfirmBtn");
+if(userImpConfirm) userImpConfirm.addEventListener("click", function(){
+  applyUserImport().catch(function(e){ console.error(e); });
+});
+
+var userImpTpl = q("userImportTemplateBtn");
+if(userImpTpl) userImpTpl.addEventListener("click", downloadUserImportTemplate);
+
+/* Click outside to close */
+var userImpBackdrop = q("userImportModal");
+if(userImpBackdrop) userImpBackdrop.addEventListener("click", function(e){
+  if(e.target === userImpBackdrop) closeUserImportModal();
+});
+
+/* Escape key closes it */
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && q("userImportModal").classList.contains("show")){
+    closeUserImportModal();
+  }
+});
   q("userModalClose").addEventListener("click", closeUserModal);
   q("userModalCancel").addEventListener("click", closeUserModal);
   q("userModalSave").addEventListener("click", saveUserModal);
