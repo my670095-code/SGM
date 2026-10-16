@@ -2342,6 +2342,7 @@ async function finalizeLogin(){
   renderAmMultiSelect();
   renderStoreMultiSelect();
   await loadDailyRecord();
+    await reloadProfiles();
   refreshCurrentView();
   renderTransactions();
 }
@@ -2385,7 +2386,8 @@ async function restoreSession(){
     } catch(e){ /* keep defaults */ }
 
     computeVisibleStores();
-    await loadAllRecordsForUser();     // ← NEW LINE
+    await loadAllRecordsForUser();
+    await reloadProfiles();
 
     if(!visibleStores.length && currentUser.role !== "admin"){
       await sb.auth.signOut();
