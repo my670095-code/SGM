@@ -1418,10 +1418,13 @@ details.group>summary::-webkit-details-marker{display:none}
           <p>Create manager accounts, assign stores and reset PINs. Store codes also act as store-login accounts.</p>
         </div>
         <div class="toolbar">
-          <button class="btn primary" id="userAddBtn" type="button">+ Add user</button>
-          <button class="btn" id="usersExportBtn" type="button">Export users CSV</button>
-        </div>
+  <button class="btn primary" id="userAddBtn" type="button">+ Add user</button>
+  <button class="btn gold" id="bulkCreateStoresBtn" type="button">🏪 Bulk-create store logins (69)</button>
+  <button class="btn gold" id="bulkCreateManagersBtn" type="button">👤 Bulk-create managers</button>
+  <button class="btn" id="usersExportBtn" type="button">Export users CSV</button>
+</div>
       </div>
+      <div id="bulkProgress" style="margin:10px 0;color:#66787e;font-size:12px;min-height:18px"></div> 
       <div class="table-card"><table id="usersTable" class="users-table"></table></div>
     </section>
 
@@ -5880,6 +5883,215 @@ function closeUserModal(){
   q("userModal").classList.remove("show");
   editingUserUsername = null;
 }
+  /* ============================================================
+   BULK CREATE — ALL STORE LOGINS (69 accounts)
+   ============================================================ */
+async function bulkCreateStores(){
+  if(!(currentUser && currentUser.role === "admin")){
+    showToast("Only admin can do this.");
+    return;
+  }
+
+  var stores = state.stores.filter(function(s){
+    return (s.status || "Active") === "Active";
+  });
+
+  if(!window.confirm(
+    "Create login accounts for all " + stores.length + " active stores?\n\n" +
+    "Username: store code in lowercase (e.g. dc288)\n" +
+    "Password: 000000\n" +
+    "Assigned store: that store only\n\n" +
+    "Existing accounts will be skipped."
+  )) return;
+
+  var progress = q("bulkProgress");
+  var created = 0, skipped = 0, failed = 0;
+  var errors = [];
+
+  var session = (await sb.auth.getSession()).data.session;
+  if(!session){ showToast("Session expired. Please log in again."); return; }
+
+  for(var i = 0; i < stores.length; i++){
+    var s = stores[i];
+    var uname = s.id.toLowerCase();
+    var email = uname + "@drcafe.com";
+    var password = "000000";
+
+    if(progress) progress.textContent = "Creating " + (i+1) + " / " + stores.length + " — " + s.id + "…";
+
+    try {
+      var resp = await fetch(
+        "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            username: uname,
+            display_name: s.id + " Store",
+            role: "store",
+            store_ids: [s.id]
+          })
+        }
+      );
+
+      var result = await resp.json();
+
+      if(result.success){
+        created++;
+      } else if(result.error && /already.*exists|duplicate|user.*already/i.test(result.error)){
+        skipped++;
+      } else {
+        failed++;
+        errors.push(s.id + ": " + (result.error || "unknown"));
+      }
+    } catch(e){
+      failed++;
+      errors.push(s.id + ": " + (e.message || "network error"));
+    }
+  }
+
+  if(progress){
+    progress.textContent = "Done. " + created + " created · " + skipped + " skipped · " + failed + " failed.";
+    setTimeout(function(){ if(progress) progress.textContent = ""; }, 8000);
+  }
+
+  showToast("Stores: " + created + " created, " + skipped + " skipped, " + failed + " failed.", "success");
+
+  if(errors.length){
+    console.warn("Bulk store creation errors:\n" + errors.join("\n"));
+    console.log("Full error list:", errors);
+  }
+
+  await reloadProfiles();
+  renderUsers();
+}
+
+/* ============================================================
+   BULK CREATE — ALL MANAGERS (AM + OM)
+   ============================================================ */
+async function bulkCreateManagers(){
+  if(!(currentUser && currentUser.role === "admin")){
+    showToast("Only admin can do this.");
+    return;
+  }
+
+  /* Build the manager list from state.stores:
+     every unique area_manager + every unique op_manager. */
+  var amNames = {};
+  var omNames = {};
+  state.stores.forEach(function(s){
+    if(s.areaManager)  amNames[s.areaManager] = true;
+    if(s.opManager)    omNames[s.opManager]   = true;
+  });
+
+  var managers = [];
+
+  Object.keys(amNames).forEach(function(name){
+    var uname = name.split(/\s+/)[0].toLowerCase();  /* first word, lowercase */
+    var storeIds = state.stores
+      .filter(function(s){ return s.areaManager === name; })
+      .map(function(s){ return s.id; });
+    managers.push({
+      username: uname,
+      display_name: name,
+      role: "am",
+      store_ids: storeIds
+    });
+  });
+
+  Object.keys(omNames).forEach(function(name){
+    var uname = name.split(/\s+/)[0].toLowerCase();
+    var storeIds = state.stores
+      .filter(function(s){ return s.opManager === name; })
+      .map(function(s){ return s.id; });
+    managers.push({
+      username: uname,
+      display_name: name,
+      role: "op",
+      store_ids: storeIds
+    });
+  });
+
+  if(!managers.length){
+    showToast("No managers to create. Check your store master.");
+    return;
+  }
+
+  if(!window.confirm(
+    "Create login accounts for " + managers.length + " managers?\n\n" +
+    "Password: 000000 for all\n" +
+    "Existing accounts will be skipped."
+  )) return;
+
+  var progress = q("bulkProgress");
+  var created = 0, skipped = 0, failed = 0;
+  var errors = [];
+
+  var session = (await sb.auth.getSession()).data.session;
+  if(!session){ showToast("Session expired. Please log in again."); return; }
+
+  for(var i = 0; i < managers.length; i++){
+    var m = managers[i];
+    var email = m.username + "@drcafe.com";
+
+    if(progress) progress.textContent = "Creating " + (i+1) + " / " + managers.length + " — " + m.username + " (" + m.role + ")…";
+
+    try {
+      var resp = await fetch(
+        "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: JSON.stringify({
+            email: email,
+            password: "000000",
+            username: m.username,
+            display_name: m.display_name,
+            role: m.role,
+            store_ids: m.store_ids
+          })
+        }
+      );
+
+      var result = await resp.json();
+
+      if(result.success){
+        created++;
+      } else if(result.error && /already.*exists|duplicate|user.*already/i.test(result.error)){
+        skipped++;
+      } else {
+        failed++;
+        errors.push(m.username + ": " + (result.error || "unknown"));
+      }
+    } catch(e){
+      failed++;
+      errors.push(m.username + ": " + (e.message || "network error"));
+    }
+  }
+
+  if(progress){
+    progress.textContent = "Done. " + created + " created · " + skipped + " skipped · " + failed + " failed.";
+    setTimeout(function(){ if(progress) progress.textContent = ""; }, 8000);
+  }
+
+  showToast("Managers: " + created + " created, " + skipped + " skipped, " + failed + " failed.", "success");
+
+  if(errors.length){
+    console.warn("Bulk manager creation errors:\n" + errors.join("\n"));
+    console.log("Full error list:", errors);
+  }
+
+  await reloadProfiles();
+  renderUsers();
+}
 async function saveUserModal(){
   if(!(currentUser && currentUser.role === "admin")){
     showToast("Only admin can manage users.");
@@ -6521,6 +6733,10 @@ var dPdfBtn  = q("dashPdfBtn"); if(dPdfBtn) dPdfBtn.addEventListener("click", ex
     if(e.target === q("importModal")) closeImportModal();
   });
   q("userAddBtn").addEventListener("click", function(){ openUserModal(null); });
+  var bulkStoresBtn = q("bulkCreateStoresBtn");
+if(bulkStoresBtn) bulkStoresBtn.addEventListener("click", function(){ bulkCreateStores().catch(function(e){ console.error(e); }); });
+var bulkMgrsBtn = q("bulkCreateManagersBtn");
+if(bulkMgrsBtn) bulkMgrsBtn.addEventListener("click", function(){ bulkCreateManagers().catch(function(e){ console.error(e); }); });
   q("usersExportBtn").addEventListener("click", exportUsersCsv);
   q("userModalClose").addEventListener("click", closeUserModal);
   q("userModalCancel").addEventListener("click", closeUserModal);
