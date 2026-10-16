@@ -3440,6 +3440,48 @@ function closeConfirmModal(){
   showToast("✓ Entry saved to server.", "success");
 }
 
+  async function clearDailyRecord(){
+  var dateEl = q("f-date");
+  var heroEl = q("f-date-hero");
+  var dateVal = (heroEl && heroEl.value) || (dateEl && dateEl.value) || todayIso();
+  var storeId = normalizeStoreId(state.selectedStore);
+
+  if(!dateVal){ showToast("Pick a date first."); return; }
+  if(!window.confirm("Delete the saved entry for " + storeId + " on " + dateLabel(dateVal) + "?")) return;
+
+  try {
+    var { error } = await sb
+      .from("daily_records")
+      .delete()
+      .eq("store_id", storeId)
+      .eq("date", dateVal);
+    if(error) throw error;
+  } catch(e){
+    showToast("Could not delete: " + (e.message || "unknown error"));
+    return;
+  }
+
+  /* Remove from memory */
+  var idx = state.records.findIndex(function(r){
+    return normalizeStoreId(r.storeId) === storeId && r.date === dateVal;
+  });
+  if(idx >= 0) state.records.splice(idx, 1);
+
+  /* Blank form */
+  REQUIRED_FIELDS.forEach(function(f){
+    var el = q("f-"+f.key);
+    if(el){ el.value = ""; el.classList.remove("filled","missing"); }
+  });
+  currentBreakdowns = [];
+  renderBreakdowns();
+  refreshGroupPills();
+  refreshProgress();
+  recalcAllCalcFields();
+  dirty = false;
+  updateEntryStatus("new");
+  showToast("Entry deleted.", "success");
+}
+
 
 /* ============================================================
    HELPERS — form validation
@@ -5482,41 +5524,49 @@ function closeStoreModal(){
   q("storeModal").classList.remove("show");
   editingStoreId = null;
 }
-function saveStoreModal(){
+  async function saveStoreModal(){
   if(!(currentUser && currentUser.role === "admin")){ showToast("Only admin can manage stores."); return; }
   var code = (q("smCode").value||"").trim().toUpperCase();
   if(!code){ showToast("Store code is required."); return; }
+
   var payload = {
+    id: code,
     name: (q("smName").value||"").trim() || code,
     area: (q("smArea").value||"").trim(),
     type: (q("smType").value||"").trim(),
-    storeManager: (q("smStoreManager").value||"").trim(),
-    areaManager: (q("smAreaManager").value||"").trim(),
-    opManager: (q("smOpManager").value||"").trim(),
+    store_manager: (q("smStoreManager").value||"").trim(),
+    area_manager: (q("smAreaManager").value||"").trim(),
+    op_manager: (q("smOpManager").value||"").trim(),
     status: q("smStatus").value
   };
-  if(editingStoreId){
-    var s = state.stores.find(function(x){return x.id === editingStoreId;});
-    if(!s){ closeStoreModal(); return; }
-    Object.keys(payload).forEach(function(k){ s[k] = payload[k]; });
-    saveState("Store "+editingStoreId+" updated.");
-  } else {
-    if(state.stores.some(function(x){return x.id === code;})){
-      showToast("Store "+code+" already exists.");
-      return;
+
+  var saveBtn = q("storeModalSave");
+  try {
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
+
+    if(editingStoreId){
+      var { error } = await sb.from("stores").update(payload).eq("id", editingStoreId);
+      if(error) throw error;
+      showToast("Store "+editingStoreId+" updated.", "success");
+    } else {
+      var { error } = await sb.from("stores").insert(payload);
+      if(error) throw error;
+      showToast("Store "+code+" added.", "success");
     }
-    var newStore = { id:code };
-    Object.keys(payload).forEach(function(k){ newStore[k] = payload[k]; });
-    state.stores.push(newStore);
-    saveState("Store "+code+" added.");
+
+    /* Refresh from Supabase */
+    state.stores = await sbFetchStores();
+    computeVisibleStores();
+    closeStoreModal();
+    setupStores();
+    renderStoreFilters();
+    renderStores();
+    await loadDailyRecord();
+  } catch(e){
+    showToast("Save failed: " + (e.message || e));
+  } finally {
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = "Save"; }
   }
-  closeStoreModal();
-  computeVisibleStores();
-  setupStores();
-  renderStoreFilters();
-  renderStores();
-  fillTxStoreFilter();
-  loadDailyRecord();
 }
 function resetStoresToDefault(){
   if(!(currentUser && currentUser.role === "admin")){ showToast("Only admin can reset the store list."); return; }
@@ -5775,6 +5825,25 @@ function renderUsers(){
     });
   });
 }
+  async function reloadProfiles(){
+  try {
+    var { data, error } = await sb.from("profiles").select("*");
+    if(error) throw error;
+
+    state.users = data.map(function(p){
+      return {
+        username: p.username,
+        display: p.display_name || p.username,
+        role: p.role,
+        storeIds: p.store_ids || [],
+        password: ""
+      };
+    });
+    console.log("Profiles reloaded:", state.users.length);
+  } catch(e){
+    console.warn("reloadProfiles failed:", e);
+  }
+}
 function openUserModal(username){
   editingUserUsername = username || null;
   var u = username ? state.users.find(function(x){ return x.username === username; }) : null;
@@ -5807,36 +5876,94 @@ function closeUserModal(){
   q("userModal").classList.remove("show");
   editingUserUsername = null;
 }
-function saveUserModal(){
-  if(!(currentUser && currentUser.role === "admin")){ showToast("Only admin can manage users."); return; }
+async function saveUserModal(){
+  if(!(currentUser && currentUser.role === "admin")){
+    showToast("Only admin can manage users.");
+    return;
+  }
+
   var uname = (q("umUsername").value||"").trim().toLowerCase();
   if(!uname){ showToast("Username is required."); return; }
+
   var role = q("umRole").value;
   var display = (q("umDisplay").value||"").trim() || uname;
-  var pwd = (q("umPassword").value||"").trim();
+  var pin = (q("umPassword").value||"").trim() || "0000";
   var ids = Array.from(q("umStores").selectedOptions).map(function(o){ return o.value; });
+
+  var saveBtn = q("userModalSave");
+
+  /* ========== EDIT EXISTING USER ========== */
   if(editingUserUsername){
-    var u = state.users.find(function(x){ return x.username === editingUserUsername; });
-    if(!u){ closeUserModal(); return; }
-    u.display = display;
-    u.role = role;
-    if(pwd) u.password = pwd;
-    u.storeIds = (role === "admin") ? [] : ids;
-    saveState("User "+editingUserUsername+" updated.");
-  } else {
-    if(state.users.some(function(x){ return x.username === uname; })){
-      showToast("Username already exists.");
+    try {
+      if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Updating…"; }
+
+      var { error } = await sb.from("profiles")
+        .update({
+          display_name: display,
+          role: role,
+          store_ids: (role === "admin") ? [] : ids
+        })
+        .eq("username", editingUserUsername);
+
+      if(error) throw error;
+
+      showToast("User " + editingUserUsername + " updated.", "success");
+      closeUserModal();
+      await reloadProfiles();
+      renderUsers();
+    } catch(e){
+      showToast("Update failed: " + (e.message || e));
+    } finally {
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = "Save"; }
+    }
+    return;
+  }
+
+  /* ========== CREATE NEW USER via Edge Function ========== */
+  var email = uname + "@drcafe.com";
+  var password = (pin.length >= 6) ? pin : (pin + "00");
+
+  try {
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Creating…"; }
+
+    var session = (await sb.auth.getSession()).data.session;
+    if(!session){ showToast("Session expired. Please log in again."); return; }
+
+    var resp = await fetch(
+      "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+          username: uname,
+          display_name: display,
+          role: role,
+          store_ids: (role === "admin") ? [] : ids
+        })
+      }
+    );
+
+    var result = await resp.json();
+    if(!resp.ok || !result.success){
+      showToast("Create failed: " + (result.error || resp.statusText));
       return;
     }
-    state.users.push({
-      username: uname, display: display, role: role,
-      password: pwd || "0000",
-      storeIds: role === "admin" ? [] : ids
-    });
-    saveState("User "+uname+" added.");
+
+    showToast("✓ User " + uname + " created. They can now log in.", "success");
+    closeUserModal();
+    await reloadProfiles();
+    renderUsers();
+
+  } catch(e){
+    showToast("Error: " + (e.message || e));
+  } finally {
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = "Save"; }
   }
-  closeUserModal();
-  renderUsers();
 }
 function exportUsersCsv(){
   var rows = [["Username","Display","Role","Assigned Stores","Password"]];
@@ -6175,7 +6302,7 @@ function refreshCurrentView(){
   if(name==="dashboard") renderDashboard();
   if(name==="backup") updateStorageStat();
   if(name==="stores"){ renderStoreFilters(); renderStores(); }
-  if(name==="users") renderUsers();
+  if(name==="users"){ reloadProfiles().then(renderUsers); }
 }
 
 function bindEvents(){
