@@ -3198,6 +3198,17 @@ function updateEntryHero(){
   var s = state.stores.find(function(x){return x.id === state.selectedStore;});
   label.textContent = s ? (s.id + (s.area ? " · "+s.area : "")) : state.selectedStore;
 }
+
+  function getMissingFields(){
+  var out = [];
+  REQUIRED_FIELDS.forEach(function(f){
+    var el = q("f-"+f.key);
+    if(!el) return;
+    var v = String(el.value||"").trim();
+    if(v === "") out.push({ key:f.key, label:f.label });
+  });
+  return out;
+}
 function submitDailyRecord(){
   syncBreakdownsFromDom();
 
@@ -3415,16 +3426,7 @@ function closeConfirmModal(){
 /* ============================================================
    HELPERS — form validation
    ============================================================ */
-function getMissingFields(){
-  var out = [];
-  REQUIRED_FIELDS.forEach(function(f){
-    var el = q("f-"+f.key);
-    if(!el) return;
-    var v = String(el.value||"").trim();
-    if(v === "") out.push({ key:f.key, label:f.label });
-  });
-  return out;
-}
+
 
  
 
