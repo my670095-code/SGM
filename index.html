@@ -2051,6 +2051,22 @@ function canManageEntries(){
   if(!currentUser) return false;
   return currentUser.role === "admin" || currentUser.role === "am";
 }
+  /* Load ALL daily records for this user into memory */
+async function loadAllRecordsForUser(){
+  try {
+    var storeIds = visibleStores.map(function(s){ return s.id; });
+    if(!storeIds.length){
+      state.records = [];
+      return;
+    }
+    var records = await sbLoadRecords(storeIds, null, null);
+    state.records = records;
+    console.log("Loaded " + records.length + " records");
+  } catch(e){
+    console.error("Could not load records:", e);
+    state.records = [];
+  }
+}
 
 /* ============================================================
    STATE
@@ -2301,6 +2317,7 @@ async function finalizeLogin(){
   }
 
   computeVisibleStores();
+  await loadAllRecordsForUser();
 
   if(!visibleStores.length && currentUser.role !== "admin"){
     showToast("This account has no assigned stores. Contact admin.");
@@ -2366,6 +2383,7 @@ async function restoreSession(){
     } catch(e){ /* keep defaults */ }
 
     computeVisibleStores();
+    await loadAllRecordsForUser();     // ← NEW LINE
 
     if(!visibleStores.length && currentUser.role !== "admin"){
       await sb.auth.signOut();
