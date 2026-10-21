@@ -4152,7 +4152,7 @@ function renderDashboardCharts(agg, visibleRows){
     { name:"Merchandise Mix %",  key:"merchandiseMix",  target:TARGETS.merchandiseMix },
     { name:"Modifier %",         key:"modifierMix",     target:TARGETS.modifierMix },
     { name:"Upsize %",           key:"upsizePct",       target:TARGETS.upsize },
-    { name:"Water Attachment %", key:"waterAttachment", target:TARGETS.waterAttachment }
+    { name:"Water Qty V/S Transaction %", key:"waterAttachment", target:TARGETS.waterAttachment }
   ];
   var mixLabels = [], mixActual = [], mixTarget = [];
   mixKeys.forEach(function(m){
@@ -4768,7 +4768,7 @@ var GRID_ROWS = [
   { type:"metric", key:"grabGoMix",        label:"Grab & Go Mix %",        fmt:"pct", target:TARGETS.grabGoMix,        lower:false },
   { type:"metric", key:"merchSales",       label:"Merchandise Sales (SAR)",fmt:"money" },
   { type:"metric", key:"merchandiseMix",   label:"Merchandise Mix %",      fmt:"pct", target:TARGETS.merchandiseMix,   lower:false },
-  { type:"metric", key:"waterAttachment",  label:"Water Attachment %",     fmt:"pct", target:TARGETS.waterAttachment,  lower:false },
+  { type:"metric", key:"waterAttachment",  label:"Water Qty V/S Transaction %",     fmt:"pct", target:TARGETS.waterAttachment,  lower:false },
      { type:"metric", key:"waterSales",        label:"water Sales Amount (SAR)",fmt:"money" },
   { type:"metric", key:"waterSalesMix",    label:"Water Sales Mix %",      fmt:"pct"    },
        { type:"metric", key:"modifierSales",        label:"modifier Sales Amount (SAR)",fmt:"money" },
@@ -5424,7 +5424,7 @@ function exportReport(kind){
 function exportAllDailyCsv(){
   var headers = ["Store","Date"].concat(NUMERIC_KEYS).concat([
     "Sales W/O Tax","Net Sales","ADT","AT","Food Sales","Grab & Go Sales","Merchandise Sales",
-    "Food Mix %","Grab & Go Mix %","Merchandise Mix %","Water Attachment %","Modifier Mix %","Upsize %",
+    "Food Mix %","Grab & Go Mix %","Merchandise Mix %","Water Qty V/S Transaction %","Modifier Mix %","Upsize %",
     "DC App Sales %","DC App Order Mix %","DC App Delivery %","DC App AT",
     "Wastage %","Employee Cost","Employee Cost %","Cash Deposited Variance","DC App Variance",
     "Cancelled Bill %","Cash Deposited Variance %",
