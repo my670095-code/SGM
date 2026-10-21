@@ -1669,7 +1669,7 @@ details.group>summary::-webkit-details-marker{display:none}
             <li><strong>ADT</strong> = Transactions ÷ Opening Days.</li>
             <li><strong>AT</strong> = Sales W/O Tax ÷ Transactions.</li>
             <li><strong>Sales mix %</strong> = Category Sales ÷ Sales W/O Tax.</li>
-            <li><strong>Water Attachment %</strong> = Water Qty ÷ Transactions.</li>
+            <li><strong>Water Qty V/S Transaction</strong> = Water Qty ÷ Transactions.</li>
             <li><strong>Modifier %</strong> = Modifier Sales ÷ Sales W/O Tax.</li>
             <li><strong>Upsize %</strong> = (Grande + Jumbo) ÷ (Tall + Grande + Jumbo).</li>
             <li><strong>DC App variance</strong> = App total − POS total.</li>
@@ -4769,7 +4769,9 @@ var GRID_ROWS = [
   { type:"metric", key:"merchSales",       label:"Merchandise Sales (SAR)",fmt:"money" },
   { type:"metric", key:"merchandiseMix",   label:"Merchandise Mix %",      fmt:"pct", target:TARGETS.merchandiseMix,   lower:false },
   { type:"metric", key:"waterAttachment",  label:"Water Attachment %",     fmt:"pct", target:TARGETS.waterAttachment,  lower:false },
+     { type:"metric", key:"waterSales",        label:"water Sales Amount (SAR)",fmt:"money" },
   { type:"metric", key:"waterSalesMix",    label:"Water Sales Mix %",      fmt:"pct"    },
+       { type:"metric", key:"modifierSales",        label:"modifier Sales Amount (SAR)",fmt:"money" },
   { type:"metric", key:"modifierMix",      label:"Modifier Contribution %",fmt:"pct", target:TARGETS.modifierMix,      lower:false },
   { type:"metric", key:"upsizePct",        label:"Upsize Conversion %",    fmt:"pct", target:TARGETS.upsize,           lower:false },
   { type:"category", label:"DC App" },
@@ -4784,6 +4786,7 @@ var GRID_ROWS = [
   { type:"metric", key:"cashVariance",     label:"Cash Excess / (Short)",  fmt:"money", target:0, lower:true, abs:true },
   { type:"metric", key:"cancelledBillPct", label:"Cancelled Bill %",       fmt:"pct", target:TARGETS.cancelledBill,  lower:true },
   { type:"category", label:"Cost Efficiency" },
+         { type:"metric", key:"wastageSales",        label:"wastage Sales Amount (SAR)",fmt:"money" },
   { type:"metric", key:"wastagePct",       label:"Wastage %",              fmt:"pct", target:TARGETS.wastage,   lower:true },
   { type:"metric", key:"employeeCost",     label:"Employee Cost (SAR)",    fmt:"money" },
   { type:"metric", key:"employeePct",      label:"Employee Cost %",        fmt:"pct", target:TARGETS.employee,  lower:true },
