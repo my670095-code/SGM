@@ -4479,7 +4479,7 @@ function renderReportTable2Col(table, periods, search, countElId){
     '<th class="cat-col">Category</th>' +
     '<th class="section-col">Section</th>';
     
-   periods.forEach(function(p){
+     periods.forEach(function(p){
     // Check if this is a monthly or weekly report based on the label format
     var isMonthly = (p.shortLabel.indexOf("W") !== 0); 
     var periodType = isMonthly ? "monthly" : "weekly";
@@ -4488,13 +4488,21 @@ function renderReportTable2Col(table, periods, search, countElId){
     var startDateStr = isMonthly ? p.start : weekStart(p.start);
     var pLabel = p.shortLabel;
     
+    // Hide action plan buttons for custom date ranges
+    var currentMode = q("monthCompareMode") ? q("monthCompareMode").value : "";
+    var showActions = !(isMonthly && (currentMode === "custom" || currentMode === "custom3"));
+
     thead += '<th class="val-col" style="vertical-align:top; padding: 8px;">' +
-      '<div style="margin-bottom:6px;">'+escapeHtml(pLabel)+'</div>' +
-      '<div style="display:flex; gap:4px; justify-content:flex-end;">' +
+      '<div style="margin-bottom:6px;">'+escapeHtml(pLabel)+'</div>';
+      
+    if (showActions) {
+      thead += '<div style="display:flex; gap:4px; justify-content:flex-end;">' +
         '<button class="btn small" style="padding:2px 6px; font-size:10px; height:22px; background:#f8fafc;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+pLabel+'\', true, \''+periodType+'\')" title="View Action Plan">👁️ View</button>' +
         '<button class="btn small primary" style="padding:2px 6px; font-size:10px; height:22px;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+pLabel+'\', false, \''+periodType+'\')" title="Edit Action Plan">📝 Edit</button>' +
-      '</div>' +
-    '</th>';
+      '</div>';
+    }
+      
+    thead += '</th>';
   });
   thead += '</tr></thead>';
 
