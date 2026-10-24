@@ -4621,6 +4621,8 @@ async function openActionPlanModal(weekStartDateStr, weekLabelStr, readOnlyMode)
     saveBtn.disabled = false;
   }
 }
+  window.openActionPlanModal = openActionPlanModal;
+
 
 async function saveWeeklyActionPlan() {
   if (!currentUser || !currentWeeklyActionPlan.storeId) return;
