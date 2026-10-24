@@ -1539,28 +1539,53 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="report-shell">
         <div class="report-top">
           <div class="field" style="min-width:150px"><label for="monthDate">Reporting month</label><input class="control-input" type="date" id="monthDate"></div>
-          <div class="field" style="min-width:170px"><label for="monthCompareMode">Comparison</label>
+                <div class="field" style="min-width:170px"><label for="monthCompareMode">Comparison</label>
             <select class="control-input" id="monthCompareMode">
               <option value="single">Single month</option>
               <option value="2">Compare 2 months</option>
               <option value="3">Compare 3 months</option>
-                <option value="custom">Custom Date Range (e.g., 1st to 15th)</option> <!-- NEW -->
-
+              <option value="custom">Custom Date Range (Single)</option>
+              <option value="custom3">Compare 3 Custom Date Ranges</option>
             </select>
           </div>
           <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="date" id="monthDate2"></div>
           <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="date" id="monthDate3"></div>
-<!-- NEW: Custom Range Wrapper -->
-<div class="field" id="customRangeWrap" style="display:none; gap:10px; flex-direction:row; align-items:center;">
-  <div>
-    <label for="customFromDate">From</label>
-    <input class="control-input" type="date" id="customFromDate">
-  </div>
-  <div>
-    <label for="customToDate">To</label>
-    <input class="control-input" type="date" id="customToDate">
-  </div>
-</div>
+          
+          <!-- Custom Range 1 -->
+          <div class="field" id="customRangeWrap" style="display:none; gap:10px; flex-direction:row; align-items:center;">
+            <div>
+              <label for="customFromDate">From</label>
+              <input class="control-input" type="date" id="customFromDate">
+            </div>
+            <div>
+              <label for="customToDate">To</label>
+              <input class="control-input" type="date" id="customToDate">
+            </div>
+          </div>
+
+          <!-- Custom Range 2 -->
+          <div class="field" id="customRangeWrap2" style="display:none; gap:10px; flex-direction:row; align-items:center;">
+            <div>
+              <label for="customFromDate2">From (2)</label>
+              <input class="control-input" type="date" id="customFromDate2">
+            </div>
+            <div>
+              <label for="customToDate2">To (2)</label>
+              <input class="control-input" type="date" id="customToDate2">
+            </div>
+          </div>
+
+          <!-- Custom Range 3 -->
+          <div class="field" id="customRangeWrap3" style="display:none; gap:10px; flex-direction:row; align-items:center;">
+            <div>
+              <label for="customFromDate3">From (3)</label>
+              <input class="control-input" type="date" id="customFromDate3">
+            </div>
+            <div>
+              <label for="customToDate3">To (3)</label>
+              <input class="control-input" type="date" id="customToDate3">
+            </div>
+          </div>
           
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
@@ -4539,32 +4564,43 @@ function buildWeeklyPeriods(){
   }
   return periods;
 }
-
 function buildMonthlyPeriods(){
   var mode = q("monthCompareMode").value;
   
-  // --- NEW: Handle Custom Date Range ---
-  if (mode === "custom") {
-    var from = q("customFromDate").value;
-    var to = q("customToDate").value;
-    if (!from || !to) {
-      // Fallback if dates are empty
-      from = currentMonthIso() + "-01";
-      to = currentMonthIso() + "-15";
-      q("customFromDate").value = from;
-      q("customToDate").value = to;
-    }
-    var ids = resolveStoreScope();
-    var agg = aggregate(recordsBetweenStores(ids, from, to));
-    agg._periodStartLabel = from;
-    agg._periodEndLabel   = to;
+  // --- Handle Custom Date Ranges ---
+  if (mode === "custom" || mode === "custom3") {
+    var periods = [];
+    var count = (mode === "custom3") ? 3 : 1;
     
-    return [{
-      shortLabel: dateLabel(from) + " – " + dateLabel(to),
-      start: from, 
-      end: to, 
-      agg: agg
-    }];
+    for (var i = 1; i <= count; i++) {
+      var suffix = (i === 1) ? "" : i; // "", "2", "3"
+      var fromEl = q("customFromDate" + suffix);
+      var toEl = q("customToDate" + suffix);
+      
+      var from = fromEl ? fromEl.value : "";
+      var to = toEl ? toEl.value : "";
+      
+      // Fallback if dates are empty
+      if (!from || !to) {
+        from = currentMonthIso() + "-01";
+        to = currentMonthIso() + "-15";
+        if(fromEl) fromEl.value = from;
+        if(toEl) toEl.value = to;
+      }
+      
+      var ids = resolveStoreScope();
+      var agg = aggregate(recordsBetweenStores(ids, from, to));
+      agg._periodStartLabel = from;
+      agg._periodEndLabel   = to;
+      
+      periods.push({
+        shortLabel: dateLabel(from) + " – " + dateLabel(to),
+        start: from, 
+        end: to, 
+        agg: agg
+      });
+    }
+    return periods;
   }
   // -------------------------------------
 
@@ -4713,9 +4749,11 @@ async function saveWeeklyActionPlan() {
   q("monthWrap3").style.display = (mode==="3") ? "" : "none";
   
   // Show/hide custom range pickers
-  q("customRangeWrap").style.display = (mode==="custom") ? "" : "none";
+  q("customRangeWrap").style.display = (mode==="custom"||mode==="custom3") ? "" : "none";
+  q("customRangeWrap2").style.display = (mode==="custom3") ? "" : "none";
+  q("customRangeWrap3").style.display = (mode==="custom3") ? "" : "none";
   
-  if (mode !== "custom") {
+  if (mode !== "custom" && mode !== "custom3") {
     var base = (q("monthDate").value || todayIso()).slice(0,7) + "-01";
     if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(base.slice(0,7), -1) + "-01";
     if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(base.slice(0,7), -2) + "-01";
@@ -7364,9 +7402,12 @@ if(grossSalesEl){
   q("monthDate2").addEventListener("change", renderMonthly);
   q("monthDate3").addEventListener("change", renderMonthly);
   q("monthCompareMode").addEventListener("change", renderMonthly);
-    q("customFromDate").addEventListener("change", renderMonthly);
+  q("customFromDate").addEventListener("change", renderMonthly);
   q("customToDate").addEventListener("change", renderMonthly);
-
+  q("customFromDate2").addEventListener("change", renderMonthly);
+  q("customToDate2").addEventListener("change", renderMonthly);
+  q("customFromDate3").addEventListener("change", renderMonthly);
+  q("customToDate3").addEventListener("change", renderMonthly);
 
 q("dashMonth").addEventListener("change", renderDashboard);
 
@@ -7505,9 +7546,13 @@ document.addEventListener("keydown", function(e){
      q("monthDate").value = currentMonthIso() + "-01";
   q("monthDate2").value = shiftMonth(currentMonthIso(), -1) + "-01";
   q("monthDate3").value = shiftMonth(currentMonthIso(), -2) + "-01";
-     q("customFromDate").value = currentMonthIso() + "-01";
+  q("customFromDate").value = currentMonthIso() + "-01";
   q("customToDate").value = currentMonthIso() + "-15";
-
+  
+  q("customFromDate2").value = currentMonthIso() + "-16";
+  q("customToDate2").value = currentMonthIso() + "-30";
+  q("customFromDate3").value = currentMonthIso() + "-01";
+  q("customToDate3").value = currentMonthIso() + "-30";
    q("dashMonth").value = currentMonthIso();
   q("plannedHours").value = state.settings.plannedHours || 24;
   q("defaultStorePin").value = state.defaultStorePin || "0000";
