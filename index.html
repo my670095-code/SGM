@@ -1538,7 +1538,7 @@ details.group>summary::-webkit-details-marker{display:none}
       </div>
       <div class="report-shell">
         <div class="report-top">
-          <div class="field" style="min-width:150px"><label for="monthDate">Reporting month</label><input class="control-input" type="date" id="monthDate"></div>
+          <div class="field" style="min-width:150px"><label for="monthDate">Reporting month</label><input class="control-input" type="month" id="monthDate"></div>
                 <div class="field" style="min-width:170px"><label for="monthCompareMode">Comparison</label>
             <select class="control-input" id="monthCompareMode">
               <option value="single">Single month</option>
@@ -4761,10 +4761,14 @@ async function saveWeeklyActionPlan() {
   q("customRangeWrap2").style.display = (mode==="custom3") ? "" : "none";
   q("customRangeWrap3").style.display = (mode==="custom3") ? "" : "none";
   
-  if (mode !== "custom" && mode !== "custom3") {
-    var base = (q("monthDate").value || todayIso()).slice(0,7) + "-01";
-    if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(base.slice(0,7), -1) + "-01";
-    if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(base.slice(0,7), -2) + "-01";
+    if (mode !== "custom" && mode !== "custom3") {
+    // Grab the value and force it to be a 7-character string (YYYY-MM)
+    var baseVal = (q("monthDate").value || todayIso()).slice(0, 7);
+    var base = baseVal + "-01";
+    
+    // Do the same for Month 2 and Month 3
+    if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(baseVal, -1) + "-01";
+    if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(baseVal, -2) + "-01";
   }
 
   var periods = buildMonthlyPeriods();
@@ -7551,10 +7555,10 @@ document.addEventListener("keydown", function(e){
   q("weekDate2").value = addDays(todayIso(), -7);
   q("weekDate3").value = addDays(todayIso(), -14);
   q("weekDate4").value = addDays(todayIso(), -21);
-     q("monthDate").value = currentMonthIso() + "-01";
+  q("monthDate").value = currentMonthIso();
   q("monthDate2").value = shiftMonth(currentMonthIso(), -1) + "-01";
   q("monthDate3").value = shiftMonth(currentMonthIso(), -2) + "-01";
-  q("customFromDate").value = currentMonthIso() + "-01";
+   q("customFromDate").value = currentMonthIso() + "-01";
   q("customToDate").value = currentMonthIso() + "-15";
   
   q("customFromDate2").value = currentMonthIso() + "-16";
