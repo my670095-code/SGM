@@ -7228,6 +7228,10 @@ async function saveUserModal(){
   var display = (q("umDisplay").value||"").trim() || uname;
   var pin = (q("umPassword").value||"").trim() || "0000";
   var ids = Array.from(q("umStores").selectedOptions).map(function(o){ return o.value; });
+  
+  // ✅ Password is defined once here so both Edit and Create can use it
+  var password = (pin.length >= 6) ? pin : (pin + "00");
+  var email = uname + "@drcafe.com";
 
   var saveBtn = q("userModalSave");
 
@@ -7236,15 +7240,33 @@ async function saveUserModal(){
     try {
       if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Updating…"; }
 
-      var { error } = await sb.from("profiles")
-        .update({
-          display_name: display,
-          role: role,
-          store_ids: (role === "admin") ? [] : ids
-        })
-        .eq("username", editingUserUsername);
+      var session = (await sb.auth.getSession()).data.session;
+      if(!session){ showToast("Session expired. Please log in again."); return; }
 
-      if(error) throw error;
+      var resp = await fetch(
+        "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: JSON.stringify({
+            email: editingUserUsername + "@drcafe.com",
+            password: password, // ✅ Now it is defined!
+            username: editingUserUsername,
+            display_name: display,
+            role: role,
+            store_ids: (role === "admin") ? [] : ids
+          })
+        }
+      );
+
+      var result = await resp.json();
+      if(!resp.ok || !result.success){
+        showToast("Update failed: " + (result.error || resp.statusText));
+        return;
+      }
 
       showToast("User " + editingUserUsername + " updated.", "success");
       closeUserModal();
@@ -7259,9 +7281,6 @@ async function saveUserModal(){
   }
 
   /* ========== CREATE NEW USER via Edge Function ========== */
-  var email = uname + "@drcafe.com";
-  var password = (pin.length >= 6) ? pin : (pin + "00");
-
   try {
     if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Creating…"; }
 
