@@ -1544,11 +1544,11 @@ details.group>summary::-webkit-details-marker{display:none}
               <option value="single">Single month</option>
               <option value="2">Compare 2 months</option>
               <option value="3">Compare 3 months</option>
-              <option value="custom">Custom Date Range (Single)</option>
+              
               <option value="custom3">Compare 3 Custom Date Ranges</option>
             </select>
           </div>
-          <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="date" id="monthDate2"></div>
+          <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="month" id="monthDate2"></div>
           <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="date" id="monthDate3"></div>
           
           <!-- Custom Range 1 -->
@@ -4775,18 +4775,18 @@ async function saveWeeklyActionPlan() {
   q("monthWrap3").style.display = (mode==="3") ? "" : "none";
   
   // Show/hide custom range pickers
-  q("customRangeWrap").style.display = (mode==="custom"||mode==="custom3") ? "" : "none";
+  q("customRangeWrap").style.display = (mode==="custom3") ? "" : "none";
   q("customRangeWrap2").style.display = (mode==="custom3") ? "" : "none";
   q("customRangeWrap3").style.display = (mode==="custom3") ? "" : "none";
   
-    if (mode !== "custom" && mode !== "custom3") {
+     if (mode !== "custom" && mode !== "custom3") {
     // Grab the value and force it to be a 7-character string (YYYY-MM)
     var baseVal = (q("monthDate").value || todayIso()).slice(0, 7);
     var base = baseVal + "-01";
     
     // Do the same for Month 2 and Month 3
-    if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(baseVal, -1) + "-01";
-    if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(baseVal, -2) + "-01";
+    if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(baseVal, -1);
+    if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(baseVal, -2);
   }
 
   var periods = buildMonthlyPeriods();
@@ -7574,8 +7574,8 @@ document.addEventListener("keydown", function(e){
   q("weekDate3").value = addDays(todayIso(), -14);
   q("weekDate4").value = addDays(todayIso(), -21);
   q("monthDate").value = currentMonthIso();
-  q("monthDate2").value = shiftMonth(currentMonthIso(), -1) + "-01";
-  q("monthDate3").value = shiftMonth(currentMonthIso(), -2) + "-01";
+  q("monthDate2").value = shiftMonth(currentMonthIso(), -1);
+  q("monthDate3").value = shiftMonth(currentMonthIso(), -2);
    q("customFromDate").value = currentMonthIso() + "-01";
   q("customToDate").value = currentMonthIso() + "-15";
   
