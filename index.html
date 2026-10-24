@@ -4700,6 +4700,11 @@ async function saveWeeklyActionPlan() {
   }
 }
 /* ---------- Monthly ---------- */
+  function shiftMonth(monthIso, delta){
+  var d = parseDate(monthIso+"-01");
+  d.setMonth(d.getMonth()+delta);
+  return isoDate(d).slice(0,7);
+}
  function renderMonthly(){
   var mode = q("monthCompareMode").value;
   
