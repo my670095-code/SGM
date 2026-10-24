@@ -1497,36 +1497,42 @@ details.group>summary::-webkit-details-marker{display:none}
           <button class="btn small" id="weeklyClearBtn" type="button">Clear search</button>
         </div>
       </div>	
-         <div class="table-card"><table id="weeklyTable" class="report-2col"></table></div>
+         <div class="table-card"><table id="weeklyTable" class="report-2col"></table></div> <div id="inlineActionPlanHost"></div>
           </section> <!-- ✅ CLOSE THE WEEKLY SECTION HERE -->
 
       
     <!-- ============ WEEKLY ACTION PLAN MODAL ============ -->
 <div class="modal-backdrop" id="actionPlanModal">
-  <div class="modal" style="max-width: 600px;">
+  <div class="modal" style="max-width:720px">
     <div class="modal-head">
       <h3 id="actionPlanModalTitle">Action Plan</h3>
       <button class="modal-x" id="actionPlanModalClose" type="button">×</button>
     </div>
-    <div class="modal-body" style="grid-template-columns: 1fr;">
-      
+    <div class="modal-body" style="grid-template-columns:1fr;gap:12px">
+
+      <div id="actionPlanSuggestions" style="display:none;padding:10px 12px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;"></div>
+
       <div class="field">
-        <label for="weeklyActionPlanText">Action Plan & Follow-ups</label>
-        <textarea id="weeklyActionPlanText" class="control-input" style="width:100%; height:150px; resize:vertical; font-size:13.5px;" placeholder="Enter action plans, root causes, and follow-ups for this week..."></textarea>
+        <label style="display:flex;justify-content:space-between;align-items:center">
+          <span>Actions</span>
+          <button type="button" class="btn small" id="actionPlanAddItemBtn">+ Add action</button>
+        </label>
+        <div id="actionPlanListHost"></div>
       </div>
 
-      <!-- Read-only view (for when the user just wants to read it) -->
-      <div id="actionPlanReadOnly" style="display:none; padding:12px; background:var(--surface-2); border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; white-space:pre-wrap; color:var(--text-muted);"></div>
+      <div class="field">
+        <label for="actionPlanNotes">Notes (free text)</label>
+        <textarea id="actionPlanNotes" class="control-input" style="width:100%;height:90px;resize:vertical;font-size:13px;"></textarea>
+      </div>
 
+      <div id="actionPlanReadOnly" style="display:none"></div>
     </div>
     <div class="modal-foot">
       <button class="btn" id="actionPlanModalCancel" type="button">Close</button>
       <button class="btn primary" id="actionPlanModalSave" type="button">Save Action Plan</button>
     </div>
   </div>
-</div>
-      
-  
+</div>  
     <!-- ============ MONTHLY ============ -->
     <section id="view-monthly" class="view">
       <div class="page-head">
@@ -1591,7 +1597,7 @@ details.group>summary::-webkit-details-marker{display:none}
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
         </div>
       </div>
-      <div class="table-card"><table id="monthlyTable" class="report-2col"></table></div>
+      <div class="table-card"><table id="monthlyTable" class="report-2col"></table></div> <div id="inlineActionPlanHostMonthly"></div>
     </section>
     <!-- ============ KPI DASHBOARD ============ -->
     <section id="view-dashboard" class="view">
@@ -4484,7 +4490,7 @@ body += '<td class="dash-kpi-name">'+escapeHtml(k.name)+'</td>'+
   table.innerHTML = thead + body;
 }
 /* ---------- Multi-period 2-column renderer ---------- */
-function renderReportTable2Col(table, periods, search, countElId){
+function renderReportTable2Col(table, periods, search, countElId, inlineHostId){
   var all = reportRows();
   var filtered = all.filter(function(r){
     if(!search) return true;
@@ -4563,6 +4569,55 @@ function renderReportTable2Col(table, periods, search, countElId){
   });
 
   table.innerHTML = thead + '<tbody>'+body+'</tbody>';
+  /* Inline action-plan summary */
+(function renderInlinePlan(){
+  var wrap = document.getElementById(inlineHostId || "inlineActionPlanHost");
+  if(!wrap) return;
+  wrap.innerHTML = '<div class="bd-empty" style="margin-top:12px">Loading action plans…</div>';
+  var scope = currentScopeDescriptor();
+  var promises = periods.map(function(p){
+    var pt = (p.shortLabel.indexOf("W") === 0) ? "week" : "month";
+    var startIso = (pt === "week") ? weekStart(p.start) : (p.start.slice(0,7) + "-01");
+    return fetchPlanForPeriod(scope, startIso, pt).then(function(plan){
+      return { period: p, plan: plan };
+    });
+  });
+  Promise.all(promises).then(function(results){
+    var any = false;
+    var html = '<div class="section" style="margin-top:16px">'+
+      '<div class="section-head"><div class="num">📝</div>'+
+      '<h4>Action Plan</h4>'+
+      '<div class="sub">'+escapeHtml(scopeLabelForDescriptor(scope))+'</div></div>'+
+      '<div class="section-body">';
+    results.forEach(function(r){
+      if(!r.plan || ((!r.plan.items || !r.plan.items.length) && !r.plan.notes)) return;
+      any = true;
+      var items = r.plan.items || [];
+      var openN = items.filter(function(i){ return (i.status||"Open") !== "Done"; }).length;
+      var doneN = items.filter(function(i){ return (i.status||"Open") === "Done"; }).length;
+      html += '<div style="margin-bottom:10px">'+
+        '<div style="font-weight:700;font-size:12.5px;margin-bottom:4px">'+
+          escapeHtml(r.period.shortLabel)+
+          ' <span style="font-size:10.5px;color:#94a3b8">'+openN+' open · '+doneN+' done</span>'+
+        '</div>';
+      items.forEach(function(it){
+        var badge = it.status === "Done" ? "✅" : it.status === "In Progress" ? "🟡" : "🟠";
+        html += '<div style="font-size:12px;padding:3px 0 3px 14px;border-left:2px solid #e2e8f0;margin-left:4px">'+
+          badge+' <strong>'+escapeHtml(it.kpi||"General")+'</strong> — '+
+          escapeHtml(it.action||"(no action)")+
+          (it.owner?' · '+escapeHtml(it.owner):'')+
+          (it.due?' · '+escapeHtml(it.due):'')+
+        '</div>';
+      });
+      html += '</div>';
+    });
+    if(!any){
+      html += '<div class="bd-empty">No action plan recorded for these periods yet. Click 📝 Edit in a column header to add one.</div>';
+    }
+    html += '</div></div>';
+    wrap.innerHTML = html;
+  });
+})();
 }
 
 /* ---------- Period builders ---------- */
@@ -4666,102 +4721,415 @@ function renderWeekly(){
   var periods = buildWeeklyPeriods();
   var range = periods.map(function(p){ return dateLabel(p.start)+" — "+dateLabel(p.end); }).join("  |  ");
   
-  renderReportTable2Col(q("weeklyTable"), periods, q("weeklySearch")?q("weeklySearch").value:"", "weeklyCount");
+  renderReportTable2Col(q("weeklyTable"), periods, q("weeklySearch")?q("weeklySearch").value:"", "weeklyCount", "inlineActionPlanHost");
   
 }
 /* ---------- Weekly Action Plan Logic ---------- */
-var currentWeeklyActionPlan = { storeId: "", weekStart: "", id: null };
+/* ============================================================
+   ACTION PLAN — v2 (structured, suggested, carry-forward)
+   ============================================================ */
+var currentActionPlan = {
+  id: null,
+  scopeType: "store",
+  scopeValue: "",
+  periodType: "week",
+  periodStart: "",
+  periodLabel: "",
+  items: [],
+  notes: "",
+  originalSnapshot: null
+};
 
-// Called when user clicks a button in the table
-  async function openActionPlanModal(startDateStr, periodLabelStr, readOnlyMode, periodType) {
-  if (!currentUser || !state.selectedStore) return;
-  
-  var storeId = normalizeStoreId(state.selectedStore);
-  
-  q("actionPlanModalTitle").textContent = "Action Plan — " + periodLabelStr + " (" + storeId + ")";
-  q("actionPlanModal").classList.add("show");
-  
-  var textarea = q("weeklyActionPlanText");
-  var readonlyDiv = q("actionPlanReadOnly");
+var __pendingSuggestions = [];
+var __planCache = {};
+
+function currentScopeDescriptor(){
+  if(topFilter.storeIds && topFilter.storeIds.length === 1){
+    return { type:"store", value: topFilter.storeIds[0] };
+  }
+  if(topFilter.storeIds && topFilter.storeIds.length > 1){
+    return { type:"store", value: topFilter.storeIds.slice().sort().join(",") };
+  }
+  if(topFilter.areaManagers && topFilter.areaManagers.length){
+    return { type:"am", value: topFilter.areaManagers.slice().sort().join(",") };
+  }
+  if(state.selectedStore){
+    return { type:"store", value: state.selectedStore };
+  }
+  return { type:"all", value:"" };
+}
+
+function scopeLabelForDescriptor(d){
+  if(d.type === "store"){
+    if(d.value.indexOf(",") >= 0) return d.value.split(",").length + " stores";
+    return d.value;
+  }
+  if(d.type === "am") return d.value + " (AM)";
+  return "All visible stores";
+}
+
+function suggestActionsFromAgg(agg){
+  if(!agg || !agg._calc) return [];
+  var out = [];
+  KPI_DEFS.forEach(function(k){
+    if(k.target == null) return;
+    var v = agg._calc[k.key];
+    if(v == null || isNaN(v)) return;
+    var lbl = statusLabel(v, k.target, !!k.lower);
+    if(lbl === "ACHIEVED") return;
+    out.push({
+      id: uid("act"),
+      kpi: k.name,
+      issue: k.name + " is " +
+        (k.fmt === "pct" ? pct(v) : k.fmt === "money" ? ("SAR "+money(v)) : round(v,2)) +
+        " vs target " +
+        (k.fmt === "pct" ? pct(k.target) : k.fmt === "money" ? ("SAR "+money(k.target)) : round(k.target,2)),
+      action: "",
+      owner: "",
+      due: "",
+      priority: lbl === "ACTION" ? "High" : "Medium",
+      status: "Open",
+      suggested: true
+    });
+  });
+  return out;
+}
+
+function aggForPeriod(scopeDesc, periodStart, periodType){
+  var ids;
+  if(scopeDesc.type === "store" && scopeDesc.value.indexOf(",") >= 0){
+    ids = scopeDesc.value.split(",");
+  } else if(scopeDesc.type === "store"){
+    ids = [scopeDesc.value];
+  } else if(scopeDesc.type === "am"){
+    var ams = scopeDesc.value.split(",");
+    ids = visibleStores.filter(function(s){ return ams.indexOf(s.areaManager) >= 0; }).map(function(s){ return s.id; });
+  } else {
+    ids = visibleStores.map(function(s){ return s.id; });
+  }
+  var start, end;
+  if(periodType === "week"){
+    start = periodStart;
+    end = addDays(periodStart, 6);
+  } else if(periodType === "month"){
+    start = periodStart;
+    var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
+    end = isoDate(d);
+  } else {
+    start = periodStart; end = periodStart;
+  }
+  return aggregate(recordsBetweenStores(ids, start, end));
+}
+
+function previousPeriodStart(startIso, periodType){
+  if(!startIso) return null;
+  if(periodType === "week") return addDays(startIso, -7);
+  if(periodType === "month"){
+    var d = parseDate(startIso);
+    d.setMonth(d.getMonth()-1);
+    return isoDate(d).slice(0,7) + "-01";
+  }
+  return null;
+}
+
+function renderSuggestions(list){
+  __pendingSuggestions = list || [];
+  var host = q("actionPlanSuggestions");
+  if(!host) return;
+  if(!list.length){ host.style.display = "none"; host.innerHTML = ""; return; }
+  host.style.display = "";
+  var html = '<div class="grp-title" style="margin-bottom:6px">Suggested from missed KPIs</div>';
+  list.forEach(function(s){
+    html += '<label class="am-ms-item" style="border-radius:6px">' +
+              '<input type="checkbox" data-sugg="' + escapeAttr(s.id) + '">' +
+              '<span class="lbl">' + escapeHtml(s.issue) + '</span>' +
+              '<span class="cnt">' + escapeHtml(s.priority) + '</span>' +
+            '</label>';
+  });
+  host.innerHTML = html;
+  host.querySelectorAll("[data-sugg]").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var id = cb.dataset.sugg;
+      var s = __pendingSuggestions.find(function(x){ return x.id === id; });
+      if(!s) return;
+      if(cb.checked){
+        currentActionPlan.items.push(s);
+      } else {
+        currentActionPlan.items = currentActionPlan.items.filter(function(x){ return x.id !== id; });
+      }
+      __pendingSuggestions = __pendingSuggestions.filter(function(x){ return x.id !== id; });
+      renderSuggestions(__pendingSuggestions);
+      renderActionPlanList();
+    });
+  });
+}
+
+function renderActionPlanList(){
+  var host = q("actionPlanListHost");
+  if(!host) return;
+  host.innerHTML = "";
+  if(!currentActionPlan.items.length){
+    host.innerHTML = '<div class="bd-empty">No actions yet. Pick a suggested KPI above, or click "+ Add action".</div>';
+    return;
+  }
+  currentActionPlan.items.forEach(function(item, idx){
+    var row = document.createElement("div");
+    row.style.cssText = "border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:#fff;";
+    var carried = item.carriedFrom ? ' <span style="font-size:10px;background:#fef3c7;color:#b45309;padding:2px 7px;border-radius:999px;font-weight:700">carried</span>' : '';
+    row.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">'+
+        '<strong style="font-size:12.5px;flex:1">' + (item.kpi ? escapeHtml(item.kpi) : "General action") + carried + '</strong>'+
+        '<button type="button" class="icon-btn" data-remove="'+idx+'">×</button>'+
+      '</div>'+
+      '<div class="field" style="margin-bottom:6px"><label>Issue</label>'+
+        '<input type="text" data-k="issue" value="'+escapeAttr(item.issue||"")+'"></div>'+
+      '<div class="field" style="margin-bottom:6px"><label>Action</label>'+
+        '<input type="text" data-k="action" value="'+escapeAttr(item.action||"")+'" placeholder="What will be done?"></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">'+
+        '<div class="field"><label>Owner</label><input type="text" data-k="owner" value="'+escapeAttr(item.owner||"")+'"></div>'+
+        '<div class="field"><label>Due</label><input type="date" data-k="due" value="'+escapeAttr(item.due||"")+'"></div>'+
+        '<div class="field"><label>Priority</label><select data-k="priority">'+
+          ['High','Medium','Low'].map(function(p){
+            return '<option value="'+p+'"'+(item.priority===p?' selected':'')+'>'+p+'</option>';
+          }).join("")+'</select></div>'+
+        '<div class="field"><label>Status</label><select data-k="status">'+
+          ['Open','In Progress','Done'].map(function(st){
+            return '<option value="'+st+'"'+(item.status===st?' selected':'')+'>'+st+'</option>';
+          }).join("")+'</select></div>'+
+      '</div>';
+    row.querySelectorAll("[data-k]").forEach(function(inp){
+      inp.addEventListener("input", function(){ currentActionPlan.items[idx][inp.dataset.k] = inp.value; });
+      inp.addEventListener("change", function(){ currentActionPlan.items[idx][inp.dataset.k] = inp.value; });
+    });
+    row.querySelector("[data-remove]").addEventListener("click", function(){
+      currentActionPlan.items.splice(idx, 1);
+      renderActionPlanList();
+    });
+    host.appendChild(row);
+  });
+}
+
+function renderActionPlanReadOnly(){
+  var host = q("actionPlanReadOnly");
+  var listHost = q("actionPlanListHost");
+  var notesEl = q("actionPlanNotes");
   var saveBtn = q("actionPlanModalSave");
+  if(listHost) listHost.style.display = "none";
+  if(notesEl) notesEl.style.display = "none";
+  if(saveBtn) saveBtn.style.display = "none";
+  if(!host) return;
+  host.style.display = "block";
+  if(!currentActionPlan.items.length && !currentActionPlan.notes){
+    host.innerHTML = '<div class="bd-empty">No action plan recorded.</div>';
+    return;
+  }
+  var html = "";
+  if(currentActionPlan.items.length){
+    currentActionPlan.items.forEach(function(it){
+      var badge = it.status === "Done" ? "✅" : it.status === "In Progress" ? "🟡" : "🟠";
+      html += '<div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:#fff">'+
+                '<div style="font-weight:700;font-size:12.5px">'+badge+' '+escapeHtml(it.kpi||"General")+'</div>'+
+                (it.issue ? '<div style="font-size:11.5px;color:#64748b">'+escapeHtml(it.issue)+'</div>':'')+
+                (it.action ? '<div style="font-size:12px">'+escapeHtml(it.action)+'</div>':'')+
+                '<div style="font-size:11px;color:#94a3b8;margin-top:3px">'+
+                  (it.owner?('Owner: '+escapeHtml(it.owner)+' · '):'')+
+                  (it.due?('Due: '+escapeHtml(it.due)+' · '):'')+
+                  escapeHtml(it.priority||"")+' · '+escapeHtml(it.status||"Open")+
+                '</div>'+
+              '</div>';
+    });
+  }
+  if(currentActionPlan.notes){
+    html += '<div style="white-space:pre-wrap;font-size:12.5px;margin-top:8px">'+escapeHtml(currentActionPlan.notes)+'</div>';
+  }
+  host.innerHTML = html;
+}
 
-  textarea.value = "Loading...";
-  textarea.disabled = true;
-  saveBtn.disabled = true;
+function addActionPlanItem(){
+  currentActionPlan.items.push({
+    id: uid("act"), kpi:"", issue:"", action:"",
+    owner:"", due:"", priority:"Medium", status:"Open"
+  });
+  renderActionPlanList();
+}
+
+async function openActionPlanModal(startDateStr, periodLabelStr, readOnlyMode, periodType){
+  if(!currentUser) return;
+  var scope = currentScopeDescriptor();
+  var pt = periodType || "week";
+  if(pt === "weekly")  pt = "week";
+if(pt === "monthly") pt = "month";
+
+
+  currentActionPlan = {
+    id: null,
+    scopeType: scope.type,
+    scopeValue: scope.value,
+    periodType: pt,
+    periodStart: startDateStr,
+    periodLabel: periodLabelStr,
+    items: [],
+    notes: "",
+    originalSnapshot: null
+  };
+
+  q("actionPlanModalTitle").textContent =
+    "Action Plan — " + periodLabelStr + " (" + scopeLabelForDescriptor(scope) + ")";
+  q("actionPlanModal").classList.add("show");
+
+  var listHost = q("actionPlanListHost");
+  var notesEl = q("actionPlanNotes");
+  var roEl = q("actionPlanReadOnly");
+  var saveBtn = q("actionPlanModalSave");
+  var suggWrap = q("actionPlanSuggestions");
+
+  if(listHost){ listHost.style.display = ""; listHost.innerHTML = '<div class="bd-empty">Loading…</div>'; }
+  if(notesEl){ notesEl.value = ""; notesEl.style.display = ""; notesEl.disabled = false; }
+  if(roEl){ roEl.style.display = "none"; roEl.innerHTML = ""; }
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.style.display = "inline-flex"; }
+  if(suggWrap){ suggWrap.style.display = "none"; suggWrap.innerHTML = ""; }
 
   try {
-    // If monthly, we append "-01" to make it a valid date for Supabase, or keep the exact date for weekly
-    var dbDateStr = startDateStr;
-
     var { data, error } = await sb.from("weekly_action_plans")
       .select("*")
-      .eq("store_id", storeId)
-      .eq("week_start_date", dbDateStr)
-      .single();
+      .eq("scope_type", scope.type)
+      .eq("scope_value", scope.value)
+      .eq("period_type", pt)
+      .eq("week_start_date", startDateStr)
+      .maybeSingle();
+    if(error) throw error;
 
-    if (error && error.code !== "PGRST116") throw error; 
-
-    currentWeeklyActionPlan = {
-      storeId: storeId,
-      weekStart: dbDateStr, // Reusing the weekStart column for months too
-      id: data ? data.id : null
-    };
-
-    var planText = data ? (data.action_text || "") : "";
-    
-    if (readOnlyMode) {
-      textarea.style.display = "none";
-      readonlyDiv.style.display = "block";
-      readonlyDiv.textContent = planText || "No action plan recorded for this period.";
-      saveBtn.style.display = "none";
-    } else {
-      textarea.style.display = "block";
-      readonlyDiv.style.display = "none";
-      textarea.value = planText;
-      saveBtn.style.display = "inline-flex";
+    if(data){
+      currentActionPlan.id = data.id;
+      currentActionPlan.items = Array.isArray(data.items) ? data.items.slice() : [];
+      currentActionPlan.notes = data.notes || data.action_text || "";
     }
-    
-  } catch(e) {
-    console.error("Failed to load action plan:", e);
-    textarea.value = "";
-    showToast("Could not load action plan.");
-  } finally {
-    textarea.disabled = false;
-    saveBtn.disabled = false;
+
+    if(!readOnlyMode){
+      var prevStart = previousPeriodStart(startDateStr, pt);
+      if(prevStart){
+        try {
+          var { data: prev } = await sb.from("weekly_action_plans")
+            .select("items")
+            .eq("scope_type", scope.type)
+            .eq("scope_value", scope.value)
+            .eq("period_type", pt)
+            .eq("week_start_date", prevStart)
+            .maybeSingle();
+          if(prev && Array.isArray(prev.items)){
+            var already = {};
+            currentActionPlan.items.forEach(function(it){ if(it.carriedFrom) already[it.carriedFrom] = true; });
+            prev.items.forEach(function(it){
+              if((it.status||"Open") === "Done") return;
+              if(already[it.id]) return;
+              currentActionPlan.items.push(Object.assign({}, it, {
+                id: uid("act"), carriedFrom: it.id
+              }));
+            });
+          }
+        } catch(e){ console.warn("Carry-forward failed:", e); }
+      }
+
+      var agg = aggForPeriod(scope, startDateStr, pt);
+      var sugg = suggestActionsFromAgg(agg);
+      var existingKpis = {};
+      currentActionPlan.items.forEach(function(it){ if(it.kpi) existingKpis[it.kpi] = true; });
+      sugg = sugg.filter(function(s){ return !existingKpis[s.kpi]; });
+      renderSuggestions(sugg);
+    }
+
+    currentActionPlan.originalSnapshot = JSON.stringify({
+      items: currentActionPlan.items, notes: currentActionPlan.notes
+    });
+
+    if(readOnlyMode){
+      renderActionPlanReadOnly();
+    } else {
+      renderActionPlanList();
+      if(notesEl) notesEl.value = currentActionPlan.notes;
+    }
+    if(saveBtn) saveBtn.disabled = false;
+
+  } catch(e){
+    console.error("openActionPlanModal:", e);
+    if(listHost) listHost.innerHTML = '<div class="bd-empty">Could not load: '+escapeHtml(e.message||"")+'</div>';
+    if(saveBtn) saveBtn.disabled = false;
   }
 }
-  window.openActionPlanModal = openActionPlanModal;
+window.openActionPlanModal = openActionPlanModal;
 
-async function saveWeeklyActionPlan() {
-  if (!currentUser || !currentWeeklyActionPlan.storeId) return;
-
-  var text = q("weeklyActionPlanText").value.trim();
+async function fetchPlanForPeriod(scopeDesc, periodStart, periodType){
+  var key = scopeDesc.type+"|"+scopeDesc.value+"|"+periodType+"|"+periodStart;
+  if(__planCache[key] !== undefined) return __planCache[key];
+  try {
+    var { data } = await sb.from("weekly_action_plans")
+      .select("items,notes")
+      .eq("scope_type", scopeDesc.type)
+      .eq("scope_value", scopeDesc.value)
+      .eq("period_type", periodType)
+      .eq("week_start_date", periodStart)
+      .maybeSingle();
+    __planCache[key] = data || null;
+  } catch(e){ __planCache[key] = null; }
+  return __planCache[key];
+}
+  async function saveWeeklyActionPlan(){
+  if(!currentUser) return;
   var btn = q("actionPlanModalSave");
-  
-  btn.disabled = true;
-  btn.textContent = "Saving...";
+  if(btn){ btn.disabled = true; btn.textContent = "Saving…"; }
 
   try {
-    var { error } = await sb.from("weekly_action_plans").upsert({
-      store_id: currentWeeklyActionPlan.storeId,
-      week_start_date: currentWeeklyActionPlan.weekStart,
-      action_text: text,
-      updated_by: currentUser.username,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "store_id,week_start_date" });
+    var snapshotNow = JSON.stringify({ items: currentActionPlan.items, notes: currentActionPlan.notes });
+    if(snapshotNow === currentActionPlan.originalSnapshot){
+      showToast("No changes to save.");
+      q("actionPlanModal").classList.remove("show");
+      return;
+    }
 
-    if (error) throw error;
+    var payload = {
+      store_id:        currentActionPlan.scopeValue.split(",")[0] || null,
+      week_start_date: currentActionPlan.periodStart,
+      action_text:     currentActionPlan.notes || "",
+      scope_type:      currentActionPlan.scopeType,
+      scope_value:     currentActionPlan.scopeValue,
+      period_type:     currentActionPlan.periodType,
+      items:           currentActionPlan.items,
+      notes:           currentActionPlan.notes,
+      updated_by:      currentUser.username,
+      updated_at:      new Date().toISOString()
+    };
+
+    var { data, error } = await sb.from("weekly_action_plans")
+      .upsert(payload, { onConflict: "scope_type,scope_value,period_type,week_start_date" })
+      .select()
+      .single();
+    if(error) throw error;
+
+    try {
+      await sb.from("action_plan_revisions").insert({
+        plan_id:      data.id,
+        scope_type:   currentActionPlan.scopeType,
+        scope_value:  currentActionPlan.scopeValue,
+        period_type:  currentActionPlan.periodType,
+        period_start: currentActionPlan.periodStart,
+        snapshot:     { items: currentActionPlan.items, notes: currentActionPlan.notes },
+        edited_by:    currentUser.username
+      });
+    } catch(revErr){ console.warn("Revision insert:", revErr); }
+
+    __planCache = {};
     showToast("✓ Action plan saved.", "success");
     q("actionPlanModal").classList.remove("show");
-  } catch(e) {
-    console.error(e);
-    showToast("Failed to save action plan.");
+    refreshCurrentView();
+  } catch(e){
+    console.error("saveWeeklyActionPlan:", e);
+    showToast("Save failed: " + (e.message || ""));
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Save Action Plan";
+    if(btn){ btn.disabled = false; btn.textContent = "Save Action Plan"; }
   }
 }
-/* ---------- Monthly ---------- */
+
+  /* ---------- Monthly ---------- */
   function shiftMonth(monthIso, delta){
   var d = parseDate(monthIso+"-01");
   d.setMonth(d.getMonth()+delta);
@@ -4790,7 +5158,7 @@ async function saveWeeklyActionPlan() {
   }
 
   var periods = buildMonthlyPeriods();
-  renderReportTable2Col(q("monthlyTable"), periods, q("monthlySearch")?q("monthlySearch").value:"", "monthlyCount");
+  renderReportTable2Col(q("monthlyTable"), periods, q("monthlySearch")?q("monthlySearch").value:"", "monthlyCount", "inlineActionPlanHostMonthly");
 }
 
 /* ============================================================
@@ -7480,7 +7848,9 @@ q("dashKpi").addEventListener("change", renderDashboard);
   // Connect the Weekly Action Plan Modal buttons
   var saveActionBtn = q("actionPlanModalSave");
   if(saveActionBtn) saveActionBtn.addEventListener("click", saveWeeklyActionPlan);
-  
+
+var addActBtn = q("actionPlanAddItemBtn");
+if(addActBtn) addActBtn.addEventListener("click", addActionPlanItem);  
   var closeActionBtn = q("actionPlanModalClose");
   if(closeActionBtn) closeActionBtn.addEventListener("click", function(){ q("actionPlanModal").classList.remove("show"); });
   
