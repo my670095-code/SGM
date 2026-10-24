@@ -1544,10 +1544,23 @@ details.group>summary::-webkit-details-marker{display:none}
               <option value="single">Single month</option>
               <option value="2">Compare 2 months</option>
               <option value="3">Compare 3 months</option>
+                <option value="custom">Custom Date Range (e.g., 1st to 15th)</option> <!-- NEW -->
+
             </select>
           </div>
           <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="date" id="monthDate2"></div>
-          <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="month" id="monthDate3"></div>
+          <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="date" id="monthDate3"></div>
+<!-- NEW: Custom Range Wrapper -->
+<div class="field" id="customRangeWrap" style="display:none; gap:10px; flex-direction:row; align-items:center;">
+  <div>
+    <label for="customFromDate">From</label>
+    <input class="control-input" type="date" id="customFromDate">
+  </div>
+  <div>
+    <label for="customToDate">To</label>
+    <input class="control-input" type="date" id="customToDate">
+  </div>
+</div>
           
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
           <button class="btn small" id="monthlyClearBtn" type="button">Clear search</button>
@@ -4529,16 +4542,40 @@ function buildWeeklyPeriods(){
 
 function buildMonthlyPeriods(){
   var mode = q("monthCompareMode").value;
-  // Extract just YYYY-MM from the date input
+  
+  // --- NEW: Handle Custom Date Range ---
+  if (mode === "custom") {
+    var from = q("customFromDate").value;
+    var to = q("customToDate").value;
+    if (!from || !to) {
+      // Fallback if dates are empty
+      from = currentMonthIso() + "-01";
+      to = currentMonthIso() + "-15";
+      q("customFromDate").value = from;
+      q("customToDate").value = to;
+    }
+    var ids = resolveStoreScope();
+    var agg = aggregate(recordsBetweenStores(ids, from, to));
+    agg._periodStartLabel = from;
+    agg._periodEndLabel   = to;
+    
+    return [{
+      shortLabel: dateLabel(from) + " – " + dateLabel(to),
+      start: from, 
+      end: to, 
+      agg: agg
+    }];
+  }
+  // -------------------------------------
+
   var base = (q("monthDate").value || todayIso()).slice(0,7); 
   var count = mode === "single" ? 1 : parseInt(mode,10);
   var inputs = ["monthDate","monthDate2","monthDate3"];
   var labels = ["Month 1","Month 2","Month 3"];
   var periods = [];
+  
   for(var i=0;i<count;i++){
-    // Extract just YYYY-MM from the input
     var mv = (q(inputs[i]).value || base).slice(0,7); 
-    
     var start = mv+"-01";
     var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
     var end = isoDate(d);
@@ -4663,28 +4700,24 @@ async function saveWeeklyActionPlan() {
   }
 }
 /* ---------- Monthly ---------- */
-  function renderMonthly(){
+ function renderMonthly(){
   var mode = q("monthCompareMode").value;
+  
+  // Show/hide standard month pickers
   q("monthWrap2").style.display = (mode==="2"||mode==="3") ? "" : "none";
   q("monthWrap3").style.display = (mode==="3") ? "" : "none";
   
-  // Default to the first day of the current month if empty
-  var base = (q("monthDate").value || todayIso()).slice(0,7) + "-01";
+  // Show/hide custom range pickers
+  q("customRangeWrap").style.display = (mode==="custom") ? "" : "none";
   
-  if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(base.slice(0,7), -1) + "-01";
-  if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(base.slice(0,7), -2) + "-01";
+  if (mode !== "custom") {
+    var base = (q("monthDate").value || todayIso()).slice(0,7) + "-01";
+    if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(base.slice(0,7), -1) + "-01";
+    if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(base.slice(0,7), -2) + "-01";
+  }
 
   var periods = buildMonthlyPeriods();
-  var range = periods.map(function(p){ return p.shortLabel; }).join("  |  ");
-  var total = periods.reduce(function(a,p){ return a + p.agg._records.length; }, 0);
-  
   renderReportTable2Col(q("monthlyTable"), periods, q("monthlySearch")?q("monthlySearch").value:"", "monthlyCount");
-}
-
-function shiftMonth(monthIso, delta){
-  var d = parseDate(monthIso+"-01");
-  d.setMonth(d.getMonth()+delta);
-  return isoDate(d).slice(0,7);
 }
 
 /* ============================================================
@@ -5286,9 +5319,8 @@ function exportPeriodReportPdf(kind){
     title = "Monthly Operations Report";
   } else { return; }
 
-  var subtitle = "Scope: " + scopeLabel() + " · " +
-                 periods.map(function(p){ return p.shortLabel; }).join(" | ");
-
+var subtitle = "Scope: " + scopeLabel() + " · " +
+               periods.map(function(p){ return p.shortLabel || p.start; }).join(" | ");
   var doc = getPdfContext(title, subtitle);
 
   /* Header: Category | Section | P1 | P2 | ... */
@@ -7327,6 +7359,9 @@ if(grossSalesEl){
   q("monthDate2").addEventListener("change", renderMonthly);
   q("monthDate3").addEventListener("change", renderMonthly);
   q("monthCompareMode").addEventListener("change", renderMonthly);
+    q("customFromDate").addEventListener("change", renderMonthly);
+  q("customToDate").addEventListener("change", renderMonthly);
+
 
 q("dashMonth").addEventListener("change", renderDashboard);
 
@@ -7465,6 +7500,9 @@ document.addEventListener("keydown", function(e){
      q("monthDate").value = currentMonthIso() + "-01";
   q("monthDate2").value = shiftMonth(currentMonthIso(), -1) + "-01";
   q("monthDate3").value = shiftMonth(currentMonthIso(), -2) + "-01";
+     q("customFromDate").value = currentMonthIso() + "-01";
+  q("customToDate").value = currentMonthIso() + "-15";
+
    q("dashMonth").value = currentMonthIso();
   q("plannedHours").value = state.settings.plannedHours || 24;
   q("defaultStorePin").value = state.defaultStorePin || "0000";
