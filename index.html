@@ -1498,6 +1498,8 @@ details.group>summary::-webkit-details-marker{display:none}
         </div>
       </div>	
          <div class="table-card"><table id="weeklyTable" class="report-2col"></table></div>
+          </section> <!-- ✅ CLOSE THE WEEKLY SECTION HERE -->
+
       
     <!-- ============ WEEKLY ACTION PLAN MODAL ============ -->
 <div class="modal-backdrop" id="actionPlanModal">
@@ -1523,7 +1525,7 @@ details.group>summary::-webkit-details-marker{display:none}
     </div>
   </div>
 </div>
-      </section>
+      
   
     <!-- ============ MONTHLY ============ -->
     <section id="view-monthly" class="view">
@@ -4439,17 +4441,20 @@ function renderReportTable2Col(table, periods, search, countElId){
     '<th class="cat-col">Category</th>' +
     '<th class="section-col">Section</th>';
     
-  periods.forEach(function(p){
-    // Calculate the exact Saturday start date for this week
-    var startDateStr = weekStart(p.start);
-    var wLabel = weekLabel(startDateStr);
+   periods.forEach(function(p){
+    // Check if this is a monthly or weekly report based on the label format
+    var isMonthly = (p.shortLabel.indexOf("W") !== 0); 
+    var periodType = isMonthly ? "monthly" : "weekly";
     
-    // Build the header with the title and the two Action Plan buttons
+    // The start date of the period (Saturday for weekly, 1st of month for monthly)
+    var startDateStr = isMonthly ? p.start : weekStart(p.start);
+    var pLabel = p.shortLabel;
+    
     thead += '<th class="val-col" style="vertical-align:top; padding: 8px;">' +
-      '<div style="margin-bottom:6px;">'+escapeHtml(p.shortLabel)+'</div>' +
+      '<div style="margin-bottom:6px;">'+escapeHtml(pLabel)+'</div>' +
       '<div style="display:flex; gap:4px; justify-content:flex-end;">' +
-        '<button class="btn small" style="padding:2px 6px; font-size:10px; height:22px; background:#f8fafc;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+wLabel+'\', true)" title="View Action Plan">👁️ View</button>' +
-        '<button class="btn small primary" style="padding:2px 6px; font-size:10px; height:22px;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+wLabel+'\', false)" title="Edit Action Plan">📝 Edit</button>' +
+        '<button class="btn small" style="padding:2px 6px; font-size:10px; height:22px; background:#f8fafc;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+pLabel+'\', true, \''+periodType+'\')" title="View Action Plan">👁️ View</button>' +
+        '<button class="btn small primary" style="padding:2px 6px; font-size:10px; height:22px;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+pLabel+'\', false, \''+periodType+'\')" title="Edit Action Plan">📝 Edit</button>' +
       '</div>' +
     '</th>';
   });
@@ -4566,12 +4571,12 @@ function renderWeekly(){
 var currentWeeklyActionPlan = { storeId: "", weekStart: "", id: null };
 
 // Called when user clicks a button in the table
-async function openActionPlanModal(weekStartDateStr, weekLabelStr, readOnlyMode) {
+  async function openActionPlanModal(startDateStr, periodLabelStr, readOnlyMode, periodType) {
   if (!currentUser || !state.selectedStore) return;
   
   var storeId = normalizeStoreId(state.selectedStore);
   
-  q("actionPlanModalTitle").textContent = "Action Plan — " + weekLabelStr + " (" + storeId + ")";
+  q("actionPlanModalTitle").textContent = "Action Plan — " + periodLabelStr + " (" + storeId + ")";
   q("actionPlanModal").classList.add("show");
   
   var textarea = q("weeklyActionPlanText");
@@ -4583,30 +4588,31 @@ async function openActionPlanModal(weekStartDateStr, weekLabelStr, readOnlyMode)
   saveBtn.disabled = true;
 
   try {
+    // If monthly, we append "-01" to make it a valid date for Supabase, or keep the exact date for weekly
+    var dbDateStr = startDateStr;
+
     var { data, error } = await sb.from("weekly_action_plans")
       .select("*")
       .eq("store_id", storeId)
-      .eq("week_start_date", weekStartDateStr)
+      .eq("week_start_date", dbDateStr)
       .single();
 
     if (error && error.code !== "PGRST116") throw error; 
 
     currentWeeklyActionPlan = {
       storeId: storeId,
-      weekStart: weekStartDateStr,
+      weekStart: dbDateStr, // Reusing the weekStart column for months too
       id: data ? data.id : null
     };
 
     var planText = data ? (data.action_text || "") : "";
     
     if (readOnlyMode) {
-      // Show read-only view
       textarea.style.display = "none";
       readonlyDiv.style.display = "block";
-      readonlyDiv.textContent = planText || "No action plan recorded for this week.";
+      readonlyDiv.textContent = planText || "No action plan recorded for this period.";
       saveBtn.style.display = "none";
     } else {
-      // Show editable view
       textarea.style.display = "block";
       readonlyDiv.style.display = "none";
       textarea.value = planText;
@@ -4623,7 +4629,6 @@ async function openActionPlanModal(weekStartDateStr, weekLabelStr, readOnlyMode)
   }
 }
   window.openActionPlanModal = openActionPlanModal;
-
 
 async function saveWeeklyActionPlan() {
   if (!currentUser || !currentWeeklyActionPlan.storeId) return;
