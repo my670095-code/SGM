@@ -1499,19 +1499,30 @@ details.group>summary::-webkit-details-marker{display:none}
       </div>	
          <div class="table-card"><table id="weeklyTable" class="report-2col"></table></div>
       
-      <!-- NEW: WEEKLY ACTION PLAN -->
-      <div class="card" id="weeklyActionPlanCard" style="margin-top: 20px; padding: 20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-          <h3 style="margin:0; font-size:16px; color:var(--brand-900);">📝 Weekly Action Plan</h3>
-          <span id="actionPlanWeekLabel" style="font-size:12px; font-weight:600; color:var(--text-muted);">Loading...</span>
-        </div>
-        <textarea id="weeklyActionPlanText" class="control-input" style="width:100%; height:120px; resize:vertical; font-size:13.5px; line-height: 1.5;" placeholder="Enter action plans, root causes, and follow-ups for this week..."></textarea>
-        <div style="display:flex; justify-content:flex-end; margin-top: 12px;">
-          <button class="btn primary" id="saveWeeklyActionBtn" type="button" disabled>Save Action Plan</button>
-        </div>
+    <!-- ============ WEEKLY ACTION PLAN MODAL ============ -->
+<div class="modal-backdrop" id="actionPlanModal">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal-head">
+      <h3 id="actionPlanModalTitle">Action Plan</h3>
+      <button class="modal-x" id="actionPlanModalClose" type="button">×</button>
+    </div>
+    <div class="modal-body" style="grid-template-columns: 1fr;">
+      
+      <div class="field">
+        <label for="weeklyActionPlanText">Action Plan & Follow-ups</label>
+        <textarea id="weeklyActionPlanText" class="control-input" style="width:100%; height:150px; resize:vertical; font-size:13.5px;" placeholder="Enter action plans, root causes, and follow-ups for this week..."></textarea>
       </div>
 
-    </section>
+      <!-- Read-only view (for when the user just wants to read it) -->
+      <div id="actionPlanReadOnly" style="display:none; padding:12px; background:var(--surface-2); border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; white-space:pre-wrap; color:var(--text-muted);"></div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="actionPlanModalCancel" type="button">Close</button>
+      <button class="btn primary" id="actionPlanModalSave" type="button">Save Action Plan</button>
+    </div>
+  </div>
+</div>
   
     <!-- ============ MONTHLY ============ -->
     <section id="view-monthly" class="view">
@@ -4426,8 +4437,20 @@ function renderReportTable2Col(table, periods, search, countElId){
   var thead = '<thead><tr>' +
     '<th class="cat-col">Category</th>' +
     '<th class="section-col">Section</th>';
+    
   periods.forEach(function(p){
-    thead += '<th class="val-col">'+escapeHtml(p.shortLabel)+'</th>';
+    // Calculate the exact Saturday start date for this week
+    var startDateStr = weekStart(p.start);
+    var wLabel = weekLabel(startDateStr);
+    
+    // Build the header with the title and the two Action Plan buttons
+    thead += '<th class="val-col" style="vertical-align:top; padding: 8px;">' +
+      '<div style="margin-bottom:6px;">'+escapeHtml(p.shortLabel)+'</div>' +
+      '<div style="display:flex; gap:4px; justify-content:flex-end;">' +
+        '<button class="btn small" style="padding:2px 6px; font-size:10px; height:22px; background:#f8fafc;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+wLabel+'\', true)" title="View Action Plan">👁️ View</button>' +
+        '<button class="btn small primary" style="padding:2px 6px; font-size:10px; height:22px;" onclick="openActionPlanModal(\''+startDateStr+'\', \''+wLabel+'\', false)" title="Edit Action Plan">📝 Edit</button>' +
+      '</div>' +
+    '</th>';
   });
   thead += '</tr></thead>';
 
@@ -4537,46 +4560,65 @@ function renderWeekly(){
   
   renderReportTable2Col(q("weeklyTable"), periods, q("weeklySearch")?q("weeklySearch").value:"", "weeklyCount");
   
-  // Load the action plan for the first week shown
-  loadWeeklyActionPlan();
 }
-  /* ---------- Weekly Action Plan Logic ---------- */
+/* ---------- Weekly Action Plan Logic ---------- */
 var currentWeeklyActionPlan = { storeId: "", weekStart: "", id: null };
 
-async function loadWeeklyActionPlan() {
+// Called when user clicks a button in the table
+async function openActionPlanModal(weekStartDateStr, weekLabelStr, readOnlyMode) {
   if (!currentUser || !state.selectedStore) return;
-
-  var baseDate = q("weekDate").value || todayIso();
-  var weekStartDate = weekStart(baseDate);
+  
   var storeId = normalizeStoreId(state.selectedStore);
+  
+  q("actionPlanModalTitle").textContent = "Action Plan — " + weekLabelStr + " (" + storeId + ")";
+  q("actionPlanModal").classList.add("show");
+  
+  var textarea = q("weeklyActionPlanText");
+  var readonlyDiv = q("actionPlanReadOnly");
+  var saveBtn = q("actionPlanModalSave");
 
-  q("actionPlanWeekLabel").textContent = "Store: " + storeId + " · " + weekLabel(weekStartDate);
-  q("weeklyActionPlanText").value = "Loading...";
-  q("weeklyActionPlanText").disabled = true;
-  q("saveWeeklyActionBtn").disabled = true;
+  textarea.value = "Loading...";
+  textarea.disabled = true;
+  saveBtn.disabled = true;
 
   try {
     var { data, error } = await sb.from("weekly_action_plans")
       .select("*")
       .eq("store_id", storeId)
-      .eq("week_start_date", weekStartDate)
+      .eq("week_start_date", weekStartDateStr)
       .single();
 
     if (error && error.code !== "PGRST116") throw error; 
 
     currentWeeklyActionPlan = {
       storeId: storeId,
-      weekStart: weekStartDate,
+      weekStart: weekStartDateStr,
       id: data ? data.id : null
     };
 
-    q("weeklyActionPlanText").value = data ? (data.action_text || "") : "";
+    var planText = data ? (data.action_text || "") : "";
+    
+    if (readOnlyMode) {
+      // Show read-only view
+      textarea.style.display = "none";
+      readonlyDiv.style.display = "block";
+      readonlyDiv.textContent = planText || "No action plan recorded for this week.";
+      saveBtn.style.display = "none";
+    } else {
+      // Show editable view
+      textarea.style.display = "block";
+      readonlyDiv.style.display = "none";
+      textarea.value = planText;
+      saveBtn.style.display = "inline-flex";
+    }
+    
   } catch(e) {
     console.error("Failed to load action plan:", e);
-    q("weeklyActionPlanText").value = "";
+    textarea.value = "";
+    showToast("Could not load action plan.");
   } finally {
-    q("weeklyActionPlanText").disabled = false;
-    q("saveWeeklyActionBtn").disabled = false;
+    textarea.disabled = false;
+    saveBtn.disabled = false;
   }
 }
 
@@ -4584,7 +4626,7 @@ async function saveWeeklyActionPlan() {
   if (!currentUser || !currentWeeklyActionPlan.storeId) return;
 
   var text = q("weeklyActionPlanText").value.trim();
-  var btn = q("saveWeeklyActionBtn");
+  var btn = q("actionPlanModalSave");
   
   btn.disabled = true;
   btn.textContent = "Saving...";
@@ -4600,6 +4642,7 @@ async function saveWeeklyActionPlan() {
 
     if (error) throw error;
     showToast("✓ Action plan saved.", "success");
+    q("actionPlanModal").classList.remove("show");
   } catch(e) {
     console.error(e);
     showToast("Failed to save action plan.");
@@ -4608,15 +4651,6 @@ async function saveWeeklyActionPlan() {
     btn.textContent = "Save Action Plan";
   }
 }
-
-/* TEMP DEBUG — remove after confirming it works */
-window.__dbgWeekly = function(){
-  console.log("Selected store:", state.selectedStore);
-  console.log("Total records:", state.records.length);
-  console.log("StoreIds present:", state.records.map(function(r){return r.storeId;}).filter(function(v,i,a){return a.indexOf(v)===i;}));
-  console.log("Records for store:", state.records.filter(function(r){return r.storeId===state.selectedStore;}).length);
-};
-
 /* ---------- Monthly ---------- */
 function renderMonthly(){
   var mode = q("monthCompareMode").value;
@@ -7318,10 +7352,18 @@ q("dashKpi").addEventListener("change", renderDashboard);
   q("saveSettingsBtn").addEventListener("click", saveSettings);
   q("saveStorePinBtn").addEventListener("click", saveStorePin);
   q("clearAllBtn").addEventListener("click", clearAll);
-  q("saveSalaryBtn").addEventListener("click", saveSalaryTable);
-    // Connect the Weekly Action Plan Save button
-  var saveActionBtn = q("saveWeeklyActionBtn");
+    q("saveSalaryBtn").addEventListener("click", saveSalaryTable);
+  
+  // Connect the Weekly Action Plan Modal buttons
+  var saveActionBtn = q("actionPlanModalSave");
   if(saveActionBtn) saveActionBtn.addEventListener("click", saveWeeklyActionPlan);
+  
+  var closeActionBtn = q("actionPlanModalClose");
+  if(closeActionBtn) closeActionBtn.addEventListener("click", function(){ q("actionPlanModal").classList.remove("show"); });
+  
+  var cancelActionBtn = q("actionPlanModalCancel");
+  if(cancelActionBtn) cancelActionBtn.addEventListener("click", function(){ q("actionPlanModal").classList.remove("show"); });
+
   var txPdfBtn = q("txPdfBtn"); if(txPdfBtn) txPdfBtn.addEventListener("click", exportDailyReportPdf);
 var wPdfBtn  = q("weeklyPdfBtn"); if(wPdfBtn) wPdfBtn.addEventListener("click", function(){ exportPeriodReportPdf("weekly"); });
 var mPdfBtn  = q("monthlyPdfBtn"); if(mPdfBtn) mPdfBtn.addEventListener("click", function(){ exportPeriodReportPdf("monthly"); });
