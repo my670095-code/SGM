@@ -1538,7 +1538,7 @@ details.group>summary::-webkit-details-marker{display:none}
       </div>
       <div class="report-shell">
         <div class="report-top">
-          <div class="field" style="min-width:150px"><label for="monthDate">Reporting month</label><input class="control-input" type="month" id="monthDate"></div>
+          <div class="field" style="min-width:150px"><label for="monthDate">Reporting month</label><input class="control-input" type="date" id="monthDate"></div>
           <div class="field" style="min-width:170px"><label for="monthCompareMode">Comparison</label>
             <select class="control-input" id="monthCompareMode">
               <option value="single">Single month</option>
@@ -1546,7 +1546,7 @@ details.group>summary::-webkit-details-marker{display:none}
               <option value="3">Compare 3 months</option>
             </select>
           </div>
-          <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="month" id="monthDate2"></div>
+          <div class="field" id="monthWrap2" style="display:none;min-width:150px"><label for="monthDate2">Month 2</label><input class="control-input" type="date" id="monthDate2"></div>
           <div class="field" id="monthWrap3" style="display:none;min-width:150px"><label for="monthDate3">Month 3</label><input class="control-input" type="month" id="monthDate3"></div>
           
           <div class="field search-field"><label for="monthlySearch">Search</label><input class="control-input" type="text" id="monthlySearch" placeholder="Filter by category or section…"></div>
@@ -4529,21 +4529,24 @@ function buildWeeklyPeriods(){
 
 function buildMonthlyPeriods(){
   var mode = q("monthCompareMode").value;
-  var base = q("monthDate").value || currentMonthIso();
+  // Extract just YYYY-MM from the date input
+  var base = (q("monthDate").value || todayIso()).slice(0,7); 
   var count = mode === "single" ? 1 : parseInt(mode,10);
   var inputs = ["monthDate","monthDate2","monthDate3"];
   var labels = ["Month 1","Month 2","Month 3"];
   var periods = [];
   for(var i=0;i<count;i++){
-    var mv = q(inputs[i]).value || base;
+    // Extract just YYYY-MM from the input
+    var mv = (q(inputs[i]).value || base).slice(0,7); 
+    
     var start = mv+"-01";
     var d = parseDate(start); d.setMonth(d.getMonth()+1); d.setDate(0);
     var end = isoDate(d);
-       var ids = resolveStoreScope();
+    var ids = resolveStoreScope();
     var agg = aggregate(recordsBetweenStores(ids, start, end));
     agg._periodStartLabel = mv;
     agg._periodEndLabel   = mv;
-       periods.push({
+    periods.push({
       shortLabel: (mode === "single") ? mv : (labels[i]+" ("+mv+")"),
       start: start, end: end, agg: agg
     });
@@ -4660,20 +4663,21 @@ async function saveWeeklyActionPlan() {
   }
 }
 /* ---------- Monthly ---------- */
-function renderMonthly(){
+  function renderMonthly(){
   var mode = q("monthCompareMode").value;
   q("monthWrap2").style.display = (mode==="2"||mode==="3") ? "" : "none";
   q("monthWrap3").style.display = (mode==="3") ? "" : "none";
-  var base = q("monthDate").value || currentMonthIso();
-  if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(base, -1);
-  if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(base, -2);
+  
+  // Default to the first day of the current month if empty
+  var base = (q("monthDate").value || todayIso()).slice(0,7) + "-01";
+  
+  if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(base.slice(0,7), -1) + "-01";
+  if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(base.slice(0,7), -2) + "-01";
 
   var periods = buildMonthlyPeriods();
   var range = periods.map(function(p){ return p.shortLabel; }).join("  |  ");
-  
   var total = periods.reduce(function(a,p){ return a + p.agg._records.length; }, 0);
   
-
   renderReportTable2Col(q("monthlyTable"), periods, q("monthlySearch")?q("monthlySearch").value:"", "monthlyCount");
 }
 
@@ -7458,10 +7462,10 @@ document.addEventListener("keydown", function(e){
   q("weekDate2").value = addDays(todayIso(), -7);
   q("weekDate3").value = addDays(todayIso(), -14);
   q("weekDate4").value = addDays(todayIso(), -21);
-  q("monthDate").value = currentMonthIso();
-  q("monthDate2").value = shiftMonth(currentMonthIso(), -1);
-  q("monthDate3").value = shiftMonth(currentMonthIso(), -2);
-  q("dashMonth").value = currentMonthIso();
+     q("monthDate").value = currentMonthIso() + "-01";
+  q("monthDate2").value = shiftMonth(currentMonthIso(), -1) + "-01";
+  q("monthDate3").value = shiftMonth(currentMonthIso(), -2) + "-01";
+   q("dashMonth").value = currentMonthIso();
   q("plannedHours").value = state.settings.plannedHours || 24;
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
