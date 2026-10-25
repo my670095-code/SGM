@@ -7267,6 +7267,19 @@ async function saveUserModal(){
         showToast("Update failed: " + (result.error || resp.statusText));
         return;
       }
+            // ✅ NEW: Update the profile table directly from the app
+      var { error: profileError } = await sb.from("profiles")
+        .update({
+          display_name: display,
+          role: role,
+          store_ids: (role === "admin") ? [] : ids
+        })
+        .eq("username", editingUserUsername);
+
+      if(profileError) {
+        showToast("Password saved, but profile update failed: " + profileError.message);
+        return;
+      }
 
       showToast("User " + editingUserUsername + " updated.", "success");
       closeUserModal();
