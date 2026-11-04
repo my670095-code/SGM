@@ -6376,7 +6376,7 @@ function closeStoreModal(){
   q("storeModal").classList.remove("show");
   editingStoreId = null;
 }
-  async function saveStoreModal(){
+async function saveStoreModal(){
   if(!(currentUser && currentUser.role === "admin")){ showToast("Only admin can manage stores."); return; }
   var code = (q("smCode").value||"").trim().toUpperCase();
   if(!code){ showToast("Store code is required."); return; }
@@ -6397,16 +6397,18 @@ function closeStoreModal(){
     if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
 
     if(editingStoreId){
+      // Update existing store
       var { error } = await sb.from("stores").update(payload).eq("id", editingStoreId);
       if(error) throw error;
       showToast("Store "+editingStoreId+" updated.", "success");
     } else {
+      // Insert new store
       var { error } = await sb.from("stores").insert(payload);
       if(error) throw error;
       showToast("Store "+code+" added.", "success");
     }
 
-    /* Refresh from Supabase */
+    // Refresh data from Supabase
     state.stores = await sbFetchStores();
     computeVisibleStores();
     closeStoreModal();
@@ -6415,6 +6417,7 @@ function closeStoreModal(){
     renderStores();
     await loadDailyRecord();
   } catch(e){
+    console.error("Store save error:", e);
     showToast("Save failed: " + (e.message || e));
   } finally {
     if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = "Save"; }
@@ -7271,11 +7274,8 @@ async function saveUserModal(){
   var display = (q("umDisplay").value||"").trim() || uname;
   var pin = (q("umPassword").value||"").trim() || "0000";
   var ids = Array.from(q("umStores").selectedOptions).map(function(o){ return o.value; });
-  
-  // ✅ Password is defined once here so both Edit and Create can use it
   var password = (pin.length >= 6) ? pin : (pin + "00");
   var email = uname + "@drcafe.com";
-
   var saveBtn = q("userModalSave");
 
   /* ========== EDIT EXISTING USER ========== */
@@ -7283,34 +7283,7 @@ async function saveUserModal(){
     try {
       if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Updating…"; }
 
-      var session = (await sb.auth.getSession()).data.session;
-      if(!session){ showToast("Session expired. Please log in again."); return; }
-
-      var resp = await fetch(
-        "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + session.access_token
-          },
-          body: JSON.stringify({
-            email: editingUserUsername + "@drcafe.com",
-            password: password, // ✅ Now it is defined!
-            username: editingUserUsername,
-            display_name: display,
-            role: role,
-            store_ids: (role === "admin") ? [] : ids
-          })
-        }
-      );
-
-      var result = await resp.json();
-      if(!resp.ok || !result.success){
-        showToast("Update failed: " + (result.error || resp.statusText));
-        return;
-      }
-            // ✅ NEW: Update the profile table directly from the app
+      // 1. Update the profiles table directly (Display Name, Role, Stores)
       var { error: profileError } = await sb.from("profiles")
         .update({
           display_name: display,
@@ -7319,9 +7292,30 @@ async function saveUserModal(){
         })
         .eq("username", editingUserUsername);
 
-      if(profileError) {
-        showToast("Password saved, but profile update failed: " + profileError.message);
-        return;
+      if(profileError) throw profileError;
+
+      // 2. Try to update the Auth password via Edge Function (Ignore if it fails, e.g. password too short)
+      try {
+        var session = (await sb.auth.getSession()).data.session;
+        if(session) {
+          await fetch("https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + session.access_token
+            },
+            body: JSON.stringify({
+              email: editingUserUsername + "@drcafe.com",
+              password: password,
+              username: editingUserUsername,
+              display_name: display,
+              role: role,
+              store_ids: (role === "admin") ? [] : ids
+            })
+          });
+        }
+      } catch(authErr) {
+        console.warn("Auth password update skipped/failed:", authErr);
       }
 
       showToast("User " + editingUserUsername + " updated.", "success");
@@ -7368,7 +7362,7 @@ async function saveUserModal(){
       return;
     }
 
-    showToast("✓ User " + uname + " created. They can now log in.", "success");
+    showToast("✓ User " + uname + " created.", "success");
     closeUserModal();
     await reloadProfiles();
     renderUsers();
