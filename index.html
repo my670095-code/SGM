@@ -2736,6 +2736,7 @@ function applyRoleUi(){
   var roleLabel = currentUser.role === "admin" ? "Admin"
                 : currentUser.role === "op" ? "Operation Mgr"
                 : currentUser.role === "am" ? "Area Mgr"
+                 : currentUser.role === "viewer" ? "Viewer"
                 : "Store";
   q("userName").textContent = currentUser.display || "—";
   q("userRole").textContent = roleLabel;
