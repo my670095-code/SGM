@@ -2328,7 +2328,8 @@ async function sbFetchProfile(userId){
     username: data.username,
     display: data.display_name,
     role: data.role,
-    storeIds: data.store_ids || []
+    storeIds: data.store_ids || [],
+    is_active: data.is_active !== false // Defaults to true if null
   };
 }
 
@@ -2564,6 +2565,11 @@ async function tryStoreLogin(){
     if(result.error) throw result.error;
 
     var profile = await sbFetchProfile(result.data.user.id);
+      if (profile.is_active === false) {
+      await sb.auth.signOut();
+      err.textContent = "Your account has been disabled by the administrator.";
+      return;
+    }
     if(profile.role !== "store"){
       await sb.auth.signOut();
       err.textContent = "This account is not a store login. Use the Manager tab.";
@@ -2602,6 +2608,11 @@ async function tryManagerLogin(){
     if(result.error) throw result.error;
 
     var profile = await sbFetchProfile(result.data.user.id);
+     if (profile.is_active === false) {
+      await sb.auth.signOut();
+      err.textContent = "Your account has been disabled by the administrator.";
+      return;
+    }
 
     currentUser = {
       role: profile.role,
@@ -6276,28 +6287,25 @@ thead += "</tr></thead>";
     b.addEventListener("click", function(){ openStoreModal(b.dataset.id); });
   });
   table.querySelectorAll(".toggle-store").forEach(function(b){
-    b.addEventListener("click", function(){
+    b.addEventListener("click", async function(){
       var s = state.stores.find(function(x){return x.id === b.dataset.id;});
       if(!s) return;
-      s.status = s.status === "Active" ? "Inactive" : "Active";
-      saveState("Store "+s.id+" set to "+s.status+".");
-      computeVisibleStores();
-      setupStores();
-      fillTxStoreFilter();
-      renderStores();
-    });
-  });
-  table.querySelectorAll(".load-store").forEach(function(b){
-    b.addEventListener("click", function(){
-      var s = state.stores.find(function(x){return x.id === b.dataset.id;});
-      if(!s) return;
-      if(s.status !== "Active"){ showToast("Store "+s.id+" is "+s.status+"."); return; }
-      state.selectedStore = s.id;
-      saveState();
-      q("globalStore").value = s.id;
-      loadDailyRecord();
-      switchView("daily");
-      showToast("Now working on "+s.id+" — "+s.area);
+      var newStatus = s.status === "Active" ? "Inactive" : "Active";
+      
+      try {
+        var { error } = await sb.from("stores").update({ status: newStatus }).eq("id", s.id);
+        if(error) throw error;
+
+        s.status = newStatus;
+        saveState("Store "+s.id+" set to "+s.status+".");
+        computeVisibleStores();
+        setupStores();
+        fillTxStoreFilter();
+        renderStores();
+        showToast("Store status updated.", "success");
+      } catch(e) {
+        showToast("Failed: " + e.message);
+      }
     });
   });
   table.querySelectorAll(".delete-store").forEach(function(b){
@@ -6635,7 +6643,7 @@ var editingUserUsername = null;
 function renderUsers(){
   var table = q("usersTable");
   if(!table) return;
-  var thead = "<thead><tr><th>Username</th><th>Display name</th><th>Role</th><th>Assigned stores</th><th>Password</th><th>Actions</th></tr></thead>";
+  var thead = "<thead><tr><th>Status</th><th>Username</th><th>Display name</th><th>Role</th><th>Assigned stores</th><th>Actions</th></tr></thead>";
   var tbody = "<tbody>";
   if(!state.users.length){
     tbody += '<tr><td colspan="6" class="empty">No users.</td></tr>';
@@ -6644,19 +6652,29 @@ function renderUsers(){
     var roleClass = u.role === "admin" ? "admin" : u.role === "op" ? "op" : u.role === "am" ? "am" : "sm";
     var roleLabel = u.role === "admin" ? "Admin" : u.role === "op" ? "Operation Manager" : u.role === "am" ? "Area Manager" : "Store";
     var scope = (u.role === "admin") ? "All stores" : (u.storeIds||[]).join(", ") || "—";
+    
+    var statusBadge = u.is_active 
+      ? '<span class="mini-status on">Active</span>' 
+      : '<span class="mini-status off">Inactive</span>';
+      
+    var toggleBtnText = u.is_active ? "Disable" : "Enable";
+
     tbody += '<tr>'+
+      '<td>'+ statusBadge +'</td>'+
       '<td><strong>'+escapeHtml(u.username)+'</strong></td>'+
       '<td style="text-align:left">'+escapeHtml(u.display||u.username)+'</td>'+
       '<td><span class="role-chip '+roleClass+'">'+roleLabel+'</span></td>'+
       '<td style="text-align:left;white-space:normal;max-width:360px">'+escapeHtml(scope)+'</td>'+
-      '<td style="text-align:left;color:#66787e">'+escapeHtml(u.password||"")+'</td>'+
       '<td>'+
+        '<button class="row-btn toggle-user" data-username="'+escapeAttr(u.username)+'" data-active="'+u.is_active+'" type="button">'+toggleBtnText+'</button>'+
         '<button class="row-btn edit-user" data-username="'+escapeAttr(u.username)+'" type="button">Edit</button>'+
         (u.username === "admin" ? '' : '<button class="row-btn danger delete-user" data-username="'+escapeAttr(u.username)+'" type="button">Delete</button>')+
       '</td></tr>';
   });
   tbody += '</tbody>';
   table.innerHTML = thead + tbody;
+
+  // Handle Edit/Delete (Keep existing)
   table.querySelectorAll(".edit-user").forEach(function(b){
     b.addEventListener("click", function(){ openUserModal(b.dataset.username); });
   });
@@ -6668,8 +6686,33 @@ function renderUsers(){
       renderUsers();
     });
   });
+
+  // Handle NEW Toggle Status button
+  table.querySelectorAll(".toggle-user").forEach(function(b){
+    b.addEventListener("click", async function(){
+      var uname = b.dataset.username;
+      var isCurrentlyActive = b.dataset.active === "true";
+      var newStatus = !isCurrentlyActive;
+
+      if(!window.confirm((newStatus ? "Enable" : "Disable") + " user " + uname + "?")) return;
+
+      try {
+        var { error } = await sb.from("profiles")
+          .update({ is_active: newStatus })
+          .eq("username", uname);
+          
+        if(error) throw error;
+
+        showToast("User " + (newStatus ? "enabled" : "disabled") + ".", "success");
+        await reloadProfiles();
+        renderUsers();
+      } catch(e) {
+        showToast("Failed to update user: " + e.message);
+      }
+    });
+  });
 }
-  async function reloadProfiles(){
+async function reloadProfiles(){
   try {
     var { data, error } = await sb.from("profiles").select("*");
     if(error) throw error;
@@ -6680,10 +6723,10 @@ function renderUsers(){
         display: p.display_name || p.username,
         role: p.role,
         storeIds: p.store_ids || [],
-        password: ""
+        password: "",
+        is_active: p.is_active !== false 
       };
     });
-    console.log("Profiles reloaded:", state.users.length);
   } catch(e){
     console.warn("reloadProfiles failed:", e);
   }
