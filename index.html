@@ -1082,6 +1082,7 @@ table.report-2col td.val-col.bad .val-main{color:var(--danger-600)}
 .role-chip.op{background:#dbeafe;color:#1d4ed8}
 .role-chip.am{background:var(--warning-soft);color:var(--accent-600)}
 .role-chip.sm{background:var(--success-soft);color:var(--success-600)}
+  .role-chip.viewer{background:#e0e7ff;color:#4338ca}
 
 /* ============================ BACKUP ============================ */
 .backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -1861,12 +1862,12 @@ details.group>summary::-webkit-details-marker{display:none}
       <div class="field"><label for="umDisplay">Display name</label><input id="umDisplay" type="text" placeholder="Full name"></div>
       <div class="field"><label for="umRole">Role</label>
         <select id="umRole">
-            <option value="store">Store</option>
-
-          <option value="op">Operation Manager</option>
-          <option value="am">Area Manager</option>
-          <option value="admin">Admin</option>
-        </select>
+    <option value="store">Store</option>
+    <option value="op">Operation Manager</option>
+    <option value="am">Area Manager</option>
+    <option value="viewer">Viewer (Read Only)</option>
+    <option value="admin">Admin</option>
+</select>
       </div>
       <div class="field"><label for="umPassword">Password</label><input id="umPassword" type="text" placeholder="Leave blank to keep current / default 0000"></div>
       <div class="field wide">
@@ -2736,11 +2737,12 @@ function applyRoleUi(){
   var roleLabel = currentUser.role === "admin" ? "Admin"
                 : currentUser.role === "op" ? "Operation Mgr"
                 : currentUser.role === "am" ? "Area Mgr"
-                 : currentUser.role === "viewer" ? "Viewer"
+                : currentUser.role === "viewer" ? "Viewer"
                 : "Store";
   q("userName").textContent = currentUser.display || "—";
   q("userRole").textContent = roleLabel;
 
+  // 1. Handle Navigation Buttons
   document.querySelectorAll(".nav-btn").forEach(function(b){
     var roles = b.dataset.roles;
     if(!roles){ b.classList.remove("hidden-by-role"); return; }
@@ -2750,6 +2752,24 @@ function applyRoleUi(){
   });
 
   var isAdmin = currentUser.role === "admin";
+  var isViewer = currentUser.role === "viewer";
+
+  // 2. Handle Viewer Restrictions
+  var submitBtn = q("submitDayBtn");
+  if(submitBtn) submitBtn.style.display = isViewer ? "none" : "";
+  
+  var clearBtn = q("clearDayBtn");
+  if(clearBtn) clearBtn.style.display = isViewer ? "none" : "";
+  
+  if(isViewer){
+    setTimeout(function(){
+      document.querySelectorAll("#formStack input, #formStack select, #formStack textarea").forEach(function(el){
+        el.disabled = true;
+      });
+    }, 300);
+  }
+
+  // 3. Handle Store Management Buttons
   var storeAddBtn = q("storeAddBtn");
   var storeImportBtn = q("storeImportBtn");
   var storesResetBtn = q("storesResetBtn");
@@ -2757,11 +2777,13 @@ function applyRoleUi(){
   if(storeImportBtn) storeImportBtn.style.display = isAdmin ? "" : "none";
   if(storesResetBtn) storesResetBtn.style.display = isAdmin ? "" : "none";
 
+  // 4. Update Scope Notes
   var storesNote = q("storesScopeNote");
   if(storesNote){
     if(isAdmin) storesNote.textContent = "Full outlet master list. All stores visible.";
     else if(currentUser.role === "op") storesNote.textContent = "Stores assigned to you as Operation Manager.";
     else if(currentUser.role === "am") storesNote.textContent = "Stores assigned to you as Area Manager.";
+    else if(isViewer) storesNote.textContent = "View-only access to all assigned stores.";
     else storesNote.textContent = "Your store only.";
   }
 
@@ -2770,6 +2792,7 @@ function applyRoleUi(){
     if(isAdmin) txNote.textContent = "Every saved daily entry across all stores, in one wide report.";
     else if(currentUser.role === "op") txNote.textContent = "All saved daily entries for the stores assigned to you as Operation Manager.";
     else if(currentUser.role === "am") txNote.textContent = "All saved daily entries for the stores assigned to you as Area Manager.";
+    else if(isViewer) txNote.textContent = "View-only access to all saved daily entries for your assigned stores.";
     else txNote.textContent = "Every saved daily entry for your store.";
   }
 
@@ -6653,8 +6676,8 @@ function renderUsers(){
     tbody += '<tr><td colspan="6" class="empty">No users.</td></tr>';
   }
   state.users.forEach(function(u){
-    var roleClass = u.role === "admin" ? "admin" : u.role === "op" ? "op" : u.role === "am" ? "am" : "sm";
-    var roleLabel = u.role === "admin" ? "Admin" : u.role === "op" ? "Operation Manager" : u.role === "am" ? "Area Manager" : "Store";
+    var roleClass = u.role === "admin" ? "admin" : u.role === "op" ? "op" : u.role === "am" ? "am" : u.role === "viewer" ? "viewer" : "sm";
+    var roleLabel = u.role === "admin" ? "Admin" : u.role === "op" ? "Operation Manager" : u.role === "am" ? "Area Manager" : u.role === "viewer" ? "Viewer" : "Store";
     var scope = (u.role === "admin") ? "All stores" : (u.storeIds||[]).join(", ") || "—";
     
     var statusBadge = u.is_active 
