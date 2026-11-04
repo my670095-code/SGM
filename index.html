@@ -7283,7 +7283,6 @@ async function saveUserModal(){
     try {
       if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Updating…"; }
 
-      // 1. Update the profiles table directly (Display Name, Role, Stores)
       var { error: profileError } = await sb.from("profiles")
         .update({
           display_name: display,
@@ -7294,7 +7293,6 @@ async function saveUserModal(){
 
       if(profileError) throw profileError;
 
-      // 2. Try to update the Auth password via Edge Function (Ignore if it fails, e.g. password too short)
       try {
         var session = (await sb.auth.getSession()).data.session;
         if(session) {
@@ -7314,9 +7312,7 @@ async function saveUserModal(){
             })
           });
         }
-      } catch(authErr) {
-        console.warn("Auth password update skipped/failed:", authErr);
-      }
+      } catch(authErr) { console.warn("Auth password update skipped/failed:", authErr); }
 
       showToast("User " + editingUserUsername + " updated.", "success");
       closeUserModal();
@@ -7330,12 +7326,17 @@ async function saveUserModal(){
     return;
   }
 
-  /* ========== CREATE NEW USER via Edge Function ========== */
+  /* ========== CREATE NEW USER ========== */
   try {
     if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Creating…"; }
 
-    var session = (await sb.auth.getSession()).data.session;
-    if(!session){ showToast("Session expired. Please log in again."); return; }
+    // 🔥 FORCE A FRESH TOKEN
+    var { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+    if(refreshError || !refreshData.session){
+      showToast("Session expired. Please log out and log back in.");
+      return;
+    }
+    var validToken = refreshData.session.access_token;
 
     var resp = await fetch(
       "https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user",
@@ -7343,7 +7344,7 @@ async function saveUserModal(){
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + session.access_token
+          "Authorization": "Bearer " + validToken
         },
         body: JSON.stringify({
           email: email,
