@@ -1755,7 +1755,7 @@ details.group>summary::-webkit-details-marker{display:none}
             <li><strong>DC App Sales %</strong> = (DC App POS + DC App App) ÷ Sales W/O Tax.</li>
             <li><strong>Employee Cost</strong> = Σ (headcount × monthly CTC ÷ 30) + Σ (OT hours × role rate).</li>
             <li><strong>COGS / Wastage / Employee %</strong> = amount ÷ Sales W/O Tax.</li>
-            <li><strong>Inventory variance %</strong> = |variance| ÷ Sales W/O Tax.</li>
+            <li><strong>COGS %</strong> = |variance| ÷ Sales W/O Tax.</li>
             <li><strong>Estimated Lost Sales</strong> = Breakdown Hours × Daily Sales Target ÷ Planned Hours.</li>
           </ul>
         </div>
@@ -2232,7 +2232,7 @@ var KPI_DEFS = [
   { cat:"Sales Mix", name:"Upsize Conversion %",    key:"upsizePct",        target:TARGETS.upsize,           fmt:"pct" },
   { cat:"Cost Efficiency", name:"Employee Cost %",    key:"employeePct",         target:TARGETS.employee,   fmt:"pct", lower:true },
   { cat:"Cost Efficiency", name:"Wastage %",          key:"wastagePct",          target:TARGETS.wastage,    fmt:"pct", lower:true },
-  { cat:"Cost Efficiency", name:"Inventory Variance %",key:"inventoryVariancePct",target:TARGETS.inventory, fmt:"pct", lower:true },
+  { cat:"Cost Efficiency", name:"COGS %",key:"inventoryVariancePct",target:TARGETS.inventory, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cancelled Bill Value %", key:"cancelledBillPct", target:TARGETS.cancelledBill, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cash Deposited Variance %", key:"cashVariancePct", target:TARGETS.cashVariance, fmt:"pct", lower:true },
     { cat:"Smart Brew", name:"Completion %", key:"smartCompleted", target:TARGETS.smartCompleted, fmt:"pct" },
@@ -2948,7 +2948,7 @@ else              colCount = 5;
     cancelledBillPct:"Cancelled Bill Value % (Tgt 0.0%)",
     cashVariancePct:"Cash Deposited Variance % (Tgt 0.0%)",
     wastagePct:"Wastage % (Tgt 1.0%)",
-    inventoryVariancePct:"Inventory Variance % (Tgt 0.0%)",
+    inventoryVariancePct:"COGS % (Tgt 0.0%)",
     employeeCost:"Employee Cost (SAR)",
     employeePct:"Employee Cost % (Tgt 17.0%)",
     positiveReviewPct:"Google Positive Review %",
@@ -3992,7 +3992,7 @@ function reportRows(){
     R("Cost Efficiency", "Wastage Amount (SAR)"),
     R("Cost Efficiency", "Wastage %"),
     R("Cost Efficiency", "Inventory Variance Amount (SAR)"),
-    R("Cost Efficiency", "Inventory Variance %"),
+    R("Cost Efficiency", "COGS %"),
     R("Control Actuals", "Cancelled Bill Amount (SAR)"),
     R("Control Actuals", "Cancelled Bill Value %"),
     R("Control Actuals", "Cash Deposited Variance %"),
@@ -4061,7 +4061,7 @@ function sectionValue(agg, label){
     case "Wastage Amount (SAR)":             return { value: n(agg.wastage), fmt:"money" };
     case "Wastage %":                        return { value: c.wastagePct, fmt:"pct", target: TARGETS.wastage, lower:true };
     case "Inventory Variance Amount (SAR)":  return { value: n(agg.inventoryVariance), fmt:"money" };
-    case "Inventory Variance %":             return { value: c.inventoryVariancePct, fmt:"pct", target: TARGETS.inventory, lower:true };
+    case "COGS %":             return { value: c.inventoryVariancePct, fmt:"pct", target: TARGETS.inventory, lower:true };
 
     /* Control Actuals */
       case "Cancelled Bill Amount (SAR)":      return { value: n(agg.cancelledBillAmount), fmt:"money" };
@@ -5433,7 +5433,7 @@ var GRID_ROWS = [
   { type:"metric", key:"wastagePct",       label:"Wastage %",              fmt:"pct", target:TARGETS.wastage,   lower:true },
   { type:"metric", key:"employeeCost",     label:"Employee Cost (SAR)",    fmt:"money" },
   { type:"metric", key:"employeePct",      label:"Employee Cost %",        fmt:"pct", target:TARGETS.employee,  lower:true },
-  { type:"metric", key:"inventoryVariancePct", label:"Inventory Variance %", fmt:"pct", target:TARGETS.inventory, lower:true },
+  { type:"metric", key:"inventoryVariancePct", label:"COGS %", fmt:"pct", target:TARGETS.inventory, lower:true },
   { type:"category", label:"Smart Brew & Execution" },
     { type:"metric", key:"smartCompletedPct",label:"Smart Brew Completed %", fmt:"pct", target:TARGETS.smartCompleted,lower:false },
   { type:"metric", key:"googleRating",     label:"Google Rating",          fmt:"rating",target:TARGETS.googleRating,lower:false },
