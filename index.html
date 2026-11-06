@@ -8368,32 +8368,49 @@ function refreshCurrentView(){
 function bindEvents(){
 
   /* ============================================================
-     KEYBOARD ARROW KEY SCROLLING
+     SMART KEYBOARD ARROW KEY SCROLLING (Table First, Then Page)
      ============================================================ */
   document.addEventListener("keydown", function(e) {
-    // Ignore if the user is typing in an input, select, or textarea
+    // 1. Ignore if the user is typing in an input, select, or textarea
     var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
     if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") return;
 
-    // Define scroll amount
-    var scrollAmount = 60; 
+    var scrollAmount = 60;
+    var isArrow = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key);
+    if (!isArrow) return;
 
-    // Check which arrow key was pressed
-    if (e.key === "ArrowDown") {
-      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
-    } else if (e.key === "ArrowUp") {
-      window.scrollBy({ top: -scrollAmount, behavior: "smooth" });
-    } else if (e.key === "ArrowRight") {
-      window.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    } else if (e.key === "ArrowLeft") {
-      window.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    // 2. Find which view is currently active
+    var activeView = document.querySelector(".view.active");
+    if (!activeView) return;
+
+    // 3. Look for a scrollable container inside the active view
+    // (This catches the table-card, tx-table-card, tx-grid-wrap, etc.)
+    var scrollContainer = activeView.querySelector(".table-card, .tx-grid-wrap, .calc-sidebar, .modal");
+
+    // 4. Check if this container is actually scrollable (has hidden content)
+    var canScroll = false;
+    if (scrollContainer) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        canScroll = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        canScroll = scrollContainer.scrollWidth > scrollContainer.clientWidth;
+      }
     }
-  });
-  /* ============================================================ */
 
-  q("mainNav").addEventListener("click", function(e){
-    var b = e.target.closest(".nav-btn");
-    if(b) switchView(b.dataset.view);
+    // 5. Apply the scroll
+    if (canScroll) {
+      e.preventDefault(); // Stop the whole page from jumping
+      if (e.key === "ArrowDown")  scrollContainer.scrollBy({ top: scrollAmount, behavior: "smooth" });
+      if (e.key === "ArrowUp")    scrollContainer.scrollBy({ top: -scrollAmount, behavior: "smooth" });
+      if (e.key === "ArrowRight") scrollContainer.scrollBy({ left: scrollAmount, behavior: "smooth" });
+      if (e.key === "ArrowLeft")  scrollContainer.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    } else {
+      // 6. Fallback: If no scrollable table is found, scroll the normal page
+      if (e.key === "ArrowDown")  window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+      if (e.key === "ArrowUp")    window.scrollBy({ top: -scrollAmount, behavior: "smooth" });
+      if (e.key === "ArrowRight") window.scrollBy({ left: scrollAmount, behavior: "smooth" });
+      if (e.key === "ArrowLeft")  window.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    }
   });
   document.querySelectorAll("#loginTabs button").forEach(function(b){
     b.addEventListener("click", function(){
