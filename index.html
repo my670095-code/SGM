@@ -1315,7 +1315,6 @@ details.group>summary::-webkit-details-marker{display:none}
     max-width: 100%;
   }
 </style>
-</style>
 </head>
 <body>
 
@@ -8371,6 +8370,23 @@ function switchView(name){
   }
   document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.toggle("active", b.dataset.view===name);});
   document.querySelectorAll(".view").forEach(function(v){v.classList.toggle("active", v.id==="view-"+name);});
+  
+  /* --- NEW: Force full width for dashboard --- */
+  var mainEl = document.querySelector("main");
+  var topbarEl = document.querySelector(".topbar-main");
+  var navEl = document.querySelector("nav");
+  
+  if(name === "dashboard"){
+    if(mainEl) { mainEl.style.maxWidth = "100%"; mainEl.style.padding = "22px 32px"; }
+    if(topbarEl) topbarEl.style.maxWidth = "100%";
+    if(navEl) navEl.style.maxWidth = "100%";
+  } else {
+    if(mainEl) { mainEl.style.maxWidth = "1480px"; mainEl.style.padding = "22px 24px"; }
+    if(topbarEl) topbarEl.style.maxWidth = "1480px";
+    if(navEl) navEl.style.maxWidth = "1480px";
+  }
+  /* ------------------------------------------- */
+
   document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
   refreshCurrentView();
 }
