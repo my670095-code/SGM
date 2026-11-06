@@ -2319,6 +2319,66 @@ async function sbFetchSalary(){
     return { key: r.role_key, label: r.label, ctc: Number(r.ctc), ot: Number(r.ot_rate) };
   });
 }
+  /* ============================================================
+   P&L TARGETS — fetch & upsert
+   ============================================================ */
+
+/* Canonical cost head keys ↔ exact Excel DESCRIPTION wording */
+var PNL_HEAD_MAP = {
+  "employee cost":                          "employee_cost",
+  "advertisements, marketing & promotions": "advertisement",
+  "communication":                          "communication",
+  "recruitment expenses":                   "recruitment",
+  "water":                                  "water",
+  "sewage":                                 "sewage",
+  "vehicle fuel":                           "vehicle_fuel",
+  "gas & electricity":                      "gas_electricity",
+  "cleaning & cleaning materials":          "cleaning",
+  "repair & maintenance":                   "repair_maintenance",
+  "printing & stationery":                  "printing_stationery",
+  "computer expenses":                      "computer",
+  "sales expenses":                         "sales_expenses",
+  "government related expenses":            "government",
+  "bank charges & commissions":             "bank_charges",
+  "handling & transportation expense":      "handling_transport",
+  "rent expenses":                          "rent",
+  "professional fees":                      "professional_fees"
+};
+
+/* Reverse map: key → Excel description (used for CSV/PDF export) */
+var PNL_HEAD_LABEL = {};
+Object.keys(PNL_HEAD_MAP).forEach(function(excelName){
+  PNL_HEAD_LABEL[ PNL_HEAD_MAP[excelName] ] = excelName;
+});
+
+/* Fetch targets for one store across a date range of months */
+async function sbFetchPnlTargets(storeId, fromMonth, toMonth){
+  const { data, error } = await sb
+    .from("pnl_targets")
+    .select("month,cost_head,target_amount")
+    .eq("store_id", storeId)
+    .gte("month", fromMonth)
+    .lte("month", toMonth);
+  if(error) throw error;
+
+  /* Group as { "2026-11-01": { advertisement: 21867.8, rent: 29135.9, … } } */
+  var out = {};
+  data.forEach(function(r){
+    if(!out[r.month]) out[r.month] = {};
+    out[r.month][r.cost_head] = Number(r.target_amount) || 0;
+  });
+  return out;
+}
+
+/* Upsert an array of { store_id, month, cost_head, target_amount } */
+async function sbUpsertPnlTargets(rows){
+  if(!rows || !rows.length) return { count: 0 };
+  const { error, count } = await sb
+    .from("pnl_targets")
+    .upsert(rows, { onConflict: "store_id,month,cost_head", count: "exact" });
+  if(error) throw error;
+  return { count: count || rows.length };
+}
 
 /* Fetch the profile of the logged-in user */
 async function sbFetchProfile(userId){
