@@ -126,7 +126,7 @@ input,select,textarea{outline:none}
   border-bottom:1px solid rgba(255,255,255,.04);
 }
 .topbar-main{
-  max-width:1480px;margin:0 auto;
+  max-width:100%;margin:0 auto;
   min-height:72px;max-height:72px;
   padding:10px 24px;
   display:flex;align-items:center;gap:16px;
@@ -228,7 +228,7 @@ nav::-webkit-scrollbar{display:none}
 .nav-btn.hidden-by-role{display:none}
 
 /* ============================ MAIN ============================ */
-main{max-width:1480px;margin:0 auto;padding:22px 24px;width:100%}
+main{max-width:100%;margin:0 auto;padding:22px 24px;width:100%}
 .view{display:none}
 .view.active{display:block;animation:fadeUp .2s ease-out}
 @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -1290,30 +1290,7 @@ details.group>summary::-webkit-details-marker{display:none}
 #view-weekly .table-card {
   max-height: 55vh;
 }
-    /* ============================================================
-     FULL WIDTH DASHBOARD OVERRIDE
-     ============================================================ */
-  /* Remove the max-width constraint on main when dashboard is active */
-  body:has(#view-dashboard.active) main {
-    max-width: 100%;
-    padding: 22px 32px;
-  }
 
-  /* Expand the chart grid to fill the new space evenly */
-  body:has(#view-dashboard.active) .chart-panel {
-    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  }
-
-  /* Make the wide chart span the full width of the expanded container */
-  body:has(#view-dashboard.active) .chart-card-wide {
-    grid-column: 1 / -1;
-  }
-
-  /* Stretch the top navigation bar to match the full width */
-  body:has(#view-dashboard.active) .topbar-main,
-  body:has(#view-dashboard.active) nav {
-    max-width: 100%;
-  }
 </style>
 </head>
 <body>
@@ -8371,22 +8348,6 @@ function switchView(name){
   document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.toggle("active", b.dataset.view===name);});
   document.querySelectorAll(".view").forEach(function(v){v.classList.toggle("active", v.id==="view-"+name);});
   
-  /* --- NEW: Force full width for dashboard --- */
-  var mainEl = document.querySelector("main");
-  var topbarEl = document.querySelector(".topbar-main");
-  var navEl = document.querySelector("nav");
-  
-  if(name === "dashboard"){
-    if(mainEl) { mainEl.style.maxWidth = "100%"; mainEl.style.padding = "22px 32px"; }
-    if(topbarEl) topbarEl.style.maxWidth = "100%";
-    if(navEl) navEl.style.maxWidth = "100%";
-  } else {
-    if(mainEl) { mainEl.style.maxWidth = "1480px"; mainEl.style.padding = "22px 24px"; }
-    if(topbarEl) topbarEl.style.maxWidth = "1480px";
-    if(navEl) navEl.style.maxWidth = "1480px";
-  }
-  /* ------------------------------------------- */
-
   document.body.scrollTop = 0; document.documentElement.scrollTop = 0;
   refreshCurrentView();
 }
