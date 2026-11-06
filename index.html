@@ -8708,7 +8708,8 @@ document.addEventListener("keydown", function(e){
   });
 }
   
- function init(){
+ async function init(){
+    bindEvents();
   renderForm();
   q("f-date").value = todayIso();
   q("f-date-hero").value = todayIso();
@@ -8739,7 +8740,6 @@ document.addEventListener("keydown", function(e){
   q("plannedHours").value = state.settings.plannedHours || 24;
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
-  bindEvents();
    q("appShell").style.display = "none";
   restoreSession().then(async function(ok){
     if(ok){
@@ -8785,6 +8785,18 @@ try {
   box.textContent = "Init error: " + (err && err.message ? err.message : String(err));
   document.body.appendChild(box);
 }
+  /* ============================================================
+   GLOBAL FIX: CONNECT TOP NAVIGATION BUTTONS
+   ============================================================ */
+document.addEventListener("click", function(e) {
+  var navBtn = e.target.closest(".nav-btn");
+  if (navBtn) {
+    var targetView = navBtn.getAttribute("data-view");
+    if (targetView && typeof switchView === "function") {
+      switchView(targetView);
+    }
+  }
+});
 }());
 </script>
 </body>
