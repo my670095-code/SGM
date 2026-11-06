@@ -1282,13 +1282,204 @@ details.group>summary::-webkit-details-marker{display:none}
   .card,.report-shell,.table-card,.chart-card,.backup-card{box-shadow:none}
   .view{display:none !important}
   .view.active{display:block !important}
+    #view-briefing .brief-hero,
+  #view-briefing .brief-grid { break-inside: avoid; }
 }
 
 /* Live-strip hidden (values live in sidebar) */
 .live-strip{display:none !important}
-  /* Make the weekly table shorter so the Action Plan is visible */
-#view-weekly .table-card {
-  max-height: 55vh;
+
+/* ============================================================
+   DAILY BRIEFING
+   ============================================================ */
+.brief-hero{
+  display:flex; justify-content:space-between; align-items:center;
+  gap:24px; flex-wrap:wrap;
+  padding:26px 30px; margin-bottom:18px;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#3b2f14 100%);
+  border-radius:var(--r-xl); color:#fff;
+  box-shadow:0 12px 32px rgba(15,23,42,.18);
+  position:relative; overflow:hidden;
+}
+.brief-hero::after{
+  content:""; position:absolute; right:-60px; top:-60px;
+  width:280px; height:280px; border-radius:50%;
+  background:radial-gradient(circle,rgba(245,158,11,.22),transparent 70%);
+  pointer-events:none;
+}
+.brief-greeting{
+  font-size:11px; font-weight:700; letter-spacing:1.2px;
+  text-transform:uppercase; color:rgba(255,255,255,.55);
+  margin-bottom:6px;
+}
+.brief-hero h2{
+  margin:0; font-size:26px; font-weight:800;
+  letter-spacing:-.02em; line-height:1.15;
+}
+.brief-hero p{
+  margin:6px 0 0; color:rgba(255,255,255,.7);
+  font-size:13.5px; max-width:520px; line-height:1.5;
+}
+.brief-hero-right{
+  display:flex; align-items:center; gap:18px;
+  position:relative; z-index:1;
+}
+.brief-clock{
+  font-variant-numeric:tabular-nums;
+  font-size:22px; font-weight:800; color:#fbbf24;
+  letter-spacing:-.02em;
+}
+.brief-cta{
+  padding:14px 24px; font-size:14px; font-weight:800;
+  background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  color:#1e293b; border:0; border-radius:var(--r-md);
+  box-shadow:0 8px 22px rgba(245,158,11,.4);
+  display:inline-flex; align-items:center; gap:10px;
+  transition:transform .15s, box-shadow .15s;
+}
+.brief-cta:hover{ transform:translateY(-2px); box-shadow:0 12px 28px rgba(245,158,11,.55); }
+.brief-cta-arrow{ font-size:16px; }
+
+.brief-ribbon{
+  display:grid; grid-template-columns:repeat(5,1fr); gap:12px;
+  margin-bottom:18px;
+}
+.brief-ribbon-cell{
+  background:#fff; border:1px solid var(--border);
+  border-radius:var(--r-lg); padding:14px 16px;
+  box-shadow:var(--shadow-sm);
+  border-top:3px solid var(--brand-900);
+  transition:transform .15s;
+}
+.brief-ribbon-cell:hover{ transform:translateY(-2px); }
+.brief-ribbon-cell.good{ border-top-color:var(--success-500); }
+.brief-ribbon-cell.warn{ border-top-color:var(--accent-500); }
+.brief-ribbon-cell.bad{ border-top-color:var(--danger-500); }
+.brief-ribbon-cell .lbl{
+  font-size:10.5px; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.4px;
+}
+.brief-ribbon-cell .val{
+  font-size:20px; font-weight:800; color:var(--text);
+  margin-top:4px; font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+}
+.brief-ribbon-cell .sub{
+  font-size:11px; color:var(--text-subtle);
+  margin-top:2px; font-weight:500;
+}
+
+.brief-grid{
+  display:grid; grid-template-columns:repeat(2,1fr);
+  gap:14px; margin-bottom:18px;
+}
+.brief-card{
+  background:#fff; border:1px solid var(--border);
+  border-radius:var(--r-lg); box-shadow:var(--shadow-sm);
+  overflow:hidden;
+}
+.brief-card-head{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 18px; border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#fbfcfd,#f1f5f9);
+}
+.brief-card-head h3{
+  margin:0; font-size:13.5px; font-weight:700; color:var(--text);
+  flex:1; letter-spacing:-.005em;
+}
+.brief-card-icon{
+  width:28px; height:28px; border-radius:8px;
+  display:grid; place-items:center;
+  font-size:14px; font-weight:800; flex-shrink:0;
+}
+.brief-card-icon.danger{ background:var(--danger-soft); color:var(--danger-600); }
+.brief-card-icon.warn{ background:var(--warning-soft); color:var(--accent-600); }
+.brief-card-icon.good{ background:var(--success-soft); color:var(--success-600); }
+.brief-card-icon.info{ background:var(--info-soft); color:var(--info-600); }
+.brief-card-count{
+  padding:3px 10px; border-radius:999px;
+  background:var(--surface-3); color:var(--text);
+  font-size:11px; font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.brief-card-body{
+  padding:8px; max-height:280px; overflow-y:auto;
+}
+.brief-empty{
+  padding:24px 14px; text-align:center;
+  color:var(--text-muted); font-size:12.5px; font-style:italic;
+}
+
+.brief-item{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:8px;
+  font-size:12.5px; color:var(--text);
+  cursor:pointer; transition:background .1s;
+  border-bottom:1px solid var(--surface-3);
+}
+.brief-item:last-child{ border-bottom:0; }
+.brief-item:hover{ background:var(--surface-2); }
+.brief-item .dot{
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.brief-item .dot.bad{ background:var(--danger-500); box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+.brief-item .dot.warn{ background:var(--accent-500); box-shadow:0 0 0 3px rgba(245,158,11,.15); }
+.brief-item .dot.good{ background:var(--success-500); box-shadow:0 0 0 3px rgba(5,150,105,.12); }
+.brief-item .dot.info{ background:var(--info-600); box-shadow:0 0 0 3px rgba(3,105,161,.12); }
+.brief-item .lbl{ flex:1; min-width:0; }
+.brief-item .lbl strong{ font-weight:700; }
+.brief-item .lbl small{ display:block; color:var(--text-subtle); font-size:11px; margin-top:1px; }
+.brief-item .cta{
+  padding:3px 9px; font-size:10.5px; font-weight:700;
+  border-radius:999px; border:1px solid var(--border);
+  background:#fff; color:var(--text-muted);
+  white-space:nowrap;
+}
+.brief-item:hover .cta{ border-color:var(--brand-500); color:var(--text); }
+
+.brief-trend-card{ margin-bottom:8px; }
+.brief-trend-body{
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:16px; padding:16px 18px 20px;
+}
+.brief-spark-label{
+  font-size:11px; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.4px;
+}
+.brief-spark-value{
+  font-size:20px; font-weight:800; color:var(--text);
+  margin:4px 0 10px; font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+}
+.brief-spark-bars{
+  display:flex; align-items:flex-end; gap:4px;
+  height:52px; padding-bottom:2px;
+  border-bottom:1px dashed var(--border);
+}
+.brief-spark-bar{
+  flex:1; border-radius:3px 3px 0 0;
+  min-height:3px; background:var(--brand-500);
+  transition:height .3s ease, background .15s;
+  position:relative;
+}
+.brief-spark-bar:hover{ background:var(--accent-500); }
+.brief-spark-bar.today{ background:var(--accent-500); box-shadow:0 0 0 2px rgba(245,158,11,.3); }
+.brief-spark-bar.good{ background:var(--success-500); }
+.brief-spark-bar.bad{ background:var(--danger-500); }
+
+@media (max-width:1100px){
+  .brief-ribbon{ grid-template-columns:repeat(3,1fr); }
+  .brief-trend-body{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:760px){
+  .brief-hero{ padding:20px; }
+  .brief-hero h2{ font-size:20px; }
+  .brief-hero-right{ flex-direction:column; align-items:stretch; width:100%; }
+  .brief-clock{ text-align:right; }
+  .brief-cta{ justify-content:center; }
+  .brief-ribbon{ grid-template-columns:1fr 1fr; }
+  .brief-grid{ grid-template-columns:1fr; }
+  .brief-trend-body{ grid-template-columns:1fr; }
 }
 
 </style>
@@ -1378,7 +1569,8 @@ details.group>summary::-webkit-details-marker{display:none}
     </div>
     <div class="nav-wrap">
       <nav id="mainNav">
-        <button class="nav-btn active" data-view="daily">Daily Entry</button>
+              <button class="nav-btn active" data-view="briefing">Briefing</button>
+        <button class="nav-btn" data-view="daily">Daily Entry</button>
         <button class="nav-btn" data-view="dailyreport">Daily Report</button>
         <button class="nav-btn" data-view="weekly">Weekly</button>
         <button class="nav-btn" data-view="monthly">Monthly</button>
@@ -1392,8 +1584,107 @@ details.group>summary::-webkit-details-marker{display:none}
   </header>
 
   <main>
+       <!-- ============ DAILY BRIEFING (landing) ============ -->
+    <section id="view-briefing" class="view active">
+
+      <div class="brief-hero" id="briefHero">
+        <div class="brief-hero-left">
+          <div class="brief-greeting" id="briefGreeting">Good morning</div>
+          <h2 id="briefTitle">Loading your briefing…</h2>
+          <p id="briefSubtitle">—</p>
+        </div>
+        <div class="brief-hero-right">
+          <div class="brief-clock" id="briefClock">—</div>
+          <button class="btn primary brief-cta" id="briefEnterBtn" type="button">
+            <span>Enter today's data</span>
+            <span class="brief-cta-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="brief-ribbon" id="briefRibbon"></div>
+
+      <div class="brief-grid">
+
+        <div class="brief-card" id="briefCardMissing">
+          <div class="brief-card-head">
+            <div class="brief-card-icon danger">!</div>
+            <h3>What's missing</h3>
+            <span class="brief-card-count" id="briefMissingCount">—</span>
+          </div>
+          <div class="brief-card-body" id="briefMissingBody">
+            <div class="brief-empty">Loading…</div>
+          </div>
+        </div>
+
+        <div class="brief-card" id="briefCardBroken">
+          <div class="brief-card-head">
+            <div class="brief-card-icon warn">⚠</div>
+            <h3>What's broken</h3>
+            <span class="brief-card-count" id="briefBrokenCount">—</span>
+          </div>
+          <div class="brief-card-body" id="briefBrokenBody">
+            <div class="brief-empty">Loading…</div>
+          </div>
+        </div>
+
+        <div class="brief-card" id="briefCardChanged">
+          <div class="brief-card-head">
+            <div class="brief-card-icon good">↕</div>
+            <h3>What changed</h3>
+            <span class="brief-card-count" id="briefChangedCount">—</span>
+          </div>
+          <div class="brief-card-body" id="briefChangedBody">
+            <div class="brief-empty">Loading…</div>
+          </div>
+        </div>
+
+        <div class="brief-card" id="briefCardTodo">
+          <div class="brief-card-head">
+            <div class="brief-card-icon info">✓</div>
+            <h3>What to do</h3>
+            <span class="brief-card-count" id="briefTodoCount">—</span>
+          </div>
+          <div class="brief-card-body" id="briefTodoBody">
+            <div class="brief-empty">Loading…</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="brief-card brief-trend-card">
+        <div class="brief-card-head">
+          <div class="brief-card-icon info">📈</div>
+          <h3>Last 7 days</h3>
+          <span class="brief-card-count" id="briefTrendScope">—</span>
+        </div>
+        <div class="brief-trend-body">
+          <div class="brief-spark">
+            <div class="brief-spark-label">Sales W/O Tax</div>
+            <div class="brief-spark-value" id="sparkSalesValue">—</div>
+            <div class="brief-spark-bars" id="sparkSales"></div>
+          </div>
+          <div class="brief-spark">
+            <div class="brief-spark-label">ADT</div>
+            <div class="brief-spark-value" id="sparkAdtValue">—</div>
+            <div class="brief-spark-bars" id="sparkAdt"></div>
+          </div>
+          <div class="brief-spark">
+            <div class="brief-spark-label">AT</div>
+            <div class="brief-spark-value" id="sparkAtValue">—</div>
+            <div class="brief-spark-bars" id="sparkAt"></div>
+          </div>
+          <div class="brief-spark">
+            <div class="brief-spark-label">Food Mix %</div>
+            <div class="brief-spark-value" id="sparkFoodValue">—</div>
+            <div class="brief-spark-bars" id="sparkFood"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
         <!-- ============ DAILY ENTRY ============ -->
-    <section id="view-daily" class="view active">
+    <section id="view-daily" class="view">
  <div class="entry-hero" id="entryHero">
   <div class="hero-left">
     <div class="hero-mark">SGM</div>
@@ -2907,7 +3198,7 @@ async function finalizeLogin(){
   applyRoleUi();
   q("loginScreen").classList.remove("show");
   q("appShell").style.display = "";
-  switchView("daily");
+  switchView("briefing");
   setupStores();
   renderAmMultiSelect();
   renderStoreMultiSelect();
@@ -2968,6 +3259,7 @@ async function restoreSession(){
     applyRoleUi();
     q("loginScreen").classList.remove("show");
     q("appShell").style.display = "";
+        switchView("briefing");
     return true;
   } catch(e){
     console.warn("Session restore failed:", e);
@@ -8354,6 +8646,7 @@ function switchView(name){
 function refreshCurrentView(){
   var active = document.querySelector(".nav-btn.active");
   var name = active ? active.dataset.view : "daily";
+    if(name==="briefing") renderBriefing();
   if(name==="daily"){ updateEntryHero(); updateEntryStatus(); refreshProgress(); updateEntryDateLabel(); recalcAllCalcFields(); }
   if(name==="dailyreport") renderTransactions();
   if(name==="weekly") renderWeekly();
@@ -8708,9 +9001,9 @@ document.addEventListener("keydown", function(e){
   });
 }
   
- async function init(){
-    bindEvents();
+async function init(){
   renderForm();
+  bindEvents();
   q("f-date").value = todayIso();
   q("f-date-hero").value = todayIso();
   q("weekDate").value = todayIso();
@@ -8743,8 +9036,9 @@ document.addEventListener("keydown", function(e){
    q("appShell").style.display = "none";
   restoreSession().then(async function(ok){
     if(ok){
-      computeVisibleStores();
+           computeVisibleStores();
       pullFilterPersistence();
+      syncLegacyStoreSelect();
       setupStores();
       renderAmMultiSelect();
       renderStoreMultiSelect();
@@ -8755,12 +9049,488 @@ document.addEventListener("keydown", function(e){
       renderUsers();
       renderTransactions();
       applyRoleUi();
-      switchView("daily");
+    switchView("briefing");
     } else {
       q("loginScreen").classList.add("show");
     }
   });
 }
+/* ============================================================
+   DAILY BRIEFING
+   ============================================================ */
+
+function briefingScopeStores(){
+  var ids = resolveStoreScope();
+  var set = {};
+  ids.forEach(function(id){ set[normalizeStoreId(id)] = true; });
+  return visibleStores.filter(function(s){ return set[s.id]; });
+}
+
+function briefingGreeting(){
+  var h = new Date().getHours();
+  if(h < 12) return "Good morning";
+  if(h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function briefingGreetingName(){
+  if(!currentUser) return "";
+  return (currentUser.display || currentUser.username || "").split(" ")[0];
+}
+
+function renderBriefingHero(stores){
+  var today = todayIso();
+  var yesterday = addDays(today, -1);
+
+  q("briefGreeting").textContent = briefingGreeting() + (briefingGreetingName() ? ", " + briefingGreetingName() : "");
+  q("briefClock").textContent = new Date().toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
+
+  var scope = scopeLabel();
+  var singleStore = (stores.length === 1) ? stores[0].id : state.selectedStore;
+  var todayRec = state.records.find(function(r){
+    return normalizeStoreId(r.storeId) === normalizeStoreId(singleStore) && r.date === today;
+  });
+
+  var title, subtitle;
+  if(stores.length === 1){
+    if(todayRec){
+      title = "You're all set for today.";
+      subtitle = "Entry for " + singleStore + " on " + dateLabel(today) + " is saved. Check the ribbon below for how the store is tracking.";
+    } else {
+      title = "Today's entry is pending.";
+      subtitle = singleStore + " hasn't submitted yet. It takes about 3 minutes — let's get it in.";
+    }
+  } else {
+    var missing = stores.filter(function(s){
+      return !state.records.some(function(r){
+        return normalizeStoreId(r.storeId) === s.id && r.date === today;
+      });
+    }).length;
+    if(missing === 0){
+      title = "Everything's in for today.";
+      subtitle = "All " + stores.length + " stores in scope have submitted. Check the ribbon for performance.";
+    } else {
+      title = missing + " of " + stores.length + " stores still need today's entry.";
+      subtitle = "Scope: " + scope + ". The first store is pre-selected for fast entry.";
+    }
+  }
+  q("briefTitle").textContent = title;
+  q("briefSubtitle").textContent = subtitle;
+
+  var cta = q("briefEnterBtn");
+  if(cta){
+    cta.onclick = function(){
+      if(stores.length === 1 || todayRec){
+        state.selectedStore = singleStore;
+      } else {
+        var firstMissing = stores.find(function(s){
+          return !state.records.some(function(r){
+            return normalizeStoreId(r.storeId) === s.id && r.date === today;
+          });
+        });
+        if(firstMissing) state.selectedStore = firstMissing.id;
+      }
+      pushFilterPersistence();
+      q("f-date").value = today;
+      q("f-date-hero").value = today;
+      switchView("daily");
+      loadDailyRecord().catch(function(e){ console.error(e); });
+    };
+  }
+
+  return todayRec;
+}
+
+function renderBriefingRibbon(stores){
+  var host = q("briefRibbon");
+  if(!host) return;
+
+  var today = todayIso();
+  var monthStart = currentMonthIso() + "-01";
+  var monthEnd = (function(){
+    var d = new Date(currentMonthIso() + "-01T12:00:00");
+    d.setMonth(d.getMonth() + 1); d.setDate(0);
+    return isoDate(d);
+  })();
+
+  var ids = stores.map(function(s){ return s.id; });
+  var mtdRecords = recordsBetweenStores(ids, monthStart, monthEnd);
+  var agg = aggregate(mtdRecords);
+
+  if(!mtdRecords.length){
+    host.innerHTML = '<div class="brief-ribbon-cell" style="grid-column:1/-1">' +
+      '<div class="lbl">Month to date</div>' +
+      '<div class="val">No entries yet</div>' +
+      '<div class="sub">Submit today\'s entry to start tracking.</div>' +
+      '</div>';
+    return;
+  }
+
+  var c = agg._calc;
+  var cells = [];
+
+  var salesTarget = n(agg.targetSales);
+  var salesActual = c.salesWithoutTax;
+  var salesPct = salesTarget ? (salesActual / salesTarget) * 100 : 0;
+  cells.push({
+    lbl: "Sales vs target (MTD)",
+    val: "SAR " + money(salesActual),
+    sub: salesTarget ? pct(salesPct) + " of SAR " + money(salesTarget) : "No target set",
+    cls: salesTarget ? statusClass(salesActual, salesTarget, false) : ""
+  });
+
+  var adtTarget = n(agg.targetAdt);
+  cells.push({
+    lbl: "ADT",
+    val: integer(c.adt),
+    sub: adtTarget ? "Target " + integer(adtTarget) : "—",
+    cls: adtTarget ? statusClass(c.adt, adtTarget, false) : ""
+  });
+
+  var atTarget = n(agg.targetAt);
+  cells.push({
+    lbl: "AT",
+    val: "SAR " + money(c.at),
+    sub: atTarget ? "Target SAR " + money(atTarget) : "—",
+    cls: atTarget ? statusClass(c.at, atTarget, false) : ""
+  });
+
+  cells.push({
+    lbl: "Employee cost %",
+    val: pct(c.employeePct),
+    sub: "Target " + pct(TARGETS.employee),
+    cls: statusClass(c.employeePct, TARGETS.employee, true)
+  });
+
+  cells.push({
+    lbl: "QA & rating",
+    val: pct(agg.qaScore),
+    sub: "Google " + rating(agg.googleRating) + " · DC " + rating(agg.dcAppRating),
+    cls: statusClass(agg.qaScore, TARGETS.qa, false)
+  });
+
+  host.innerHTML = cells.map(function(cell){
+    return '<div class="brief-ribbon-cell ' + cell.cls + '">' +
+      '<div class="lbl">' + escapeHtml(cell.lbl) + '</div>' +
+      '<div class="val">' + escapeHtml(cell.val) + '</div>' +
+      '<div class="sub">' + escapeHtml(cell.sub) + '</div>' +
+      '</div>';
+  }).join("");
+}
+
+function renderBriefingMissing(stores){
+  var host = q("briefMissingBody");
+  var countEl = q("briefMissingCount");
+  if(!host) return;
+
+  var today = todayIso();
+  var missing = stores.filter(function(s){
+    return !state.records.some(function(r){
+      return normalizeStoreId(r.storeId) === s.id && r.date === today;
+    });
+  });
+
+  if(countEl) countEl.textContent = String(missing.length);
+
+  if(!missing.length){
+    host.innerHTML = '<div class="brief-empty">✓ All stores have submitted today. Nice work.</div>';
+    return;
+  }
+
+  host.innerHTML = missing.slice(0, 12).map(function(s){
+    return '<div class="brief-item" data-open-store="' + escapeAttr(s.id) + '">' +
+      '<span class="dot bad"></span>' +
+      '<span class="lbl"><strong>' + escapeHtml(s.id) + '</strong>' +
+        '<small>' + escapeHtml(s.area || "") + (s.areaManager ? ' · ' + escapeHtml(s.areaManager) : '') + '</small>' +
+      '</span>' +
+      '<span class="cta">Enter →</span>' +
+      '</div>';
+  }).join("") + (missing.length > 12
+    ? '<div class="brief-empty">+ ' + (missing.length - 12) + ' more stores pending</div>'
+    : '');
+
+  host.querySelectorAll("[data-open-store]").forEach(function(el){
+    el.addEventListener("click", function(){
+      state.selectedStore = el.dataset.openStore;
+      q("f-date").value = today;
+      q("f-date-hero").value = today;
+      switchView("daily");
+      loadDailyRecord().catch(function(e){ console.error(e); });
+    });
+  });
+}
+
+function renderBriefingBroken(stores){
+  var host = q("briefBrokenBody");
+  var countEl = q("briefBrokenCount");
+  if(!host) return;
+
+  var today = todayIso();
+  var weekStart = addDays(today, -6);
+  var ids = stores.map(function(s){ return s.id; });
+  var weekRecords = recordsBetweenStores(ids, weekStart, today);
+  var agg = aggregate(weekRecords);
+  var c = agg._calc;
+
+  if(!weekRecords.length){
+    host.innerHTML = '<div class="brief-empty">No data this week — nothing to flag yet.</div>';
+    if(countEl) countEl.textContent = "0";
+    return;
+  }
+
+  var checks = [
+    { name: "Sales vs target",  value: c.salesVsTargetPct, target: 0, lower: false },
+    { name: "Food Mix %",       value: c.foodMix,          target: TARGETS.foodMix,          lower: false },
+    { name: "Grab & Go Mix %",  value: c.grabGoMix,        target: TARGETS.grabGoMix,        lower: false },
+    { name: "Merchandise Mix %",value: c.merchandiseMix,   target: TARGETS.merchandiseMix,   lower: false },
+    { name: "Upsize %",         value: c.upsizePct,        target: TARGETS.upsize,           lower: false },
+    { name: "Wastage %",        value: c.wastagePct,       target: TARGETS.wastage,          lower: true  },
+    { name: "Employee cost %",  value: c.employeePct,      target: TARGETS.employee,         lower: true  },
+    { name: "Cancelled bill %", value: c.cancelledBillPct, target: TARGETS.cancelledBill,    lower: true  },
+    { name: "Cash variance %",  value: c.cashVariancePct,  target: TARGETS.cashVariance,     lower: true  },
+    { name: "QA score %",       value: agg.qaScore,        target: TARGETS.qa,               lower: false }
+  ];
+
+  var broken = checks.filter(function(ch){
+    return statusLabel(ch.value, ch.target, ch.lower) === "ACTION";
+  });
+
+  if(countEl) countEl.textContent = String(broken.length);
+
+  if(!broken.length){
+    host.innerHTML = '<div class="brief-empty">✓ No KPI exceptions this week. All within tolerance.</div>';
+    return;
+  }
+
+  host.innerHTML = broken.map(function(ch){
+    var diff = ch.value - ch.target;
+    var arrow = diff >= 0 ? "▲" : "▼";
+    var dir = ch.lower ? (diff > 0 ? "over" : "under") : (diff >= 0 ? "over" : "under");
+    return '<div class="brief-item">' +
+      '<span class="dot warn"></span>' +
+      '<span class="lbl"><strong>' + escapeHtml(ch.name) + '</strong>' +
+        '<small>' + pct(ch.value) + ' · target ' + pct(ch.target) +
+        ' · ' + arrow + ' ' + round(Math.abs(diff), 1) + 'pp ' + dir + '</small>' +
+      '</span>' +
+      '<span class="cta">Action</span>' +
+      '</div>';
+  }).join("");
+}
+
+function renderBriefingChanged(stores){
+  var host = q("briefChangedBody");
+  var countEl = q("briefChangedCount");
+  if(!host) return;
+
+  var today = todayIso();
+  var yest = addDays(today, -1);
+  var ids = stores.map(function(s){ return s.id; });
+
+  var todayRecords = recordsBetweenStores(ids, today, today);
+  var yestRecords  = recordsBetweenStores(ids, yest, yest);
+  var aggToday = aggregate(todayRecords);
+  var aggYest  = aggregate(yestRecords);
+
+  if(!todayRecords.length || !yestRecords.length){
+    host.innerHTML = '<div class="brief-empty">Need entries from both today and yesterday to show movers.</div>';
+    if(countEl) countEl.textContent = "0";
+    return;
+  }
+
+  var ct = aggToday._calc;
+  var cy = aggYest._calc;
+
+  var movers = [
+    { name:"Sales W/O Tax", today: ct.salesWithoutTax, yesterday: cy.salesWithoutTax, goodUp: true, fmt: "money" },
+    { name:"Net Sales",     today: ct.netSales,        yesterday: cy.netSales,        goodUp: true, fmt: "money" },
+    { name:"ADT",           today: ct.adt,             yesterday: cy.adt,             goodUp: true, fmt: "number" },
+    { name:"AT",            today: ct.at,              yesterday: cy.at,              goodUp: true, fmt: "money" },
+    { name:"Food Mix %",    today: ct.foodMix,         yesterday: cy.foodMix,         goodUp: true, fmt: "pct" },
+    { name:"Wastage %",     today: ct.wastagePct,      yesterday: cy.wastagePct,      goodUp: false, fmt: "pct" },
+    { name:"Employee %",    today: ct.employeePct,     yesterday: cy.employeePct,     goodUp: false, fmt: "pct" }
+  ];
+
+  movers.forEach(function(m){
+    m.delta = m.today - m.yesterday;
+    m.better = m.goodUp ? m.delta > 0 : m.delta < 0;
+  });
+
+  var sorted = movers
+    .filter(function(m){ return Math.abs(m.delta) > 0.01; })
+    .sort(function(a, b){ return Math.abs(b.delta) - Math.abs(a.delta); })
+    .slice(0, 6);
+
+  if(countEl) countEl.textContent = String(sorted.length);
+
+  if(!sorted.length){
+    host.innerHTML = '<div class="brief-empty">No meaningful movement vs yesterday.</div>';
+    return;
+  }
+
+  host.innerHTML = sorted.map(function(m){
+    var arrow = m.delta >= 0 ? "▲" : "▼";
+    var cls = m.better ? "good" : "bad";
+    var valToday = m.fmt === "pct" ? pct(m.today)
+                 : m.fmt === "money" ? "SAR " + money(m.today)
+                 : integer(m.today);
+    var deltaStr = m.fmt === "pct" ? round(m.delta, 1) + "pp"
+                 : m.fmt === "money" ? "SAR " + money(Math.abs(m.delta))
+                 : integer(Math.abs(m.delta));
+    return '<div class="brief-item">' +
+      '<span class="dot ' + cls + '"></span>' +
+      '<span class="lbl"><strong>' + escapeHtml(m.name) + '</strong>' +
+        '<small>' + arrow + ' ' + deltaStr + ' vs yesterday · now ' + valToday + '</small>' +
+      '</span>' +
+      '</div>';
+  }).join("");
+}
+
+async function renderBriefingTodo(stores){
+  var host = q("briefTodoBody");
+  var countEl = q("briefTodoCount");
+  if(!host) return;
+
+  var items = [];
+
+  try {
+    var scope = currentScopeDescriptor();
+    var weekStartIso = weekStart(todayIso());
+    var monthStartIso = currentMonthIso() + "-01";
+
+    var weekPlan = await fetchPlanForPeriod(scope, weekStartIso, "week");
+    var monthPlan = await fetchPlanForPeriod(scope, monthStartIso, "month");
+
+    [weekPlan, monthPlan].forEach(function(plan, idx){
+      if(!plan || !Array.isArray(plan.items)) return;
+      plan.items.forEach(function(it){
+        if((it.status || "Open") === "Done") return;
+        items.push({
+          kind: "action",
+          label: (it.kpi || "General") + " — " + (it.action || it.issue || "(no detail)"),
+          meta: (it.owner ? "Owner: " + it.owner + " · " : "") +
+                (it.due ? "Due " + it.due + " · " : "") +
+                (idx === 0 ? "This week" : "This month"),
+          priority: it.priority || "Medium"
+        });
+      });
+    });
+  } catch(e){ console.warn("Action plan fetch for briefing:", e); }
+
+  try {
+    var today = todayIso();
+    var weekStartIso2 = addDays(today, -6);
+    var ids = stores.map(function(s){ return s.id; });
+    var agg = aggregate(recordsBetweenStores(ids, weekStartIso2, today));
+    var sugg = suggestActionsFromAgg(agg);
+    sugg.slice(0, 3).forEach(function(s){
+      items.push({
+        kind: "suggestion",
+        label: s.issue,
+        meta: "Suggested · " + s.priority + " priority",
+        priority: s.priority
+      });
+    });
+  } catch(e){ console.warn("Suggestions for briefing:", e); }
+
+  if(countEl) countEl.textContent = String(items.length);
+
+  if(!items.length){
+    host.innerHTML = '<div class="brief-empty">✓ Nothing on your plate. Open items will appear here.</div>';
+    return;
+  }
+
+  host.innerHTML = items.slice(0, 10).map(function(it){
+    var dot = it.kind === "suggestion" ? "info" : (it.priority === "High" ? "bad" : "warn");
+    return '<div class="brief-item">' +
+      '<span class="dot ' + dot + '"></span>' +
+      '<span class="lbl"><strong>' + escapeHtml(it.label) + '</strong>' +
+        '<small>' + escapeHtml(it.meta) + '</small>' +
+      '</span>' +
+      '</div>';
+  }).join("") + (items.length > 10
+    ? '<div class="brief-empty">+ ' + (items.length - 10) + ' more items</div>'
+    : '');
+}
+
+function renderBriefingTrend(stores){
+  var host = q("briefTrendScope");
+  if(host) host.textContent = stores.length + " store" + (stores.length === 1 ? "" : "s");
+
+  var today = todayIso();
+  var start = addDays(today, -6);
+  var ids = stores.map(function(s){ return s.id; });
+
+  var days = [];
+  for(var i = 0; i < 7; i++){
+    var d = addDays(start, i);
+    var recs = recordsBetweenStores(ids, d, d);
+    var agg = aggregate(recs);
+    days.push({
+      date: d,
+      hasData: recs.length > 0,
+      sales: agg._calc.salesWithoutTax,
+      adt: agg._calc.adt,
+      at: agg._calc.at,
+      food: agg._calc.foodMix,
+      isToday: d === today
+    });
+  }
+
+  function paintSparkline(hostId, valueId, key, fmtFn){
+    var hostEl = q(hostId);
+    var valEl = q(valueId);
+    if(!hostEl || !valEl) return;
+
+    var values = days.map(function(d){ return d[key] || 0; });
+    var max = Math.max.apply(null, values);
+    if(!max) max = 1;
+
+    var todayVal = values[values.length - 1];
+    valEl.textContent = fmtFn(todayVal);
+
+    hostEl.innerHTML = days.map(function(d){
+      var v = d[key] || 0;
+      var p = (v / max) * 100;
+      var cls = d.isToday ? "today" : "";
+      if(!d.hasData) cls += " bad";
+      return '<div class="brief-spark-bar ' + cls + '" ' +
+        'style="height:' + Math.max(4, p) + '%" ' +
+        'title="' + escapeAttr(dateLabel(d.date) + ": " + fmtFn(v)) + '"></div>';
+    }).join("");
+  }
+
+  paintSparkline("sparkSales", "sparkSalesValue", "sales", function(v){ return "SAR " + money(v); });
+  paintSparkline("sparkAdt", "sparkAdtValue", "adt", function(v){ return integer(v); });
+  paintSparkline("sparkAt", "sparkAtValue", "at", function(v){ return "SAR " + money(v); });
+  paintSparkline("sparkFood", "sparkFoodValue", "food", function(v){ return pct(v); });
+}
+
+async function renderBriefing(){
+  var host = q("view-briefing");
+  if(!host) return;
+
+  var stores = briefingScopeStores();
+  if(!stores.length){
+    q("briefTitle").textContent = "No stores in scope.";
+    q("briefSubtitle").textContent = "Ask an admin to assign stores to your account.";
+    return;
+  }
+
+  renderBriefingHero(stores);
+  renderBriefingRibbon(stores);
+  renderBriefingMissing(stores);
+  renderBriefingBroken(stores);
+  renderBriefingChanged(stores);
+  renderBriefingTrend(stores);
+  await renderBriefingTodo(stores);
+}
+
+setInterval(function(){
+  var el = q("briefClock");
+  if(el && q("view-briefing") && q("view-briefing").classList.contains("active")){
+    el.textContent = new Date().toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
+  }
+}, 30000);
 
 try {
   init();
@@ -8785,18 +9555,7 @@ try {
   box.textContent = "Init error: " + (err && err.message ? err.message : String(err));
   document.body.appendChild(box);
 }
-  /* ============================================================
-   GLOBAL FIX: CONNECT TOP NAVIGATION BUTTONS
-   ============================================================ */
-document.addEventListener("click", function(e) {
-  var navBtn = e.target.closest(".nav-btn");
-  if (navBtn) {
-    var targetView = navBtn.getAttribute("data-view");
-    if (targetView && typeof switchView === "function") {
-      switchView(targetView);
-    }
-  }
-});
+
 }());
 </script>
 </body>
