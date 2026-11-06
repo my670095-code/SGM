@@ -1381,6 +1381,7 @@ details.group>summary::-webkit-details-marker{display:none}
         <button class="nav-btn" data-view="dailyreport">Daily Report</button>
         <button class="nav-btn" data-view="weekly">Weekly</button>
         <button class="nav-btn" data-view="monthly">Monthly</button>
+                <button class="nav-btn" data-view="pnl">P&amp;L</button>
         <button class="nav-btn" data-view="dashboard">KPI Dashboard</button>
         <button class="nav-btn" data-view="stores" data-roles="admin">Stores</button>
         <button class="nav-btn" data-view="users" data-roles="admin">Users</button>
@@ -1600,6 +1601,38 @@ details.group>summary::-webkit-details-marker{display:none}
       </div>
       <div class="table-card"><table id="monthlyTable" class="report-2col"></table></div> <div id="inlineActionPlanHostMonthly"></div>
     </section>
+    <!-- ============ LIVE P&L ============ -->
+<section id="view-pnl" class="view">
+  <div class="page-head">
+    <div>
+      <h2>Live P&amp;L</h2>
+      <p>Store-wise profit &amp; loss — actuals from daily entries vs. admin-uploaded monthly targets.</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="pnlExportCsvBtn" type="button">Export CSV</button>
+      <button class="btn" id="pnlExportPdfBtn" type="button">Export PDF</button>
+    </div>
+  </div>
+
+  <div class="report-shell">
+    <div class="report-top">
+      <div class="field" style="min-width:150px">
+        <label for="pnlFrom">From</label>
+        <input class="control-input" type="date" id="pnlFrom">
+      </div>
+      <div class="field" style="min-width:150px">
+        <label for="pnlTo">To</label>
+        <input class="control-input" type="date" id="pnlTo">
+      </div>
+      <div class="range-chip" id="pnlRangeChip" style="font-size:13px">—</div>
+    </div>
+    <div id="pnlStatusChip" style="display:none;padding:10px 14px;margin:10px 0;border-radius:10px;font-size:12.5px;font-weight:600;"></div>
+  </div>
+
+  <div class="table-card" style="max-height:75vh;overflow:auto">
+    <table id="pnlTable" class="report-2col"></table>
+  </div>
+</section>
     <!-- ============ KPI DASHBOARD ============ -->
     <section id="view-dashboard" class="view">
       <div class="page-head">
@@ -1738,6 +1771,19 @@ details.group>summary::-webkit-details-marker{display:none}
           <table class="salary-table" id="salaryTable"></table>
           <div class="toolbar" style="margin-top:12px"><button class="btn primary" id="saveSalaryBtn">Save Salary Table</button></div>
         </div>
+        <div class="backup-card">
+  <h3>P&amp;L Monthly Targets</h3>
+  <p>Upload the monthly target file (same layout as <code>PNL Heads target.xlsx</code>). One row per store per cost head. Re-uploading the same month replaces that month's targets.</p>
+  <div class="field" style="margin-bottom:10px">
+    <label for="pnlTargetFile">Select Excel file</label>
+    <input type="file" id="pnlTargetFile" accept=".xlsx,.xls">
+  </div>
+  <div id="pnlTargetPreview" style="display:none;padding:12px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;margin-bottom:10px;font-size:12.5px"></div>
+  <div class="toolbar">
+    <button class="btn" id="pnlTargetTemplateBtn" type="button">Download template</button>
+    <button class="btn primary" id="pnlTargetUploadBtn" type="button" disabled>Upload targets</button>
+  </div>
+</div>
         <div class="backup-card formula-box">
           <h3>Calculation Logic</h3>
           <ul class="formula-list">
@@ -2378,6 +2424,141 @@ async function sbUpsertPnlTargets(rows){
     .upsert(rows, { onConflict: "store_id,month,cost_head", count: "exact" });
   if(error) throw error;
   return { count: count || rows.length };
+}
+  /* ============================================================
+   P&L TARGETS — Excel import
+   ============================================================ */
+var pnlPendingRows = null;
+
+function normalizePnlHeader(h){
+  return String(h==null?"":h).trim().toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/&amp;/g,"&");
+}
+
+function handlePnlTargetFile(){
+  var inp = q("pnlTargetFile");
+  var preview = q("pnlTargetPreview");
+  var uploadBtn = q("pnlTargetUploadBtn");
+  if(!inp.files || !inp.files[0]){ pnlPendingRows = null; if(uploadBtn) uploadBtn.disabled = true; return; }
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      var wb = XLSX.read(e.target.result, { type:"array" });
+      var sheet = wb.Sheets[wb.SheetNames[0]];
+      var raw = XLSX.utils.sheet_to_json(sheet, { defval:"" });
+      if(!raw.length){ showToast("File is empty."); return; }
+
+      /* Expected columns: Month, DESCRIPTION, <store codes...> */
+      var headerRow = Object.keys(raw[0]);
+      var storeCols = headerRow.filter(function(k){
+        return /^\d+$/.test(String(k).trim());    /* only numeric store codes */
+      });
+
+      if(!storeCols.length){
+        showToast("No store code columns found (expected 222, 240, …).");
+        return;
+      }
+
+      var rows = [];
+      var errorRows = [];
+
+      raw.forEach(function(r, i){
+        var desc = normalizePnlHeader(r["DESCRIPTION"] || r["Description"] || r["description"] || "");
+        var headKey = PNL_HEAD_MAP[desc];
+        if(!headKey){ /* skip totals, headers, etc. */ return; }
+
+        var monthRaw = r["Month"] || r["month"] || "";
+        var monthIso = "";
+        if(monthRaw instanceof Date){
+          monthIso = monthRaw.toISOString().slice(0,7) + "-01";
+        } else if(typeof monthRaw === "string" && monthRaw.length >= 7){
+          monthIso = monthRaw.slice(0,7) + "-01";
+        } else if(typeof monthRaw === "number"){
+          /* Excel date serial */
+          var jsDate = new Date(Math.round((monthRaw - 25569) * 86400 * 1000));
+          monthIso = jsDate.toISOString().slice(0,7) + "-01";
+        }
+        if(!monthIso){ errorRows.push("Row " + (i+2) + ": missing Month"); return; }
+
+        storeCols.forEach(function(col){
+          var storeCode = String(col).trim();
+          if(!/^DC/i.test(storeCode)) storeCode = "DC" + storeCode;
+          var val = r[col];
+          if(typeof val === "string" && val.startsWith("=")){
+            /* Excel formula string like "=15148" — take the number */
+            var m = val.match(/-?\d+(\.\d+)?/);
+            val = m ? parseFloat(m[0]) : 0;
+          }
+          var amount = Number(val) || 0;
+          rows.push({
+            store_id: storeCode.toUpperCase(),
+            month: monthIso,
+            cost_head: headKey,
+            target_amount: amount
+          });
+        });
+      });
+
+      if(!rows.length){
+        showToast("No valid rows found. Check column headings.");
+        return;
+      }
+
+      pnlPendingRows = rows;
+
+      /* Show preview */
+      var months = {};
+      var stores = {};
+      rows.forEach(function(r){ months[r.month] = true; stores[r.store_id] = true; });
+
+      preview.style.display = "block";
+      preview.innerHTML =
+        '<strong>' + rows.length + '</strong> rows ready · ' +
+        '<strong>' + Object.keys(months).length + '</strong> month(s) · ' +
+        '<strong>' + Object.keys(stores).length + '</strong> store(s)<br>' +
+        '<span style="color:#64748b">Months: ' + Object.keys(months).join(", ") + '</span><br>' +
+        '<span style="color:#64748b">Stores: ' + Object.keys(stores).sort().join(", ") + '</span>' +
+        (errorRows.length ? '<div style="color:#b91c1c;margin-top:6px">⚠ ' + errorRows.slice(0,5).join("<br>") + '</div>' : '');
+
+      if(uploadBtn) uploadBtn.disabled = false;
+
+    } catch(err){
+      console.error("P&L import parse error:", err);
+      showToast("Could not parse file: " + (err.message||""));
+    }
+  };
+  reader.readAsArrayBuffer(inp.files[0]);
+}
+
+async function uploadPnlTargets(){
+  if(!(currentUser && currentUser.role === "admin")){
+    showToast("Only admin can upload P&L targets.");
+    return;
+  }
+  if(!pnlPendingRows || !pnlPendingRows.length){
+    showToast("Select a file first.");
+    return;
+  }
+  if(!window.confirm("Upload " + pnlPendingRows.length + " target rows? Existing rows for the same store/month/head will be replaced.")) return;
+
+  var btn = q("pnlTargetUploadBtn");
+  if(btn){ btn.disabled = true; btn.textContent = "Uploading…"; }
+
+  try {
+    var result = await sbUpsertPnlTargets(pnlPendingRows);
+    showToast("✓ Uploaded " + result.count + " target rows.", "success");
+    pnlPendingRows = null;
+    q("pnlTargetFile").value = "";
+    q("pnlTargetPreview").style.display = "none";
+    refreshCurrentView();
+  } catch(e){
+    console.error("Upload failed:", e);
+    showToast("Upload failed: " + (e.message||""));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = "Upload targets"; }
+  }
 }
 
 /* Fetch the profile of the logged-in user */
@@ -3476,6 +3657,152 @@ function calculate(record){
     breakdownHours: breakHours,
     estimatedLostSales: lostSales
   });
+}
+  /* ============================================================
+   LIVE P&L ENGINE — 27-row statement
+   ============================================================ */
+function daysInMonth(monthIso){        /* "2026-11" or "2026-11-01" */
+  var ym = String(monthIso).slice(0,7);
+  var d = new Date(ym + "-01T12:00:00");
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(0);
+  return d.getDate();
+}
+function monthKeyOf(isoDate){ return String(isoDate).slice(0,7) + "-01"; }
+function addMonths(monthIso, delta){
+  var d = new Date(String(monthIso).slice(0,7) + "-01T12:00:00");
+  d.setMonth(d.getMonth() + delta);
+  return isoDate(d);
+}
+
+/* Returns { rows: [...27 items...], sales, hasTargets } */
+async function calculatePnl(storeId, fromIso, toIso){
+  /* ---- 1) Pull daily records in range ---- */
+  var records = await sbLoadRecords([storeId], fromIso, toIso);
+  var sales = 0, cogs = 0, wastage = 0, employeeCost = 0;
+  records.forEach(function(r){
+    var c = calculate(r);
+    sales        += n(c.salesWithoutTax);
+    cogs         += Math.abs(n(r.COGS));
+    wastage      += n(r.wastage);
+    employeeCost += n(c.employeeCost);
+  });
+
+  /* ---- 2) Fetch targets for every month in range ---- */
+  var fromMonth = monthKeyOf(fromIso);
+  var toMonth   = monthKeyOf(toIso);
+  var targets = {};
+  try {
+    var m = fromMonth;
+    while(m <= toMonth){
+      var chunk = await sbFetchPnlTargets(storeId, m, m);
+      Object.assign(targets, chunk);
+      m = addMonths(m, 1);
+    }
+  } catch(e){ console.warn("P&L targets fetch:", e); }
+
+  /* ---- 3) Prorate each cost head across months in range ---- */
+  function prorate(head){
+    var total = 0;
+    var start = new Date(fromIso + "T12:00:00");
+    var end   = new Date(toIso   + "T12:00:00");
+    var cursor = new Date(start);
+    while(cursor <= end){
+      var ym = cursor.getFullYear() + "-" + String(cursor.getMonth()+1).padStart(2,"0");
+      var firstOfMonth = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12);
+      var lastOfMonth  = new Date(cursor.getFullYear(), cursor.getMonth()+1, 0, 12);
+      var overlapStart = cursor > firstOfMonth ? cursor : firstOfMonth;
+      var overlapEnd   = end < lastOfMonth ? end : lastOfMonth;
+      var overlapDays  = Math.round((overlapEnd - overlapStart) / 86400000) + 1;
+      var dim = daysInMonth(ym);
+      var monthTargets = targets[ym + "-01"] || {};
+      var headTarget = monthTargets[head] || 0;
+      total += headTarget * (overlapDays / dim);
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1, 12);
+    }
+    return total;
+  }
+
+  var budget = {
+    employee_cost:       prorate("employee_cost"),      /* for reference; Employee Cost row uses ACTUAL */
+    advertisement:       prorate("advertisement"),
+    communication:       prorate("communication"),
+    recruitment:         prorate("recruitment"),
+    water:               prorate("water"),
+    sewage:              prorate("sewage"),
+    vehicle_fuel:        prorate("vehicle_fuel"),
+    gas_electricity:     prorate("gas_electricity"),
+    cleaning:            prorate("cleaning"),
+    repair_maintenance:  prorate("repair_maintenance"),
+    printing_stationery: prorate("printing_stationery"),
+    computer:            prorate("computer"),
+    sales_expenses:      prorate("sales_expenses"),
+    government:          prorate("government"),
+    bank_charges:        prorate("bank_charges"),
+    handling_transport:  prorate("handling_transport"),
+    rent:                prorate("rent"),
+    professional_fees:   prorate("professional_fees")
+  };
+  var hasTargets = Object.keys(budget).some(function(k){ return budget[k] > 0; });
+
+  /* ---- 4) Build the 27 rows ---- */
+  var grossMargin = sales - cogs - wastage;
+
+  var ctrlRows = [
+    { sl:5,  desc:"Employee Cost",                          actual: employeeCost,             target: budget.employee_cost },
+    { sl:6,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,     target: budget.advertisement },
+    { sl:7,  desc:"Communication",                          actual: budget.communication,     target: budget.communication },
+    { sl:8,  desc:"Recruitment Expenses",                   actual: budget.recruitment,       target: budget.recruitment },
+    { sl:9,  desc:"Water",                                  actual: budget.water,             target: budget.water },
+    { sl:10, desc:"Sewage",                                 actual: budget.sewage,            target: budget.sewage },
+    { sl:11, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,      target: budget.vehicle_fuel },
+    { sl:12, desc:"Gas & Electricity",                      actual: budget.gas_electricity,   target: budget.gas_electricity },
+    { sl:13, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,          target: budget.cleaning },
+    { sl:14, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,target: budget.repair_maintenance },
+    { sl:15, desc:"Printing & Stationery",                  actual: budget.printing_stationery,target: budget.printing_stationery },
+    { sl:16, desc:"Computer Expenses",                      actual: budget.computer,          target: budget.computer },
+    { sl:17, desc:"Sales Expenses",                         actual: budget.sales_expenses,    target: budget.sales_expenses }
+  ];
+  var totalCtrl = ctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
+  var netAfterCtrl = grossMargin - totalCtrl;
+
+  var unctrlRows = [
+    { sl:20, desc:"GOVERNMENT RELATED EXPENSES",    actual: budget.government,         target: budget.government },
+    { sl:21, desc:"BANK CHARGES & COMMISSIONS",     actual: budget.bank_charges,       target: budget.bank_charges },
+    { sl:22, desc:"Handling & Transportation Expense",actual: budget.handling_transport,target: budget.handling_transport },
+    { sl:23, desc:"Rent Expenses",                  actual: budget.rent,               target: budget.rent },
+    { sl:24, desc:"Royalty",                        actual: sales * 0.03,              target: sales * 0.03, isRoyalty:true },
+    { sl:25, desc:"Professional Fees",              actual: budget.professional_fees,  target: budget.professional_fees }
+  ];
+  var totalUnctrl = unctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
+  var ebitda = netAfterCtrl - totalUnctrl;
+
+  /* ---- 5) Assemble with % + variance ---- */
+  function mk(sl, desc, actual, target, isRevenue){
+    var pct = sales === 0 ? 0 : (actual / sales) * 100;
+    var tgtPct = (target != null && sales !== 0) ? (target / sales) * 100 : null;
+    var variance = target != null ? (actual - target) : null;
+    return {
+      sl: sl, description: desc,
+      contribution: actual, contributionPct: pct,
+      targetSar: target, targetPct: tgtPct,
+      variance: variance, isRevenue: !!isRevenue
+    };
+  }
+
+  var rows = [];
+  rows.push(mk(1,  "Sales",                    sales,       null, true));
+  rows.push(mk(2,  "COST OF GOODS SOLD",       cogs,        null));
+  rows.push(mk(3,  "Wastage",                  wastage,     null));
+  rows.push(mk(4,  "GROSS MARGIN",             grossMargin, null, true));
+  ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
+  rows.push(mk(18, "TOTAL CONTROLLABLE EXP",   totalCtrl,   ctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
+  rows.push(mk(19, "NET MARGIN AFTER CONTROLLABLE EXP", netAfterCtrl, null, true));
+  unctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
+  rows.push(mk(26, "TOTAL UNCONTROLLABLE EXP", totalUnctrl, unctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
+  rows.push(mk(27, "EBITDA (OPERATIONAL)",     ebitda,      null, true));
+
+  return { rows: rows, sales: sales, hasTargets: hasTargets, recordCount: records.length };
 }
 function calculateBreakdown(b, targetSales){
   if(!b.start || !b.end) return {hours:0, loss:0};
@@ -5230,31 +5557,239 @@ async function fetchPlanForPeriod(scopeDesc, periodStart, periodType){
   d.setMonth(d.getMonth()+delta);
   return isoDate(d).slice(0,7);
 }
- function renderMonthly(){
+  /* ============================================================
+   LIVE P&L VIEW
+   ============================================================ */
+function fmtPnlMoney(v){
+  if(v == null || isNaN(v)) return "—";
+  return new Intl.NumberFormat("en-SA",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
+}
+function fmtPnlPct(v){
+  if(v == null || isNaN(v)) return "—";
+  return round(v,1).toFixed(1) + "%";
+}
+function pnlRowClass(row){
+  if(row.variance == null) return "";
+  if(row.isRevenue){
+    return row.variance >= 0 ? "good" : (row.variance >= -Math.abs(row.targetSar*0.02) ? "warn" : "bad");
+  }
+  return row.variance <= 0 ? "good" : (row.variance <= Math.abs(row.targetSar*0.05) ? "warn" : "bad");
+}
+
+/* ---------- P&L CSV ---------- */
+async function exportPnlCsv(){
+  var from = q("pnlFrom").value;
+  var to   = q("pnlTo").value;
+  if(!from || !to){ showToast("Set the date range first."); return; }
+  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1) ? topFilter.storeIds[0] : state.selectedStore;
+  var result = await calculatePnl(storeId, from, to);
+  if(!result.rows.length){ showToast("Nothing to export."); return; }
+
+  var remarks = {
+    1:"Take from Daily Input of sales",
+    2:"Take from Daily Input COGS Amount",
+    3:"Take From Daily Input Wastage Amount",
+    4:"( Gross Margin = Sales - Cost of goods sold - Wastage )",
+    5:"Take From Daily Input Employee Cost",
+    18:"Sum from S.No ( 5 to 17 )",
+    19:"This is GROSS MARGIN - Total Controllable Exp",
+    24:"Royalty is fixed 3 % of sales",
+    26:"Sum from S.No ( 20 to 25 )",
+    27:"This is Net Margin After Controllable exp - Total Uncontrollable exp"
+  };
+
+  var csv = [["SL NO","DESCRIPTION","Contribution","Contribution %","Target SAR","Target %","Variance","Remarks"]];
+  result.rows.forEach(function(r){
+    var rem = remarks[r.sl];
+    if(!rem && ((r.sl >= 6 && r.sl <= 17) || (r.sl >= 20 && r.sl <= 25)) && r.sl !== 24){
+      rem = "Target for that store divided by no of days in the month * no of days selected";
+    }
+    rem = rem || "";
+    csv.push([
+      r.sl,
+      r.description,
+      round(r.contribution, 2),
+      r.contributionPct == null ? "" : round(r.contributionPct, 2),
+      r.targetSar == null ? "" : round(r.targetSar, 2),
+      r.targetPct == null ? "" : round(r.targetPct, 2),
+      r.variance == null ? "" : round(r.variance, 2),
+      rem
+    ]);
+  });
+
+  download("SGM_PnL_" + storeId + "_" + from + "_to_" + to + ".csv",
+    "\ufeff" + csv.map(function(row){ return row.map(csvEscape).join(","); }).join("\r\n"),
+    "text/csv;charset=utf-8");
+  showToast("CSV downloaded.", "success");
+}
+
+/* ---------- P&L PDF ---------- */
+async function exportPnlPdf(){
+  if(typeof window.jspdf === "undefined"){ showToast("PDF library not loaded."); return; }
+  var from = q("pnlFrom").value;
+  var to   = q("pnlTo").value;
+  if(!from || !to){ showToast("Set the date range first."); return; }
+  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1) ? topFilter.storeIds[0] : state.selectedStore;
+  var result = await calculatePnl(storeId, from, to);
+  if(!result.rows.length){ showToast("Nothing to export."); return; }
+
+  var subtitle = "Store: " + storeId + " · " + dateLabel(from) + " – " + dateLabel(to);
+  var doc = getPdfContext("Live P&L", subtitle);
+
+  var head = [["SL","DESCRIPTION","Contribution","Contrib %","Target SAR","Tgt %","Variance"]];
+  var body = result.rows.map(function(r){
+    return [
+      String(r.sl),
+      r.description,
+      fmtPnlMoney(r.contribution),
+      r.contributionPct == null ? "—" : fmtPnlPct(r.contributionPct),
+      r.targetSar == null ? "—" : fmtPnlMoney(r.targetSar),
+      r.targetPct == null ? "—" : fmtPnlPct(r.targetPct),
+      r.variance == null ? "—" : (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance)
+    ];
+  });
+
+  doc.autoTable({
+    startY: 22,
+    head: head,
+    body: body,
+    theme: "grid",
+    styles: { fontSize:8, cellPadding:2 },
+    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:9 },
+    alternateRowStyles: { fillColor:[244,248,247] },
+    columnStyles: {
+      0:{ cellWidth:12, halign:"center" },
+      1:{ cellWidth:70 },
+      2:{ halign:"right", cellWidth:30 },
+      3:{ halign:"right", cellWidth:24 },
+      4:{ halign:"right", cellWidth:30 },
+      5:{ halign:"right", cellWidth:24 },
+      6:{ halign:"right", cellWidth:30 }
+    },
+    didParseCell: function(data){
+      if(data.section === "body"){
+        var sl = parseInt(data.row.raw[0], 10);
+        if(sl === 4 || sl === 18 || sl === 19 || sl === 26 || sl === 27){
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.fillColor = [230,240,245];
+        }
+      }
+    },
+    didDrawPage: function(){
+      var pageW = doc.internal.pageSize.getWidth();
+      var pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7.5);
+      doc.setTextColor(120);
+      doc.text("SGM Operations Control", 10, pageH - 5);
+      doc.text("Page " + doc.internal.getNumberOfPages(), pageW - 10, pageH - 5, { align:"right" });
+    }
+  });
+
+  savePdfDoc(doc, "SGM_PnL_" + storeId + "_" + from + ".pdf");
+}
+
+/* ---------- P&L Renderer ---------- */
+async function renderPnl(){
+  var from = q("pnlFrom").value;
+  var to   = q("pnlTo").value;
+  var table = q("pnlTable");
+  var chip = q("pnlStatusChip");
+  var rangeChip = q("pnlRangeChip");
+  if(!table) return;
+
+  if(!from || !to){ table.innerHTML = ""; return; }
+  if(from > to){
+    table.innerHTML = '<tbody><tr><td class="empty">From date must be before To date.</td></tr></tbody>';
+    return;
+  }
+
+  if(rangeChip) rangeChip.textContent = dateLabel(from) + " → " + dateLabel(to) + " · " + scopeLabel();
+
+  table.innerHTML = '<tbody><tr><td class="empty">Loading P&L…</td></tr></tbody>';
+
+  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1) ? topFilter.storeIds[0]
+              : state.selectedStore;
+
+  var result;
+  try {
+    result = await calculatePnl(storeId, from, to);
+  } catch(e){
+    table.innerHTML = '<tbody><tr><td class="empty">Error: ' + escapeHtml(e.message||"") + '</td></tr></tbody>';
+    return;
+  }
+
+  if(chip){
+    if(!result.recordCount){
+      chip.style.display = "block";
+      chip.style.background = "#fee2e2";
+      chip.style.color = "#b91c1c";
+      chip.textContent = "⚠ No daily entries for " + storeId + " in this range. P&L is empty.";
+    } else if(!result.hasTargets){
+      chip.style.display = "block";
+      chip.style.background = "#fef3c7";
+      chip.style.color = "#b45309";
+      chip.textContent = "⚠ No P&L targets uploaded for this period. Showing actuals only.";
+    } else {
+      chip.style.display = "none";
+    }
+  }
+
+  var thead = '<thead><tr>' +
+    '<th style="width:60px">SL</th>' +
+    '<th style="width:auto;text-align:left">DESCRIPTION</th>' +
+    '<th style="width:140px">Contribution</th>' +
+    '<th style="width:120px">Contrib %</th>' +
+    '<th style="width:140px">Target SAR</th>' +
+    '<th style="width:120px">Tgt %</th>' +
+    '<th style="width:130px">Variance</th>' +
+    '</tr></thead>';
+
+  var tbody = '<tbody>';
+  result.rows.forEach(function(r){
+    var cls = pnlRowClass(r);
+    var varText = "—";
+    if(r.variance != null){
+      var sign = r.variance >= 0 ? "+" : "";
+      varText = sign + fmtPnlMoney(r.variance);
+    }
+    tbody += '<tr>' +
+      '<td style="text-align:center;font-weight:700;color:#64748b">' + r.sl + '</td>' +
+      '<td style="text-align:left;font-weight:' + (r.sl===1||r.sl===4||r.sl===18||r.sl===19||r.sl===26||r.sl===27 ? "700" : "500") + '">' + escapeHtml(r.description) + '</td>' +
+      '<td class="num">' + fmtPnlMoney(r.contribution) + '</td>' +
+      '<td class="num">' + fmtPnlPct(r.contributionPct) + '</td>' +
+      '<td class="num" style="color:#64748b">' + (r.targetSar != null ? fmtPnlMoney(r.targetSar) : "—") + '</td>' +
+      '<td class="num" style="color:#64748b">' + (r.targetPct != null ? fmtPnlPct(r.targetPct) : "—") + '</td>' +
+      '<td class="num ' + cls + '">' + varText + '</td>' +
+      '</tr>';
+  });
+  tbody += '</tbody>';
+
+  table.innerHTML = thead + tbody;
+}
+
+/* ---------- Monthly Renderer ---------- */
+function renderMonthly(){
   var mode = q("monthCompareMode").value;
-  
-  // Show/hide standard month pickers
+
   q("monthWrap2").style.display = (mode==="2"||mode==="3") ? "" : "none";
   q("monthWrap3").style.display = (mode==="3") ? "" : "none";
-  
-  // Show/hide custom range pickers
-  q("customRangeWrap").style.display = (mode==="custom3") ? "" : "none";
+
+  q("customRangeWrap").style.display  = (mode==="custom3") ? "" : "none";
   q("customRangeWrap2").style.display = (mode==="custom3") ? "" : "none";
   q("customRangeWrap3").style.display = (mode==="custom3") ? "" : "none";
-  
-     if (mode !== "custom" && mode !== "custom3") {
-    // Grab the value and force it to be a 7-character string (YYYY-MM)
+
+  if (mode !== "custom" && mode !== "custom3") {
     var baseVal = (q("monthDate").value || todayIso()).slice(0, 7);
-    var base = baseVal + "-01";
-    
-    // Do the same for Month 2 and Month 3
     if(!q("monthDate2").value) q("monthDate2").value = shiftMonth(baseVal, -1);
     if(!q("monthDate3").value) q("monthDate3").value = shiftMonth(baseVal, -2);
   }
 
   var periods = buildMonthlyPeriods();
-  renderReportTable2Col(q("monthlyTable"), periods, q("monthlySearch")?q("monthlySearch").value:"", "monthlyCount", "inlineActionPlanHostMonthly");
+  renderReportTable2Col(q("monthlyTable"), periods,
+    q("monthlySearch")?q("monthlySearch").value:"",
+    "monthlyCount", "inlineActionPlanHostMonthly");
 }
+
 
 /* ============================================================
    DAILY REPORT (All Transactions)
@@ -7223,6 +7758,22 @@ function downloadUserImportTemplate(){
   XLSX.writeFile(wb, "SGM_Users_Template.xlsx");
   showToast("Template downloaded.");
 }
+  function downloadPnlTargetTemplate(){
+  var heads = Object.keys(PNL_HEAD_MAP);   /* 18 Excel descriptions */
+  var header = ["Month", "DESCRIPTION", "222", "240", "245", "265", "280", "282", "288"];
+  var sampleMonth = "2026-11-01";
+  var rows = [header];
+  heads.forEach(function(excelDesc){
+    var row = [sampleMonth, excelDesc];
+    for(var i = 2; i < header.length; i++) row.push(0);
+    rows.push(row);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Targets");
+  XLSX.writeFile(wb, "SGM_PNL_Targets_Template.xlsx");
+  showToast("Template downloaded.");
+}
 
 /* ============================================================
    BULK CREATE — ALL MANAGERS (AM + OM)
@@ -7792,6 +8343,7 @@ function refreshCurrentView(){
   if(name==="dailyreport") renderTransactions();
   if(name==="weekly") renderWeekly();
   if(name==="monthly") renderMonthly();
+    if(name==="pnl") renderPnl();
   if(name==="dashboard") renderDashboard();
   if(name==="backup") updateStorageStat();
   if(name==="stores"){ renderStoreFilters(); renderStores(); }
@@ -7951,6 +8503,10 @@ if(grossSalesEl){
 
 
   q("monthDate").addEventListener("change", renderMonthly);
+    q("pnlFrom").addEventListener("change", renderPnl);
+  q("pnlTo").addEventListener("change", renderPnl);
+  var pnlCsv = q("pnlExportCsvBtn"); if(pnlCsv) pnlCsv.addEventListener("click", exportPnlCsv);
+  var pnlPdf = q("pnlExportPdfBtn"); if(pnlPdf) pnlPdf.addEventListener("click", exportPnlPdf);
   q("monthDate2").addEventListener("change", renderMonthly);
   q("monthDate3").addEventListener("change", renderMonthly);
   q("monthCompareMode").addEventListener("change", renderMonthly);
@@ -7998,6 +8554,12 @@ q("dashKpi").addEventListener("change", renderDashboard);
   q("saveStorePinBtn").addEventListener("click", saveStorePin);
   q("clearAllBtn").addEventListener("click", clearAll);
     q("saveSalaryBtn").addEventListener("click", saveSalaryTable);
+    var pnlTargetFile = q("pnlTargetFile");
+  if(pnlTargetFile) pnlTargetFile.addEventListener("change", handlePnlTargetFile);
+  var pnlTargetUpload = q("pnlTargetUploadBtn");
+  if(pnlTargetUpload) pnlTargetUpload.addEventListener("click", function(){ uploadPnlTargets().catch(function(e){ console.error(e); }); });
+  var pnlTargetTpl = q("pnlTargetTemplateBtn");
+  if(pnlTargetTpl) pnlTargetTpl.addEventListener("click", downloadPnlTargetTemplate);
   
   // Connect the Weekly Action Plan Modal buttons
   var saveActionBtn = q("actionPlanModalSave");
@@ -8108,6 +8670,15 @@ document.addEventListener("keydown", function(e){
   q("customFromDate3").value = currentMonthIso() + "-01";
   q("customToDate3").value = currentMonthIso() + "-30";
    q("dashMonth").value = currentMonthIso();
+     /* P&L default range = current calendar month */
+  var pnlFirstOfMonth = currentMonthIso() + "-01";
+  var pnlLastOfMonth = (function(){
+    var d = new Date(currentMonthIso() + "-01T12:00:00");
+    d.setMonth(d.getMonth() + 1); d.setDate(0);
+    return isoDate(d);
+  })();
+  if(q("pnlFrom")) q("pnlFrom").value = pnlFirstOfMonth;
+  if(q("pnlTo"))   q("pnlTo").value   = pnlLastOfMonth;
   q("plannedHours").value = state.settings.plannedHours || 24;
   q("defaultStorePin").value = state.defaultStorePin || "0000";
   renderSalaryTable();
