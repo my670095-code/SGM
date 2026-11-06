@@ -1290,6 +1290,31 @@ details.group>summary::-webkit-details-marker{display:none}
 #view-weekly .table-card {
   max-height: 55vh;
 }
+    /* ============================================================
+     FULL WIDTH DASHBOARD OVERRIDE
+     ============================================================ */
+  /* Remove the max-width constraint on main when dashboard is active */
+  body:has(#view-dashboard.active) main {
+    max-width: 100%;
+    padding: 22px 32px;
+  }
+
+  /* Expand the chart grid to fill the new space evenly */
+  body:has(#view-dashboard.active) .chart-panel {
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  }
+
+  /* Make the wide chart span the full width of the expanded container */
+  body:has(#view-dashboard.active) .chart-card-wide {
+    grid-column: 1 / -1;
+  }
+
+  /* Stretch the top navigation bar to match the full width */
+  body:has(#view-dashboard.active) .topbar-main,
+  body:has(#view-dashboard.active) nav {
+    max-width: 100%;
+  }
+</style>
 </style>
 </head>
 <body>
