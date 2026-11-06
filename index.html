@@ -8658,6 +8658,12 @@ function refreshCurrentView(){
 }
 
 function bindEvents(){
+    /* ---- Navigation between views ---- */
+  document.querySelectorAll(".nav-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      switchView(btn.dataset.view);
+    });
+  });
 
   /* ============================================================
      SMART KEYBOARD ARROW KEY SCROLLING (Table First, Then Page)
