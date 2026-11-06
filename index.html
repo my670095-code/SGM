@@ -1286,8 +1286,7 @@ details.group>summary::-webkit-details-marker{display:none}
   #view-briefing .brief-grid { break-inside: avoid; }
 }
 
-/* Live-strip hidden (values live in sidebar) */
-.live-strip{display:none !important}
+
 
 /* ============================================================
    DAILY BRIEFING
@@ -9166,6 +9165,7 @@ function renderBriefingRibbon(stores){
     return;
   }
 
+   if(!agg || !agg._calc) return;
   var c = agg._calc;
   var cells = [];
 
@@ -9337,6 +9337,7 @@ function renderBriefingChanged(stores){
     return;
   }
 
+   if(!aggToday._calc || !aggYest._calc) return;
   var ct = aggToday._calc;
   var cy = aggYest._calc;
 
