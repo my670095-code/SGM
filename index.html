@@ -2102,7 +2102,7 @@ var LIVE_KEYS = {
   cupMix:      ["cupsTotal","upsizeQty","upsizePct"],
   dcApp:       ["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"],
   controls:    ["cancelledBillPct"],
-  costEmployee:["employeeCost","employeePct","wastagePct","inventoryVariancePct"],
+  costEmployee:["employeeCost","employeePct","wastagePct","COGSPct"],
   performance: ["positiveReviewPct","negativeReviewPct"],
 };
 
@@ -2183,7 +2183,7 @@ var LIVE_KEYS = {
 
   { id:"costEmployee", label:"Cost Efficiency & Employee Cost (INPUT)", hint:"Wastage, headcounts, OT", fields:[
     { key:"wastage", label:"Wastage Amount (SAR)" },
-    { key:"inventoryVariance", label:"Inventory Variance (SAR) / Surprise", allowNegative:true }
+    { key:"COGS", label:"COGS", allowNegative:true }
   ].concat(DEFAULT_SALARY.map(function(s){
     return { key:s.key, label:s.label+" Headcount", step:"1" };
   })).concat([
@@ -2194,7 +2194,7 @@ var LIVE_KEYS = {
     { key:"cleanerOt", label:"Cleaner Overtime Hours" }
   ])},
   { id:"costCalc", label:"Cost — Calculated (LOCKED)", hint:"Wastage %, Employee Cost", special:"calc", calcKeys:[
-    "wastagePct","employeeCost","employeePct","inventoryVariancePct"
+    "wastagePct","employeeCost","employeePct","COGSPct"
   ]},
 
   { id:"performance", label:"Smart Brew, QA & Guest Feedback (INPUT)", hint:"Percentages and ratings", fields:[
@@ -2232,7 +2232,7 @@ var KPI_DEFS = [
   { cat:"Sales Mix", name:"Upsize Conversion %",    key:"upsizePct",        target:TARGETS.upsize,           fmt:"pct" },
   { cat:"Cost Efficiency", name:"Employee Cost %",    key:"employeePct",         target:TARGETS.employee,   fmt:"pct", lower:true },
   { cat:"Cost Efficiency", name:"Wastage %",          key:"wastagePct",          target:TARGETS.wastage,    fmt:"pct", lower:true },
-  { cat:"Cost Efficiency", name:"COGS %",key:"inventoryVariancePct",target:TARGETS.inventory, fmt:"pct", lower:true },
+  { cat:"Cost Efficiency", name:"COGS %",key:"COGSPct",target:TARGETS.inventory, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cancelled Bill Value %", key:"cancelledBillPct", target:TARGETS.cancelledBill, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cash Deposited Variance %", key:"cashVariancePct", target:TARGETS.cashVariance, fmt:"pct", lower:true },
     { cat:"Smart Brew", name:"Completion %", key:"smartCompleted", target:TARGETS.smartCompleted, fmt:"pct" },
@@ -2948,7 +2948,7 @@ else              colCount = 5;
     cancelledBillPct:"Cancelled Bill Value % (Tgt 0.0%)",
     cashVariancePct:"Cash Deposited Variance % (Tgt 0.0%)",
     wastagePct:"Wastage % (Tgt 1.0%)",
-    inventoryVariancePct:"COGS % (Tgt 0.0%)",
+    COGSPct:"COGS % (Tgt 0.0%)",
     employeeCost:"Employee Cost (SAR)",
     employeePct:"Employee Cost % (Tgt 17.0%)",
     positiveReviewPct:"Google Positive Review %",
@@ -3000,7 +3000,7 @@ function statusForSidebar(key, v, c){
     upsizePct:        { target:TARGETS.upsize,           lower:false },
     wastagePct:       { target:TARGETS.wastage,          lower:true  },
     employeePct:      { target:TARGETS.employee,         lower:true  },
-    inventoryVariancePct:{ target:TARGETS.inventory,     lower:true  },
+    COGSPct:{ target:TARGETS.inventory,     lower:true  },
     cancelledBillPct: { target:TARGETS.cancelledBill,    lower:true  },
     cashVariancePct:  { target:TARGETS.cashVariance,     lower:true  }
   };
@@ -3037,7 +3037,7 @@ function buildCalcText(){
   lines.push("*Cost*");
   lines.push("Wastage: " + pct(c.wastagePct) + " (Tgt 1%)");
   lines.push("Employee: " + pct(c.employeePct) + " (Tgt 17%)");
-  lines.push("Inventory Var: " + pct(c.inventoryVariancePct));
+  lines.push("Inventory Var: " + pct(c.COGSPct));
   lines.push("");
   lines.push("*Controls*");
   lines.push("Cancelled Bill: " + pct(c.cancelledBillPct));
@@ -3116,7 +3116,7 @@ function recalcAllCalcFields(){
   var groups = [
     { title:"Sales & Mix",  keys:["salesWithoutTax","netSales","totalDiscount","adt","at","salesVsTargetPct"] },
     { title:"Mix %",        keys:["foodMix","grabGoMix","merchandiseMix","modifierMix","upsizePct"] },
-    { title:"Cost",         keys:["wastagePct","employeeCost","employeePct","inventoryVariancePct"] },
+    { title:"Cost",         keys:["wastagePct","employeeCost","employeePct","COGSPct"] },
     { title:"Controls",     keys:["cancelledBillPct","cashVariancePct"] },
     { title:"DC App",       keys:["dcPosTotal","dcAppTotal","dcVariance","dcAppSalesPct"] },
     { title:"QA & Guest",   keys:["positiveReviewPct","negativeReviewPct"] },
@@ -3336,7 +3336,7 @@ function calculate(record){
 
     /* Cost */
     wastage:                  n(record.wastage),
-    inventoryVariance:        n(record.inventoryVariance),
+    COGS:        n(record.COGS),
 
     /* Performance */
     smartCompletedPct:        n(record.smartCompletedPct),
@@ -3404,7 +3404,7 @@ function calculate(record){
 
     cashVariance:    cashVarianceCalc,
     wastagePct:      safeDiv(record.wastage, salesWoTax) * 100,
-    inventoryVariancePct: safeDiv(Math.abs(n(record.inventoryVariance)), salesWoTax) * 100,
+    COGSPct: safeDiv(Math.abs(n(record.COGS)), salesWoTax) * 100,
     employeeCost:    employeeCost,
     employeePct:     safeDiv(employeeCost, salesWoTax) * 100,
 
@@ -3671,7 +3671,7 @@ function buildSubmittedText(rec, c){
   lines.push("*Cost*");
   lines.push("Wastage: " + pct(c.wastagePct) + " (Tgt 1%)");
   lines.push("Employee: " + pct(c.employeePct) + " (Tgt 17%)");
-  lines.push("Inventory Var: " + pct(c.inventoryVariancePct));
+  lines.push("Inventory Var: " + pct(c.COGSPct));
   lines.push("");
   lines.push("*Controls*");
   lines.push("Cancelled Bill: " + pct(c.cancelledBillPct));
@@ -3862,7 +3862,7 @@ function normalizeStoreId(id){
 }
 
 var AVG_KEYS = ["targetAdt","targetAt","smartCompletedPct","qaScore","googleRating","dcAppRating"];
-var LAST_KEYS = ["inventoryVariance"];
+var LAST_KEYS = ["COGS"];
 
 function aggregate(records){
   var res = { storeId: state.selectedStore, breakdowns: [], _records: records };
@@ -4060,8 +4060,8 @@ function sectionValue(agg, label){
     case "Employee Cost %":                  return { value: c.employeePct, fmt:"pct", target: TARGETS.employee, lower:true };
     case "Wastage Amount (SAR)":             return { value: n(agg.wastage), fmt:"money" };
     case "Wastage %":                        return { value: c.wastagePct, fmt:"pct", target: TARGETS.wastage, lower:true };
-    case "Inventory Variance Amount (SAR)":  return { value: n(agg.inventoryVariance), fmt:"money" };
-    case "COGS %":             return { value: c.inventoryVariancePct, fmt:"pct", target: TARGETS.inventory, lower:true };
+    case "Inventory Variance Amount (SAR)":  return { value: n(agg.COGS), fmt:"money" };
+    case "COGS %":             return { value: c.COGSPct, fmt:"pct", target: TARGETS.inventory, lower:true };
 
     /* Control Actuals */
       case "Cancelled Bill Amount (SAR)":      return { value: n(agg.cancelledBillAmount), fmt:"money" };
@@ -5245,7 +5245,7 @@ var TX_COLUMNS = [
   { key:"wastage",             label:"Wastage (SAR)",        fmt:"money" },
   { key:"wastagePct",          label:"Wastage %",            fmt:"pct",  target:TARGETS.wastage,          lower:true  },
   { key:"employeePct",         label:"Employee %",           fmt:"pct",  target:TARGETS.employee,         lower:true  },
-  { key:"inventoryVariancePct",label:"Inv Var %",            fmt:"pct",  target:TARGETS.inventory,        lower:true  },
+  { key:"COGSPct",label:"Inv Var %",            fmt:"pct",  target:TARGETS.inventory,        lower:true  },
   { key:"cashVariance",        label:"Cash Var",             fmt:"money", target:0,                        lower:true, abs:true },
   { key:"dcVariance",          label:"DC App Var",           fmt:"money", target:0,                        lower:true, abs:true },
   { key:"cancelledBillAmount", label:"Cancelled Bill (SAR)", fmt:"money" },
@@ -5433,7 +5433,7 @@ var GRID_ROWS = [
   { type:"metric", key:"wastagePct",       label:"Wastage %",              fmt:"pct", target:TARGETS.wastage,   lower:true },
   { type:"metric", key:"employeeCost",     label:"Employee Cost (SAR)",    fmt:"money" },
   { type:"metric", key:"employeePct",      label:"Employee Cost %",        fmt:"pct", target:TARGETS.employee,  lower:true },
-  { type:"metric", key:"inventoryVariancePct", label:"COGS %", fmt:"pct", target:TARGETS.inventory, lower:true },
+  { type:"metric", key:"COGSPct", label:"COGS %", fmt:"pct", target:TARGETS.inventory, lower:true },
   { type:"category", label:"Smart Brew & Execution" },
     { type:"metric", key:"smartCompletedPct",label:"Smart Brew Completed %", fmt:"pct", target:TARGETS.smartCompleted,lower:false },
   { type:"metric", key:"googleRating",     label:"Google Rating",          fmt:"rating",target:TARGETS.googleRating,lower:false },
