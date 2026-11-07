@@ -3795,10 +3795,7 @@ async function calculatePnl(storeId, fromIso, toIso){
   /* ---- 5) Assemble with % + variance ---- */
     function mk(sl, desc, actual, target, isRevenue){
     var pct = sales === 0 ? 0 : (actual / sales) * 100;
-    
-    // CHANGED: Now calculates Actual (Contribution) / Target
-    var tgtPct = (target != null && target !== 0) ? (actual / target) * 100 : null;
-    
+    var tgtPct = (target != null && sales !== 0) ? (target / sales) * 100 : null;
     var variance = target != null ? (actual - target) : null;
     return {
       sl: sl, description: desc,
