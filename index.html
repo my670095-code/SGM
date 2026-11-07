@@ -3804,11 +3804,13 @@ async function calculatePnl(storeId, fromIso, toIso){
       variance: variance, isRevenue: !!isRevenue
     };
   }
-  var rows = [];
+    var rows = [];
   /* Apply custom target logic here */
   var salesTarget = dailyInputTarget > 0 ? dailyInputTarget : null;
-  var cogsTarget = salesTarget !== null ? (salesTarget * 0.22) : null;
-  var wastageTarget = salesTarget !== null ? (salesTarget * 0.005) : null;
+  
+  /* CHANGED: Calculate COGS and Wastage targets based on ACTUAL SALES (contribution) */
+  var cogsTarget = sales > 0 ? (sales * 0.22) : null;
+  var wastageTarget = sales > 0 ? (sales * 0.005) : null;
 
   rows.push(mk(1,  "Sales",                    sales,       salesTarget, true));
   rows.push(mk(2,  "COST OF GOODS SOLD",       cogs,        cogsTarget));
