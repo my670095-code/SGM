@@ -3508,6 +3508,18 @@ function sumKeys(record, keys){
   return t;
 }
 function calculate(record){
+  // AUTO-FILL LOGIC: If sales are entered, Opening Days must be at least 1
+  if (n(record.grossSales) > 0 && (!record.openingDays || n(record.openingDays) === 0)) {
+    record.openingDays = 1;
+    
+    // Update the actual HTML input so the user sees "1" instead of "0"
+    var openingEl = document.getElementById("f-openingDays");
+    if (openingEl && String(openingEl.value || "").trim() !== "1") {
+      openingEl.value = "1";
+      openingEl.classList.add("filled");
+    }
+  }
+
   var salesWoTax = n(record.grossSales) - n(record.voidAmount) - n(record.taxAmount);
   var totalDiscount = n(record.complimentaryDiscount) + n(record.promotionDiscount);
   var netSales = salesWoTax - totalDiscount;
@@ -3679,14 +3691,16 @@ function addMonths(monthIso, delta){
 /* Returns { rows: [...27 items...], sales, hasTargets } */
 async function calculatePnl(storeId, fromIso, toIso){
   /* ---- 1) Pull daily records in range ---- */
+    /* ---- 1) Pull daily records in range ---- */
   var records = await sbLoadRecords([storeId], fromIso, toIso);
-  var sales = 0, cogs = 0, wastage = 0, employeeCost = 0;
+  var sales = 0, cogs = 0, wastage = 0, employeeCost = 0, dailyInputTarget = 0;
   records.forEach(function(r){
     var c = calculate(r);
     sales        += n(c.salesWithoutTax);
     cogs         += Math.abs(n(r.COGS));
     wastage      += n(r.wastage);
     employeeCost += n(c.employeeCost);
+    dailyInputTarget += n(r.targetSales); // <-- Added this line
   });
 
   /* ---- 2) Fetch targets for every month in range ---- */
@@ -3790,11 +3804,15 @@ async function calculatePnl(storeId, fromIso, toIso){
       variance: variance, isRevenue: !!isRevenue
     };
   }
-
   var rows = [];
-  rows.push(mk(1,  "Sales",                    sales,       null, true));
-  rows.push(mk(2,  "COST OF GOODS SOLD",       cogs,        null));
-  rows.push(mk(3,  "Wastage",                  wastage,     null));
+  /* Apply custom target logic here */
+  var salesTarget = dailyInputTarget > 0 ? dailyInputTarget : null;
+  var cogsTarget = salesTarget !== null ? (salesTarget * 0.22) : null;
+  var wastageTarget = salesTarget !== null ? (salesTarget * 0.005) : null;
+
+  rows.push(mk(1,  "Sales",                    sales,       salesTarget, true));
+  rows.push(mk(2,  "COST OF GOODS SOLD",       cogs,        cogsTarget));
+  rows.push(mk(3,  "Wastage",                  wastage,     wastageTarget));
   rows.push(mk(4,  "GROSS MARGIN",             grossMargin, null, true));
   ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
   rows.push(mk(18, "TOTAL CONTROLLABLE EXP",   totalCtrl,   ctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
@@ -5638,14 +5656,22 @@ async function exportPnlPdf(){
   var doc = getPdfContext("Live P&L", subtitle);
 
   var head = [["SL","DESCRIPTION","Contribution","Contrib %","Target SAR","Tgt %","Variance"]];
-  var body = result.rows.map(function(r){
+    var body = result.rows.map(function(r){
+    // Calculate target % manually for the PDF
+    var tgtPct = null;
+    if (r.targetSar !== null) {
+      if (r.sl === 2) tgtPct = 22.0;
+      else if (r.sl === 3) tgtPct = 0.5;
+      else tgtPct = r.targetPct;
+    }
+
     return [
       String(r.sl),
       r.description,
       fmtPnlMoney(r.contribution),
       r.contributionPct == null ? "—" : fmtPnlPct(r.contributionPct),
       r.targetSar == null ? "—" : fmtPnlMoney(r.targetSar),
-      r.targetPct == null ? "—" : fmtPnlPct(r.targetPct),
+      tgtPct == null ? "—" : fmtPnlPct(tgtPct),
       r.variance == null ? "—" : (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance)
     ];
   });
@@ -8535,23 +8561,7 @@ var fDateEl = q("f-date");
 if(fDateEl){
   fDateEl.addEventListener("change", function(){ handleDateChange(fDateEl); });
 }
-  /* Auto-set Opening Days = 1 when Gross Sales is typed and Opening Days is blank */
-var grossSalesEl = q("f-grossSales");
-if(grossSalesEl){
-  grossSalesEl.addEventListener("input", function(){
-    var openingEl = q("f-openingDays");
-    if(!openingEl) return;
-    var grossHasValue  = String(grossSalesEl.value||"").trim() !== "";
-    var openingIsBlank = String(openingEl.value||"").trim() === "";
-    if(grossHasValue && openingIsBlank){
-      openingEl.value = "1";
-      openingEl.classList.add("filled");
-      refreshGroupPills();
-      refreshProgress();
-      recalcAllCalcFields();
-    }
-  });
-}
+ 
    q("weekDate").addEventListener("change", renderWeekly);
   q("weekDate2").addEventListener("change", renderWeekly);
   q("weekDate3").addEventListener("change", renderWeekly);
