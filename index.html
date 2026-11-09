@@ -2372,6 +2372,9 @@ async function sbFetchSalary(){
 
 /* Canonical cost head keys ↔ exact Excel DESCRIPTION wording */
 var PNL_HEAD_MAP = {
+   "sales":                                  "sales",
+  "cost of goods sold":                     "cogs",
+  "wastage":                                "wastage",
   "employee cost":                          "employee_cost",
   "advertisements, marketing & promotions": "advertisement",
   "travel expenses":                        "travel",
@@ -3764,6 +3767,9 @@ async function calculatePnl(storeId, fromIso, toIso){
   }
 
 var budget = {
+   sales:                  prorate("sales"),
+  cogs:                   prorate("cogs"),
+  wastage:                prorate("wastage"),
   employee_cost:          prorate("employee_cost"),
   advertisement:          prorate("advertisement"),
   travel:                 prorate("travel"),
@@ -3836,12 +3842,11 @@ var unctrlRows = [
     };
   }
     var rows = [];
-  /* Apply custom target logic here */
-  var salesTarget = dailyInputTarget > 0 ? dailyInputTarget : null;
-  
-  /* CHANGED: Calculate COGS and Wastage targets based on ACTUAL SALES (contribution) */
-  var cogsTarget = sales > 0 ? (sales * 0.22) : null;
-  var wastageTarget = sales > 0 ? (sales * 0.005) : null;
+/* Target Sales, COGS, Wastage come from the uploaded target file.
+   Fall back to daily entries for Sales if the file has no value. */
+var salesTarget   = budget.sales   > 0 ? budget.sales   : (dailyInputTarget > 0 ? dailyInputTarget : null);
+var cogsTarget    = budget.cogs    > 0 ? budget.cogs    : null;
+var wastageTarget = budget.wastage > 0 ? budget.wastage : null;
 
 rows.push(mk(1,  "Sales",                                  sales,       salesTarget, true));
 rows.push(mk(2,  "COST OF GOODS SOLD",                     cogs,        cogsTarget));
@@ -5638,9 +5643,9 @@ async function exportPnlCsv(){
   if(!result.rows.length){ showToast("Nothing to export."); return; }
 
 var remarks = {
-  1:"Take from Daily Input of sales",
-  2:"Take from Daily Input COGS Amount",
-  3:"Take From Daily Input Wastage Amount",
+  1:"Take from target file (Sales row)",
+  2:"Take from target file (COST OF GOODS SOLD row)",
+  3:"Take from target file (Wastage row)",
   4:"( Gross Margin = Sales - Cost of goods sold - Wastage )",
   5:"Take From Daily Input Employee Cost",
   21:"Sum from S.No ( 5 to 20 )",
