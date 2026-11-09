@@ -2453,14 +2453,35 @@ function handlePnlTargetFile(){
       var raw = XLSX.utils.sheet_to_json(sheet, { defval:"" });
       if(!raw.length){ showToast("File is empty."); return; }
 
-      /* Expected columns: Month, DESCRIPTION, <store codes...> */
-      var headerRow = Object.keys(raw[0]);
+      function findKey(rowObj, target){
+        var want = target.replace(/\s+/g, "").toLowerCase();
+        for (var k in rowObj) {
+          if (String(k).replace(/\s+/g, "").toLowerCase() === want) return k;
+        }
+        return null;
+      }
+
+      var firstRow = raw[0];
+      var descKey  = findKey(firstRow, "description");
+      var monthKey = findKey(firstRow, "month");
+
+      if (!descKey) {
+        showToast("DESCRIPTION column not found.");
+        return;
+      }
+      if (!monthKey) {
+        showToast("Month column not found.");
+        return;
+      }
+
+      var headerRow = Object.keys(firstRow);
       var storeCols = headerRow.filter(function(k){
-        return /^\d+$/.test(String(k).trim());    /* only numeric store codes */
+        var s = String(k).trim();
+        return /^\d+$/.test(s) || /^dc\s*\d+$/i.test(s);
       });
 
       if(!storeCols.length){
-        showToast("No store code columns found (expected 222, 240, …).");
+        showToast("No store code columns found (expected 222, DC222, …).");
         return;
       }
 
@@ -2468,35 +2489,34 @@ function handlePnlTargetFile(){
       var errorRows = [];
 
       raw.forEach(function(r, i){
-        var desc = normalizePnlHeader(r["DESCRIPTION"] || r["Description"] || r["description"] || "");
+        var desc = normalizePnlHeader(r[descKey] || "");
         var headKey = PNL_HEAD_MAP[desc];
-        if(!headKey){ /* skip totals, headers, etc. */ return; }
+        if(!headKey){ return; }
 
-        var monthRaw = r["Month"] || r["month"] || "";
+        var monthRaw = r[monthKey];
         var monthIso = "";
         if(monthRaw instanceof Date){
           monthIso = monthRaw.toISOString().slice(0,7) + "-01";
         } else if(typeof monthRaw === "string" && monthRaw.length >= 7){
           monthIso = monthRaw.slice(0,7) + "-01";
         } else if(typeof monthRaw === "number"){
-          /* Excel date serial */
           var jsDate = new Date(Math.round((monthRaw - 25569) * 86400 * 1000));
           monthIso = jsDate.toISOString().slice(0,7) + "-01";
         }
         if(!monthIso){ errorRows.push("Row " + (i+2) + ": missing Month"); return; }
 
         storeCols.forEach(function(col){
-          var storeCode = String(col).trim();
-          if(!/^DC/i.test(storeCode)) storeCode = "DC" + storeCode;
+          var storeCode = String(col).trim().replace(/\s+/g, "").toUpperCase();
+          if(!/^DC/.test(storeCode)) storeCode = "DC" + storeCode;
+
           var val = r[col];
           if(typeof val === "string" && val.startsWith("=")){
-            /* Excel formula string like "=15148" — take the number */
             var m = val.match(/-?\d+(\.\d+)?/);
             val = m ? parseFloat(m[0]) : 0;
           }
           var amount = Number(val) || 0;
           rows.push({
-            store_id: storeCode.toUpperCase(),
+            store_id: storeCode,
             month: monthIso,
             cost_head: headKey,
             target_amount: amount
@@ -2505,13 +2525,12 @@ function handlePnlTargetFile(){
       });
 
       if(!rows.length){
-        showToast("No valid rows found. Check column headings.");
+        showToast("No valid rows found. Check DESCRIPTION wording.");
         return;
       }
 
       pnlPendingRows = rows;
 
-      /* Show preview */
       var months = {};
       var stores = {};
       rows.forEach(function(r){ months[r.month] = true; stores[r.store_id] = true; });
@@ -2534,6 +2553,7 @@ function handlePnlTargetFile(){
   };
   reader.readAsArrayBuffer(inp.files[0]);
 }
+
 
 async function uploadPnlTargets(){
   if(!(currentUser && currentUser.role === "admin")){
