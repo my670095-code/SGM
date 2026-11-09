@@ -3795,42 +3795,68 @@ var budget = {
   var hasTargets = Object.keys(budget).some(function(k){ return budget[k] > 0; });
 
   /* ---- 4) Build the 30 rows ---- */
-  var grossMargin = sales - cogs - wastage;
 
-var ctrlRows = [
-  { sl:5,  desc:"Employee Cost",                          actual: employeeCost,                  target: budget.employee_cost },
-  { sl:6,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,          target: budget.advertisement },
-  { sl:7,  desc:"Travel Expenses",                        actual: budget.travel,                 target: budget.travel },
-  { sl:8,  desc:"Communication",                          actual: budget.communication,          target: budget.communication },
-  { sl:9,  desc:"Recruitment Expenses",                   actual: budget.recruitment,            target: budget.recruitment },
-  { sl:10, desc:"Water",                                  actual: budget.water,                  target: budget.water },
-  { sl:11, desc:"Sewage",                                 actual: budget.sewage,                 target: budget.sewage },
-  { sl:12, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,           target: budget.vehicle_fuel },
-  { sl:13, desc:"Gas & Electricity",                      actual: budget.gas_electricity,        target: budget.gas_electricity },
-  { sl:14, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,               target: budget.cleaning },
-  { sl:15, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,     target: budget.repair_maintenance },
-  { sl:16, desc:"Printing & Stationery",                  actual: budget.printing_stationery,    target: budget.printing_stationery },
-  { sl:17, desc:"Computer Expenses",                      actual: budget.computer,               target: budget.computer },
-  { sl:18, desc:"Entertainment Expenses",                 actual: budget.entertainment,          target: budget.entertainment },
-  { sl:19, desc:"Warehouse & Distribution Charges",       actual: budget.warehouse_distribution, target: budget.warehouse_distribution },
-  { sl:20, desc:"SALES EXPENSES",                         actual: budget.sales_expenses,         target: budget.sales_expenses }
-];
-  var totalCtrl = ctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
-  var netAfterCtrl = grossMargin - totalCtrl;
+  /* --- SL 1-3 targets (from budget file, with daily fallback for Sales) --- */
+  var salesTarget   = budget.sales   > 0 ? budget.sales   : (dailyInputTarget > 0 ? dailyInputTarget : null);
+  var cogsTarget    = budget.cogs    > 0 ? budget.cogs    : null;
+  var wastageTarget = budget.wastage > 0 ? budget.wastage : null;
 
-var unctrlRows = [
-  { sl:23, desc:"GOVERNMENT RELATED EXPENSES", actual: budget.government,        target: budget.government },
-  { sl:24, desc:"BANK CHARGES & COMMISSIONS",  actual: budget.bank_charges,      target: budget.bank_charges },
-  { sl:25, desc:"Rent Expenses",               actual: budget.rent,              target: budget.rent },
-  { sl:26, desc:"PROFESSIONAL FEES",           actual: budget.professional_fees, target: budget.professional_fees },
-  { sl:27, desc:"Training Expenses",           actual: budget.training,          target: budget.training },
-  { sl:28, desc:"Royalty - Franchise Fee",     actual: sales * 0.03,             target: sales * 0.03, isRoyalty:true }
-];
-  var totalUnctrl = unctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
-  var ebitda = netAfterCtrl - totalUnctrl;
+  /* --- SL 4: GROSS MARGIN = SL1 - SL2 - SL3 --- */
+  var grossMargin       = sales - cogs - wastage;
+  var grossMarginTarget = (salesTarget != null && cogsTarget != null && wastageTarget != null)
+                            ? salesTarget - cogsTarget - wastageTarget
+                            : null;
+
+  var ctrlRows = [
+    { sl:5,  desc:"Employee Cost",                          actual: employeeCost,                  target: budget.employee_cost },
+    { sl:6,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,          target: budget.advertisement },
+    { sl:7,  desc:"Travel Expenses",                        actual: budget.travel,                 target: budget.travel },
+    { sl:8,  desc:"Communication",                          actual: budget.communication,          target: budget.communication },
+    { sl:9,  desc:"Recruitment Expenses",                   actual: budget.recruitment,            target: budget.recruitment },
+    { sl:10, desc:"Water",                                  actual: budget.water,                  target: budget.water },
+    { sl:11, desc:"Sewage",                                 actual: budget.sewage,                 target: budget.sewage },
+    { sl:12, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,           target: budget.vehicle_fuel },
+    { sl:13, desc:"Gas & Electricity",                      actual: budget.gas_electricity,        target: budget.gas_electricity },
+    { sl:14, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,               target: budget.cleaning },
+    { sl:15, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,     target: budget.repair_maintenance },
+    { sl:16, desc:"Printing & Stationery",                  actual: budget.printing_stationery,    target: budget.printing_stationery },
+    { sl:17, desc:"Computer Expenses",                      actual: budget.computer,               target: budget.computer },
+    { sl:18, desc:"Entertainment Expenses",                 actual: budget.entertainment,          target: budget.entertainment },
+    { sl:19, desc:"Warehouse & Distribution Charges",       actual: budget.warehouse_distribution, target: budget.warehouse_distribution },
+    { sl:20, desc:"SALES EXPENSES",                         actual: budget.sales_expenses,         target: budget.sales_expenses }
+  ];
+
+  /* --- SL 21: TOTAL CONTROLLABLE EXP = sum(SL 5..20) --- */
+  var totalCtrl       = ctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
+  var totalCtrlTarget = ctrlRows.reduce(function(s,r){ return s + n(r.target); }, 0);
+
+  /* --- SL 22: NET MARGIN AFTER CTRL = GROSS MARGIN - TOTAL CTRL --- */
+  var netAfterCtrl       = grossMargin - totalCtrl;
+  var netAfterCtrlTarget = (grossMarginTarget != null && totalCtrlTarget > 0)
+                             ? grossMarginTarget - totalCtrlTarget
+                             : null;
+
+  var unctrlRows = [
+    { sl:23, desc:"GOVERNMENT RELATED EXPENSES", actual: budget.government,        target: budget.government },
+    { sl:24, desc:"BANK CHARGES & COMMISSIONS",  actual: budget.bank_charges,      target: budget.bank_charges },
+    { sl:25, desc:"Rent Expenses",               actual: budget.rent,              target: budget.rent },
+    { sl:26, desc:"PROFESSIONAL FEES",           actual: budget.professional_fees, target: budget.professional_fees },
+    { sl:27, desc:"Training Expenses",           actual: budget.training,          target: budget.training },
+    { sl:28, desc:"Royalty - Franchise Fee",     actual: sales * 0.03,             target: sales * 0.03, isRoyalty:true }
+  ];
+
+  /* --- SL 29: TOTAL UNCONTROLLABLE EXP = sum(SL 23..28) --- */
+  var totalUnctrl       = unctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
+  var totalUnctrlTarget = unctrlRows.reduce(function(s,r){ return s + n(r.target); }, 0);
+
+  /* --- SL 30: EBITDA = NET MARGIN AFTER CTRL - TOTAL UNCTRL --- */
+  var ebitda       = netAfterCtrl - totalUnctrl;
+  var ebitdaTarget = (netAfterCtrlTarget != null && totalUnctrlTarget > 0)
+                       ? netAfterCtrlTarget - totalUnctrlTarget
+                       : null;
 
   /* ---- 5) Assemble with % + variance ---- */
-    function mk(sl, desc, actual, target, isRevenue){
+  function mk(sl, desc, actual, target, isRevenue){
     var pct = sales === 0 ? 0 : (actual / sales) * 100;
     var tgtPct = (target != null && sales !== 0) ? (target / sales) * 100 : null;
     var variance = target != null ? (actual - target) : null;
@@ -3841,23 +3867,18 @@ var unctrlRows = [
       variance: variance, isRevenue: !!isRevenue
     };
   }
-    var rows = [];
-/* Target Sales, COGS, Wastage come from the uploaded target file.
-   Fall back to daily entries for Sales if the file has no value. */
-var salesTarget   = budget.sales   > 0 ? budget.sales   : (dailyInputTarget > 0 ? dailyInputTarget : null);
-var cogsTarget    = budget.cogs    > 0 ? budget.cogs    : null;
-var wastageTarget = budget.wastage > 0 ? budget.wastage : null;
 
-rows.push(mk(1,  "Sales",                                  sales,       salesTarget, true));
-rows.push(mk(2,  "COST OF GOODS SOLD",                     cogs,        cogsTarget));
-rows.push(mk(3,  "Wastage",                                wastage,     wastageTarget));
-rows.push(mk(4,  "GROSS MARGIN",                           grossMargin, null, true));
-ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
-rows.push(mk(21, "TOTAL CONTROLLABLE EXP",                 totalCtrl,   ctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
-rows.push(mk(22, "NET MARGIN AFTER CONTROLLABLE EXP",      netAfterCtrl, null, true));
-unctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
-rows.push(mk(29, "TOTAL UNCONTROLLABLE EXP",               totalUnctrl, unctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
-rows.push(mk(30, "EBITDA (OPERATIONAL)",                   ebitda,      null, true));
+  var rows = [];
+  rows.push(mk(1,  "Sales",                                  sales,                salesTarget,        true));
+  rows.push(mk(2,  "COST OF GOODS SOLD",                     cogs,                 cogsTarget));
+  rows.push(mk(3,  "Wastage",                                wastage,              wastageTarget));
+  rows.push(mk(4,  "GROSS MARGIN",                           grossMargin,          grossMarginTarget,  true));
+  ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
+  rows.push(mk(21, "TOTAL CONTROLLABLE EXP",                 totalCtrl,            totalCtrlTarget));
+  rows.push(mk(22, "NET MARGIN AFTER CONTROLLABLE EXP",      netAfterCtrl,         netAfterCtrlTarget, true));
+  unctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
+  rows.push(mk(29, "TOTAL UNCONTROLLABLE EXP",               totalUnctrl,          totalUnctrlTarget));
+  rows.push(mk(30, "EBITDA (OPERATIONAL)",                   ebitda,               ebitdaTarget,       true));
 
   return { rows: rows, sales: sales, hasTargets: hasTargets, recordCount: records.length };
 }
