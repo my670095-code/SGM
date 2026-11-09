@@ -3715,7 +3715,7 @@ function addMonths(monthIso, delta){
 
 /* P&L rows where Actual = Target (budget-only heads, no daily input).
    Used to hide the variance column for these rows in screen, PDF and CSV. */
-var PNL_BUDGET_ONLY_SL = { 7:true, 18:true, 19:true, 27:true };
+var PNL_BUDGET_ONLY_SL = { 18:true, 19:true, 27:true };
 
 /* Returns { rows: [...30 items...], sales, hasTargets } */
 async function calculatePnl(storeId, fromIso, toIso){
