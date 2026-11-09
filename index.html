@@ -2374,6 +2374,7 @@ async function sbFetchSalary(){
 var PNL_HEAD_MAP = {
   "employee cost":                          "employee_cost",
   "advertisements, marketing & promotions": "advertisement",
+  "travel expenses":                        "travel",
   "communication":                          "communication",
   "recruitment expenses":                   "recruitment",
   "water":                                  "water",
@@ -2384,12 +2385,15 @@ var PNL_HEAD_MAP = {
   "repair & maintenance":                   "repair_maintenance",
   "printing & stationery":                  "printing_stationery",
   "computer expenses":                      "computer",
+  "entertainment expenses":                 "entertainment",
+  "warehouse & distribution charges":       "warehouse_distribution",
   "sales expenses":                         "sales_expenses",
   "government related expenses":            "government",
   "bank charges & commissions":             "bank_charges",
-  "handling & transportation expense":      "handling_transport",
   "rent expenses":                          "rent",
-  "professional fees":                      "professional_fees"
+  "professional fees":                      "professional_fees",
+  "training expenses":                      "training",
+  "royalty - franchise fee":                "royalty"
 };
 
 /* Reverse map: key → Excel description (used for CSV/PDF export) */
@@ -2432,9 +2436,7 @@ async function sbUpsertPnlTargets(rows){
 var pnlPendingRows = null;
 
 function normalizePnlHeader(h){
-  return String(h==null?"":h).trim().toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/&amp;/g,"&");
+  return String(h==null?"":h).trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function handlePnlTargetFile(){
@@ -3688,10 +3690,13 @@ function addMonths(monthIso, delta){
   return isoDate(d);
 }
 
-/* Returns { rows: [...27 items...], sales, hasTargets } */
+/* P&L rows where Actual = Target (budget-only heads, no daily input).
+   Used to hide the variance column for these rows in screen, PDF and CSV. */
+var PNL_BUDGET_ONLY_SL = { 7:true, 18:true, 19:true, 27:true };
+
+/* Returns { rows: [...30 items...], sales, hasTargets } */
 async function calculatePnl(storeId, fromIso, toIso){
-  /* ---- 1) Pull daily records in range ---- */
-    /* ---- 1) Pull daily records in range ---- */
+/* ---- 1) Pull daily records in range ---- */
   var records = await sbLoadRecords([storeId], fromIso, toIso);
   var sales = 0, cogs = 0, wastage = 0, employeeCost = 0, dailyInputTarget = 0;
   records.forEach(function(r){
@@ -3738,57 +3743,63 @@ async function calculatePnl(storeId, fromIso, toIso){
     return total;
   }
 
-  var budget = {
-    employee_cost:       prorate("employee_cost"),      /* for reference; Employee Cost row uses ACTUAL */
-    advertisement:       prorate("advertisement"),
-    communication:       prorate("communication"),
-    recruitment:         prorate("recruitment"),
-    water:               prorate("water"),
-    sewage:              prorate("sewage"),
-    vehicle_fuel:        prorate("vehicle_fuel"),
-    gas_electricity:     prorate("gas_electricity"),
-    cleaning:            prorate("cleaning"),
-    repair_maintenance:  prorate("repair_maintenance"),
-    printing_stationery: prorate("printing_stationery"),
-    computer:            prorate("computer"),
-    sales_expenses:      prorate("sales_expenses"),
-    government:          prorate("government"),
-    bank_charges:        prorate("bank_charges"),
-    handling_transport:  prorate("handling_transport"),
-    rent:                prorate("rent"),
-    professional_fees:   prorate("professional_fees")
-  };
+var budget = {
+  employee_cost:          prorate("employee_cost"),
+  advertisement:          prorate("advertisement"),
+  travel:                 prorate("travel"),
+  communication:          prorate("communication"),
+  recruitment:            prorate("recruitment"),
+  water:                  prorate("water"),
+  sewage:                 prorate("sewage"),
+  vehicle_fuel:           prorate("vehicle_fuel"),
+  gas_electricity:        prorate("gas_electricity"),
+  cleaning:               prorate("cleaning"),
+  repair_maintenance:     prorate("repair_maintenance"),
+  printing_stationery:    prorate("printing_stationery"),
+  computer:               prorate("computer"),
+  entertainment:          prorate("entertainment"),
+  warehouse_distribution: prorate("warehouse_distribution"),
+  sales_expenses:         prorate("sales_expenses"),
+  government:             prorate("government"),
+  bank_charges:           prorate("bank_charges"),
+  rent:                   prorate("rent"),
+  professional_fees:      prorate("professional_fees"),
+  training:               prorate("training")
+};
   var hasTargets = Object.keys(budget).some(function(k){ return budget[k] > 0; });
 
-  /* ---- 4) Build the 27 rows ---- */
+  /* ---- 4) Build the 30 rows ---- */
   var grossMargin = sales - cogs - wastage;
 
-  var ctrlRows = [
-    { sl:5,  desc:"Employee Cost",                          actual: employeeCost,             target: budget.employee_cost },
-    { sl:6,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,     target: budget.advertisement },
-    { sl:7,  desc:"Communication",                          actual: budget.communication,     target: budget.communication },
-    { sl:8,  desc:"Recruitment Expenses",                   actual: budget.recruitment,       target: budget.recruitment },
-    { sl:9,  desc:"Water",                                  actual: budget.water,             target: budget.water },
-    { sl:10, desc:"Sewage",                                 actual: budget.sewage,            target: budget.sewage },
-    { sl:11, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,      target: budget.vehicle_fuel },
-    { sl:12, desc:"Gas & Electricity",                      actual: budget.gas_electricity,   target: budget.gas_electricity },
-    { sl:13, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,          target: budget.cleaning },
-    { sl:14, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,target: budget.repair_maintenance },
-    { sl:15, desc:"Printing & Stationery",                  actual: budget.printing_stationery,target: budget.printing_stationery },
-    { sl:16, desc:"Computer Expenses",                      actual: budget.computer,          target: budget.computer },
-    { sl:17, desc:"Sales Expenses",                         actual: budget.sales_expenses,    target: budget.sales_expenses }
-  ];
+var ctrlRows = [
+  { sl:5,  desc:"Employee Cost",                          actual: employeeCost,                  target: budget.employee_cost },
+  { sl:6,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,          target: budget.advertisement },
+  { sl:7,  desc:"Travel Expenses",                        actual: budget.travel,                 target: budget.travel },
+  { sl:8,  desc:"Communication",                          actual: budget.communication,          target: budget.communication },
+  { sl:9,  desc:"Recruitment Expenses",                   actual: budget.recruitment,            target: budget.recruitment },
+  { sl:10, desc:"Water",                                  actual: budget.water,                  target: budget.water },
+  { sl:11, desc:"Sewage",                                 actual: budget.sewage,                 target: budget.sewage },
+  { sl:12, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,           target: budget.vehicle_fuel },
+  { sl:13, desc:"Gas & Electricity",                      actual: budget.gas_electricity,        target: budget.gas_electricity },
+  { sl:14, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,               target: budget.cleaning },
+  { sl:15, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,     target: budget.repair_maintenance },
+  { sl:16, desc:"Printing & Stationery",                  actual: budget.printing_stationery,    target: budget.printing_stationery },
+  { sl:17, desc:"Computer Expenses",                      actual: budget.computer,               target: budget.computer },
+  { sl:18, desc:"Entertainment Expenses",                 actual: budget.entertainment,          target: budget.entertainment },
+  { sl:19, desc:"Warehouse & Distribution Charges",       actual: budget.warehouse_distribution, target: budget.warehouse_distribution },
+  { sl:20, desc:"SALES EXPENSES",                         actual: budget.sales_expenses,         target: budget.sales_expenses }
+];
   var totalCtrl = ctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
   var netAfterCtrl = grossMargin - totalCtrl;
 
-  var unctrlRows = [
-    { sl:20, desc:"GOVERNMENT RELATED EXPENSES",    actual: budget.government,         target: budget.government },
-    { sl:21, desc:"BANK CHARGES & COMMISSIONS",     actual: budget.bank_charges,       target: budget.bank_charges },
-    { sl:22, desc:"Handling & Transportation Expense",actual: budget.handling_transport,target: budget.handling_transport },
-    { sl:23, desc:"Rent Expenses",                  actual: budget.rent,               target: budget.rent },
-    { sl:24, desc:"Royalty",                        actual: sales * 0.03,              target: sales * 0.03, isRoyalty:true },
-    { sl:25, desc:"Professional Fees",              actual: budget.professional_fees,  target: budget.professional_fees }
-  ];
+var unctrlRows = [
+  { sl:23, desc:"GOVERNMENT RELATED EXPENSES", actual: budget.government,        target: budget.government },
+  { sl:24, desc:"BANK CHARGES & COMMISSIONS",  actual: budget.bank_charges,      target: budget.bank_charges },
+  { sl:25, desc:"Rent Expenses",               actual: budget.rent,              target: budget.rent },
+  { sl:26, desc:"PROFESSIONAL FEES",           actual: budget.professional_fees, target: budget.professional_fees },
+  { sl:27, desc:"Training Expenses",           actual: budget.training,          target: budget.training },
+  { sl:28, desc:"Royalty - Franchise Fee",     actual: sales * 0.03,             target: sales * 0.03, isRoyalty:true }
+];
   var totalUnctrl = unctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
   var ebitda = netAfterCtrl - totalUnctrl;
 
@@ -3812,16 +3823,16 @@ async function calculatePnl(storeId, fromIso, toIso){
   var cogsTarget = sales > 0 ? (sales * 0.22) : null;
   var wastageTarget = sales > 0 ? (sales * 0.005) : null;
 
-  rows.push(mk(1,  "Sales",                    sales,       salesTarget, true));
-  rows.push(mk(2,  "COST OF GOODS SOLD",       cogs,        cogsTarget));
-  rows.push(mk(3,  "Wastage",                  wastage,     wastageTarget));
-  rows.push(mk(4,  "GROSS MARGIN",             grossMargin, null, true));
-  ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
-  rows.push(mk(18, "TOTAL CONTROLLABLE EXP",   totalCtrl,   ctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
-  rows.push(mk(19, "NET MARGIN AFTER CONTROLLABLE EXP", netAfterCtrl, null, true));
-  unctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
-  rows.push(mk(26, "TOTAL UNCONTROLLABLE EXP", totalUnctrl, unctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
-  rows.push(mk(27, "EBITDA (OPERATIONAL)",     ebitda,      null, true));
+rows.push(mk(1,  "Sales",                                  sales,       salesTarget, true));
+rows.push(mk(2,  "COST OF GOODS SOLD",                     cogs,        cogsTarget));
+rows.push(mk(3,  "Wastage",                                wastage,     wastageTarget));
+rows.push(mk(4,  "GROSS MARGIN",                           grossMargin, null, true));
+ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
+rows.push(mk(21, "TOTAL CONTROLLABLE EXP",                 totalCtrl,   ctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
+rows.push(mk(22, "NET MARGIN AFTER CONTROLLABLE EXP",      netAfterCtrl, null, true));
+unctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
+rows.push(mk(29, "TOTAL UNCONTROLLABLE EXP",               totalUnctrl, unctrlRows.reduce(function(s,r){return s+n(r.target);},0)));
+rows.push(mk(30, "EBITDA (OPERATIONAL)",                   ebitda,      null, true));
 
   return { rows: rows, sales: sales, hasTargets: hasTargets, recordCount: records.length };
 }
@@ -5606,23 +5617,23 @@ async function exportPnlCsv(){
   var result = await calculatePnl(storeId, from, to);
   if(!result.rows.length){ showToast("Nothing to export."); return; }
 
-  var remarks = {
-    1:"Take from Daily Input of sales",
-    2:"Take from Daily Input COGS Amount",
-    3:"Take From Daily Input Wastage Amount",
-    4:"( Gross Margin = Sales - Cost of goods sold - Wastage )",
-    5:"Take From Daily Input Employee Cost",
-    18:"Sum from S.No ( 5 to 17 )",
-    19:"This is GROSS MARGIN - Total Controllable Exp",
-    24:"Royalty is fixed 3 % of sales",
-    26:"Sum from S.No ( 20 to 25 )",
-    27:"This is Net Margin After Controllable exp - Total Uncontrollable exp"
-  };
+var remarks = {
+  1:"Take from Daily Input of sales",
+  2:"Take from Daily Input COGS Amount",
+  3:"Take From Daily Input Wastage Amount",
+  4:"( Gross Margin = Sales - Cost of goods sold - Wastage )",
+  5:"Take From Daily Input Employee Cost",
+  21:"Sum from S.No ( 5 to 20 )",
+  22:"This is GROSS MARGIN - Total Controllable Exp",
+  28:"Royalty is fixed 3 % of sales",
+  29:"Sum from S.No ( 23 to 28 )",
+  30:"This is Net Margin After Controllable exp - Total Uncontrollable exp"
+};
 
   var csv = [["SL NO","DESCRIPTION","Contribution","Contribution %","Target SAR","Target %","Variance","Remarks"]];
   result.rows.forEach(function(r){
     var rem = remarks[r.sl];
-    if(!rem && ((r.sl >= 6 && r.sl <= 17) || (r.sl >= 20 && r.sl <= 25)) && r.sl !== 24){
+    if(!rem && ((r.sl >= 6 && r.sl <= 20) || (r.sl >= 23 && r.sl <= 27))){
       rem = "Target for that store divided by no of days in the month * no of days selected";
     }
     rem = rem || "";
@@ -5633,7 +5644,7 @@ async function exportPnlCsv(){
       r.contributionPct == null ? "" : round(r.contributionPct, 2),
       r.targetSar == null ? "" : round(r.targetSar, 2),
       r.targetPct == null ? "" : round(r.targetPct, 2),
-      r.variance == null ? "" : round(r.variance, 2),
+      (r.variance == null || PNL_BUDGET_ONLY_SL[r.sl]) ? "" : round(r.variance, 2),
       rem
     ]);
   });
@@ -5658,23 +5669,15 @@ async function exportPnlPdf(){
   var doc = getPdfContext("Live P&L", subtitle);
 
   var head = [["SL","DESCRIPTION","Contribution","Contrib %","Target SAR","Tgt %","Variance"]];
-    var body = result.rows.map(function(r){
-    // Calculate target % manually for the PDF
-    var tgtPct = null;
-    if (r.targetSar !== null) {
-      if (r.sl === 2) tgtPct = 22.0;
-      else if (r.sl === 3) tgtPct = 0.5;
-      else tgtPct = r.targetPct;
-    }
-
+  var body = result.rows.map(function(r){
     return [
       String(r.sl),
       r.description,
       fmtPnlMoney(r.contribution),
       r.contributionPct == null ? "—" : fmtPnlPct(r.contributionPct),
       r.targetSar == null ? "—" : fmtPnlMoney(r.targetSar),
-      tgtPct == null ? "—" : fmtPnlPct(tgtPct),
-      r.variance == null ? "—" : (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance)
+      r.targetPct == null ? "—" : fmtPnlPct(r.targetPct),
+      (r.variance == null || PNL_BUDGET_ONLY_SL[r.sl]) ? "—" : (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance)
     ];
   });
 
@@ -5698,7 +5701,7 @@ async function exportPnlPdf(){
     didParseCell: function(data){
       if(data.section === "body"){
         var sl = parseInt(data.row.raw[0], 10);
-        if(sl === 4 || sl === 18 || sl === 19 || sl === 26 || sl === 27){
+        if(sl === 4 || sl === 21 || sl === 22 || sl === 29 || sl === 30){
           data.cell.styles.fontStyle = "bold";
           data.cell.styles.fillColor = [230,240,245];
         }
@@ -5778,13 +5781,13 @@ async function renderPnl(){
   
   result.rows.forEach(function(r){
     // Determine if this is a summary row to highlight
-    var isSummary = (r.sl === 4 || r.sl === 18 || r.sl === 19 || r.sl === 26 || r.sl === 27);
+    var isSummary = (r.sl === 4 || r.sl === 21 || r.sl === 22 || r.sl === 29 || r.sl === 30);
     
     // Determine variance color class
     var cls = pnlRowClass(r);
     
     var varText = "—";
-    if(r.variance != null){
+    if(r.variance != null && !PNL_BUDGET_ONLY_SL[r.sl]){
       var sign = r.variance >= 0 ? "+" : "";
       varText = sign + fmtPnlMoney(r.variance);
     }
@@ -7800,8 +7803,15 @@ function downloadUserImportTemplate(){
   XLSX.writeFile(wb, "SGM_Users_Template.xlsx");
   showToast("Template downloaded.");
 }
-  function downloadPnlTargetTemplate(){
-  var heads = Object.keys(PNL_HEAD_MAP);   /* 18 Excel descriptions */
+ function downloadPnlTargetTemplate(){
+  /* Dedupe by target key so aliases don't produce duplicate rows */
+  var seen = {}, heads = [];
+  Object.keys(PNL_HEAD_MAP).forEach(function(k){
+    var v = PNL_HEAD_MAP[k];
+    if(seen[v]) return;
+    seen[v] = true;
+    heads.push(k);
+  });
   var header = ["Month", "DESCRIPTION", "222", "240", "245", "265", "280", "282", "288"];
   var sampleMonth = "2026-11-01";
   var rows = [header];
