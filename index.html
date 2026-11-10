@@ -3724,7 +3724,10 @@ async function calculatePnl(storeId, fromIso, toIso){
   records.forEach(function(r){
     var c = calculate(r);
     sales           += n(c.salesWithoutTax);
-    cogs            += Math.abs(n(r.COGS));   // Excel: COGS only, no wastage
+    
+    // NEW: Add COGS and Wastage together for the actual COGS value
+    cogs            += Math.abs(n(r.COGS)) + Math.abs(n(r.wastage)); 
+    
     employeeCost    += n(c.employeeCost);
     dailyInputTarget += n(r.targetSales);
   });
