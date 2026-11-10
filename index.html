@@ -5671,8 +5671,8 @@ async function fetchPlanForPeriod(scopeDesc, periodStart, periodType){
 function fmtPnlMoney(v){
   if(v == null || isNaN(v)) return "—";
   return new Intl.NumberFormat("en-SA",{
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(v);
 }
 function fmtPnlPct(v){
