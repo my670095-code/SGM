@@ -5870,11 +5870,21 @@ async function renderPnl(){
       varPctText = (r.variancePct >= 0 ? "+" : "") + fmtPnlPct(r.variancePct);
     }
 
-    /* Revenue rows green when positive, cost rows green when negative */
+     /* 
+       1) Gross Margin (3), Net Margin (21), EBITDA (29): 
+          Positive = Green (good), Negative = Red (bad)
+       2) All other rows: 
+          Positive = Red (bad), Negative = Green (good)
+    */
     var cls = "";
     if(r.variance != null){
-      if(r.isRevenue) cls = r.variance >= 0 ? "good" : "bad";
-      else            cls = r.variance <= 0 ? "good" : "bad";
+      var isProfitRow = (r.sl === 3 || r.sl === 21 || r.sl === 29);
+      
+      if(isProfitRow){
+        cls = r.variance >= 0 ? "good" : "bad";
+      } else {
+        cls = r.variance > 0 ? "bad" : (r.variance < 0 ? "good" : "");
+      }
     }
 
     tbody += '<tr style="' + rowStyle + '">' +
