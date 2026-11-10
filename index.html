@@ -3721,14 +3721,14 @@ var PNL_BUDGET_ONLY_SL = { 18:true, 19:true, 27:true };
 async function calculatePnl(storeId, fromIso, toIso){
 /* ---- 1) Pull daily records in range ---- */
   var records = await sbLoadRecords([storeId], fromIso, toIso);
-  var sales = 0, cogs = 0, wastage = 0, employeeCost = 0, dailyInputTarget = 0;
+  var sales = 0, cogs = 0, employeeCost = 0, dailyInputTarget = 0;
   records.forEach(function(r){
     var c = calculate(r);
     sales        += n(c.salesWithoutTax);
-    cogs         += Math.abs(n(r.COGS));
-    wastage      += n(r.wastage);
+    // ADDED WASTAGE TO COGS HERE
+    cogs         += Math.abs(n(r.COGS)) + n(r.wastage); 
     employeeCost += n(c.employeeCost);
-    dailyInputTarget += n(r.targetSales); // <-- Added this line
+    dailyInputTarget += n(r.targetSales);
   });
 
   /* ---- 2) Fetch targets for every month in range ---- */
@@ -3768,8 +3768,7 @@ async function calculatePnl(storeId, fromIso, toIso){
 
 var budget = {
    sales:                  prorate("sales"),
-  cogs:                   prorate("cogs"),
-  wastage:                prorate("wastage"),
+  cogs:                   prorate("cogs") + prorate("wastage"), 
   employee_cost:          prorate("employee_cost"),
   advertisement:          prorate("advertisement"),
   travel:                 prorate("travel"),
@@ -3799,12 +3798,12 @@ var budget = {
   /* --- SL 1-3 targets (from budget file, with daily fallback for Sales) --- */
   var salesTarget   = budget.sales   > 0 ? budget.sales   : (dailyInputTarget > 0 ? dailyInputTarget : null);
   var cogsTarget    = budget.cogs    > 0 ? budget.cogs    : null;
-  var wastageTarget = budget.wastage > 0 ? budget.wastage : null;
 
-  /* --- SL 4: GROSS MARGIN = SL1 - SL2 - SL3 --- */
-  var grossMargin       = sales - cogs - wastage;
-  var grossMarginTarget = (salesTarget != null && cogsTarget != null && wastageTarget != null)
-                            ? salesTarget - cogsTarget - wastageTarget
+  /* --- SL 4: GROSS MARGIN = SL1 - SL2 --- */
+  // Gross margin now only subtracts COGS (since wastage is inside COGS now)
+  var grossMargin       = sales - cogs;
+  var grossMarginTarget = (salesTarget != null && cogsTarget != null)
+                            ? salesTarget - cogsTarget
                             : null;
 
   var ctrlRows = [
@@ -3871,7 +3870,6 @@ var budget = {
   var rows = [];
   rows.push(mk(1,  "Sales",                                  sales,                salesTarget,        true));
   rows.push(mk(2,  "COST OF GOODS SOLD",                     cogs,                 cogsTarget));
-  rows.push(mk(3,  "Wastage",                                wastage,              wastageTarget));
   rows.push(mk(4,  "GROSS MARGIN",                           grossMargin,          grossMarginTarget,  true));
   ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
   rows.push(mk(21, "TOTAL CONTROLLABLE EXP",                 totalCtrl,            totalCtrlTarget));
