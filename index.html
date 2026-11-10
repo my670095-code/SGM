@@ -1602,7 +1602,7 @@ details.group>summary::-webkit-details-marker{display:none}
       </div>
       <div class="table-card"><table id="monthlyTable" class="report-2col"></table></div> <div id="inlineActionPlanHostMonthly"></div>
     </section>
-    <!-- ============ LIVE P&L ============ -->
+<!-- ============ LIVE P&L ============ -->
 <section id="view-pnl" class="view">
   <div class="page-head">
     <div>
@@ -3697,7 +3697,7 @@ function calculate(record){
   });
 }
   /* ============================================================
-   LIVE P&L ENGINE — 27-row statement
+   LIVE P&L ENGINE — 29-row statement (matches PNL Working.xlsx, SL 1-29)
    ============================================================ */
 function daysInMonth(monthIso){        /* "2026-11" or "2026-11-01" */
   var ym = String(monthIso).slice(0,7);
@@ -3713,21 +3713,19 @@ function addMonths(monthIso, delta){
   return isoDate(d);
 }
 
-/* P&L rows where Actual = Target (budget-only heads, no daily input).
-   Used to hide the variance column for these rows in screen, PDF and CSV. */
-var PNL_BUDGET_ONLY_SL = { 18:true, 19:true, 27:true };
 
-/* Returns { rows: [...30 items...], sales, hasTargets } */
+
+
+/* Returns { rows: [...29 items (SL 1-29)...], sales, hasTargets, recordCount } */
 async function calculatePnl(storeId, fromIso, toIso){
 /* ---- 1) Pull daily records in range ---- */
   var records = await sbLoadRecords([storeId], fromIso, toIso);
   var sales = 0, cogs = 0, employeeCost = 0, dailyInputTarget = 0;
   records.forEach(function(r){
     var c = calculate(r);
-    sales        += n(c.salesWithoutTax);
-    // ADDED WASTAGE TO COGS HERE
-    cogs         += Math.abs(n(r.COGS)) + n(r.wastage); 
-    employeeCost += n(c.employeeCost);
+    sales           += n(c.salesWithoutTax);
+    cogs            += Math.abs(n(r.COGS));   // Excel: COGS only, no wastage
+    employeeCost    += n(c.employeeCost);
     dailyInputTarget += n(r.targetSales);
   });
 
@@ -3736,12 +3734,7 @@ async function calculatePnl(storeId, fromIso, toIso){
   var toMonth   = monthKeyOf(toIso);
   var targets = {};
   try {
-    var m = fromMonth;
-    while(m <= toMonth){
-      var chunk = await sbFetchPnlTargets(storeId, m, m);
-      Object.assign(targets, chunk);
-      m = addMonths(m, 1);
-    }
+    targets = await sbFetchPnlTargets(storeId, fromMonth, toMonth);
   } catch(e){ console.warn("P&L targets fetch:", e); }
 
   /* ---- 3) Prorate each cost head across months in range ---- */
@@ -3766,9 +3759,9 @@ async function calculatePnl(storeId, fromIso, toIso){
     return total;
   }
 
-var budget = {
-   sales:                  prorate("sales"),
-  cogs:                   prorate("cogs") + prorate("wastage"), 
+  var budget = {
+  sales:                  prorate("sales"),
+  cogs:                   prorate("cogs"),               // ← no wastage
   employee_cost:          prorate("employee_cost"),
   advertisement:          prorate("advertisement"),
   travel:                 prorate("travel"),
@@ -3789,17 +3782,18 @@ var budget = {
   bank_charges:           prorate("bank_charges"),
   rent:                   prorate("rent"),
   professional_fees:      prorate("professional_fees"),
-  training:               prorate("training")
+  training:               prorate("training"),
+  royalty:                prorate("royalty")             // ← read from file
 };
   var hasTargets = Object.keys(budget).some(function(k){ return budget[k] > 0; });
 
-  /* ---- 4) Build the 30 rows ---- */
+  /* ---- 4) Build the 29 rows (SL 1-29) ---- */
 
-  /* --- SL 1-3 targets (from budget file, with daily fallback for Sales) --- */
+  /* --- SL 1-2 targets (from budget file, with daily fallback for Sales) --- */
   var salesTarget   = budget.sales   > 0 ? budget.sales   : (dailyInputTarget > 0 ? dailyInputTarget : null);
   var cogsTarget    = budget.cogs    > 0 ? budget.cogs    : null;
 
-  /* --- SL 4: GROSS MARGIN = SL1 - SL2 --- */
+ /* --- SL 3: GROSS MARGIN = SL1 - SL2 --- */
   // Gross margin now only subtracts COGS (since wastage is inside COGS now)
   var grossMargin       = sales - cogs;
   var grossMarginTarget = (salesTarget != null && cogsTarget != null)
@@ -3807,48 +3801,51 @@ var budget = {
                             : null;
 
   var ctrlRows = [
-    { sl:5,  desc:"Employee Cost",                          actual: employeeCost,                  target: budget.employee_cost },
-    { sl:6,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,          target: budget.advertisement },
-    { sl:7,  desc:"Travel Expenses",                        actual: budget.travel,                 target: budget.travel },
-    { sl:8,  desc:"Communication",                          actual: budget.communication,          target: budget.communication },
+    { sl:4,  desc:"Employee Cost",                          actual: employeeCost,                  target: budget.employee_cost },
+    { sl:5,  desc:"Advertisements, Marketing & Promotions", actual: budget.advertisement,          target: budget.advertisement },
+    { sl:6,  desc:"Travel Expenses",                        actual: budget.travel,                 target: budget.travel },
+    { sl:7,  desc:"Communication",                          actual: budget.communication,          target: budget.communication },
     { sl:9,  desc:"Recruitment Expenses",                   actual: budget.recruitment,            target: budget.recruitment },
-    { sl:10, desc:"Water",                                  actual: budget.water,                  target: budget.water },
-    { sl:11, desc:"Sewage",                                 actual: budget.sewage,                 target: budget.sewage },
-    { sl:12, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,           target: budget.vehicle_fuel },
-    { sl:13, desc:"Gas & Electricity",                      actual: budget.gas_electricity,        target: budget.gas_electricity },
-    { sl:14, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,               target: budget.cleaning },
-    { sl:15, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,     target: budget.repair_maintenance },
-    { sl:16, desc:"Printing & Stationery",                  actual: budget.printing_stationery,    target: budget.printing_stationery },
-    { sl:17, desc:"Computer Expenses",                      actual: budget.computer,               target: budget.computer },
-    { sl:18, desc:"Entertainment Expenses",                 actual: budget.entertainment,          target: budget.entertainment },
-    { sl:19, desc:"Warehouse & Distribution Charges",       actual: budget.warehouse_distribution, target: budget.warehouse_distribution },
-    { sl:20, desc:"SALES EXPENSES",                         actual: budget.sales_expenses,         target: budget.sales_expenses }
+    { sl:8,  desc:"Water",                                  actual: budget.water,                  target: budget.water },
+    { sl:10, desc:"Sewage",                                 actual: budget.sewage,                 target: budget.sewage },
+    { sl:11, desc:"Vehicle Fuel",                           actual: budget.vehicle_fuel,           target: budget.vehicle_fuel },
+    { sl:12, desc:"Gas & Electricity",                      actual: budget.gas_electricity,        target: budget.gas_electricity },
+    { sl:13, desc:"Cleaning & Cleaning Materials",          actual: budget.cleaning,               target: budget.cleaning },
+    { sl:14, desc:"Repair & Maintenance",                   actual: budget.repair_maintenance,     target: budget.repair_maintenance },
+    { sl:15, desc:"Printing & Stationery",                  actual: budget.printing_stationery,    target: budget.printing_stationery },
+    { sl:16, desc:"Computer Expenses",                      actual: budget.computer,               target: budget.computer },
+    { sl:17, desc:"Entertainment Expenses",                 actual: budget.entertainment,          target: budget.entertainment },
+    { sl:18, desc:"Warehouse & Distribution Charges",       actual: budget.warehouse_distribution, target: budget.warehouse_distribution },
+    { sl:19, desc:"SALES EXPENSES",                         actual: budget.sales_expenses,         target: budget.sales_expenses }
   ];
 
-  /* --- SL 21: TOTAL CONTROLLABLE EXP = sum(SL 5..20) --- */
+ /* --- SL 20: TOTAL CONTROLLABLE EXP = sum(SL 4..19) --- */
   var totalCtrl       = ctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
   var totalCtrlTarget = ctrlRows.reduce(function(s,r){ return s + n(r.target); }, 0);
 
-  /* --- SL 22: NET MARGIN AFTER CTRL = GROSS MARGIN - TOTAL CTRL --- */
+ /* --- SL 21: NET MARGIN AFTER CTRL = GROSS MARGIN - TOTAL CTRL --- */
   var netAfterCtrl       = grossMargin - totalCtrl;
   var netAfterCtrlTarget = (grossMarginTarget != null && totalCtrlTarget > 0)
                              ? grossMarginTarget - totalCtrlTarget
                              : null;
 
   var unctrlRows = [
-    { sl:23, desc:"GOVERNMENT RELATED EXPENSES", actual: budget.government,        target: budget.government },
-    { sl:24, desc:"BANK CHARGES & COMMISSIONS",  actual: budget.bank_charges,      target: budget.bank_charges },
-    { sl:25, desc:"Rent Expenses",               actual: budget.rent,              target: budget.rent },
-    { sl:26, desc:"PROFESSIONAL FEES",           actual: budget.professional_fees, target: budget.professional_fees },
-    { sl:27, desc:"Training Expenses",           actual: budget.training,          target: budget.training },
-    { sl:28, desc:"Royalty - Franchise Fee",     actual: sales * 0.03,             target: sales * 0.03, isRoyalty:true }
+    { sl:22, desc:"GOVERNMENT RELATED EXPENSES", actual: budget.government,        target: budget.government },
+    { sl:23, desc:"BANK CHARGES & COMMISSIONS",  actual: budget.bank_charges,      target: budget.bank_charges },
+    { sl:24, desc:"Rent Expenses",               actual: budget.rent,              target: budget.rent },
+    { sl:25, desc:"PROFESSIONAL FEES",           actual: budget.professional_fees, target: budget.professional_fees },
+    { sl:26, desc:"Training Expenses",           actual: budget.training,          target: budget.training },
+    { sl:27, desc:"Royalty - Franchise Fee",
+      actual: sales * 0.03,
+      target: (budget.royalty > 0 ? budget.royalty : (salesTarget != null ? salesTarget * 0.03 : null))
+    }
   ];
 
-  /* --- SL 29: TOTAL UNCONTROLLABLE EXP = sum(SL 23..28) --- */
+   /* --- SL 28: TOTAL UNCONTROLLABLE EXP = sum(SL 22..27) --- */
   var totalUnctrl       = unctrlRows.reduce(function(s,r){ return s + n(r.actual); }, 0);
   var totalUnctrlTarget = unctrlRows.reduce(function(s,r){ return s + n(r.target); }, 0);
 
-  /* --- SL 30: EBITDA = NET MARGIN AFTER CTRL - TOTAL UNCTRL --- */
+  /* --- SL 29: EBITDA = NET MARGIN AFTER CTRL - TOTAL UNCTRL --- */
   var ebitda       = netAfterCtrl - totalUnctrl;
   var ebitdaTarget = (netAfterCtrlTarget != null && totalUnctrlTarget > 0)
                        ? netAfterCtrlTarget - totalUnctrlTarget
@@ -3856,27 +3853,62 @@ var budget = {
 
   /* ---- 5) Assemble with % + variance ---- */
   function mk(sl, desc, actual, target, isRevenue){
-    var pct = sales === 0 ? 0 : (actual / sales) * 100;
-    var tgtPct = (target != null && sales !== 0) ? (target / sales) * 100 : null;
-    var variance = target != null ? (actual - target) : null;
+    /* D — Target %  =  target / salesTarget  (Excel: C_row / C2) */
+    var targetPct = (target != null && salesTarget)
+                      ? (target / salesTarget) * 100
+                      : null;
+
+    /* F — Actual %  =  actual / sales         (Excel: E_row / E2) */
+    var actualPct = sales ? (actual / sales) * 100 : 0;
+
+    /* H — Variance % */
+    var variancePct;
+    if(sl === 1){
+      /* Sales row: Excel H2 = E2/C2 - 1 */
+      variancePct = (salesTarget != null && salesTarget !== 0)
+                      ? ((sales / salesTarget) - 1) * 100
+                      : null;
+    } else if(targetPct != null && actualPct != null){
+      /* All other rows: Excel H = F - D  (percentage points) */
+      variancePct = actualPct - targetPct;
+    } else {
+      variancePct = null;
+    }
+
+    /* G — Variance SAR */
+    var variance;
+    if(sl === 1){
+      /* Sales row: Excel G2 = E2 - C2 */
+      variance = (salesTarget != null) ? (sales - salesTarget) : null;
+    } else if(variancePct != null){
+      /* All other rows: Excel G = E2 * H */
+      variance = sales * (variancePct / 100);
+    } else {
+      variance = null;
+    }
+
     return {
-      sl: sl, description: desc,
-      contribution: actual, contributionPct: pct,
-      targetSar: target, targetPct: tgtPct,
-      variance: variance, isRevenue: !!isRevenue
+      sl: sl,
+      description: desc,
+      targetSar:   target,
+      targetPct:   targetPct,      /* D */
+      actual:      actual,         /* E — was "contribution" */
+      actualPct:   actualPct,      /* F — was "contributionPct" */
+      variance:    variance,       /* G */
+      variancePct: variancePct,    /* H — NEW */
+      isRevenue:   !!isRevenue
     };
   }
-
   var rows = [];
   rows.push(mk(1,  "Sales",                                  sales,                salesTarget,        true));
   rows.push(mk(2,  "COST OF GOODS SOLD",                     cogs,                 cogsTarget));
-  rows.push(mk(4,  "GROSS MARGIN",                           grossMargin,          grossMarginTarget,  true));
+  rows.push(mk(3,  "GROSS MARGIN",                           grossMargin,          grossMarginTarget,  true));
   ctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
-  rows.push(mk(21, "TOTAL CONTROLLABLE EXP",                 totalCtrl,            totalCtrlTarget));
-  rows.push(mk(22, "NET MARGIN AFTER CONTROLLABLE EXP",      netAfterCtrl,         netAfterCtrlTarget, true));
+  rows.push(mk(20, "TOTAL CONTROLLABLE EXP",                 totalCtrl,            totalCtrlTarget));
+  rows.push(mk(21, "NET MARGIN AFTER CONTROLLABLE EXP",      netAfterCtrl,         netAfterCtrlTarget, true));
   unctrlRows.forEach(function(r){ rows.push(mk(r.sl, r.desc, r.actual, r.target)); });
-  rows.push(mk(29, "TOTAL UNCONTROLLABLE EXP",               totalUnctrl,          totalUnctrlTarget));
-  rows.push(mk(30, "EBITDA (OPERATIONAL)",                   ebitda,               ebitdaTarget,       true));
+  rows.push(mk(28, "TOTAL UNCONTROLLABLE EXP",               totalUnctrl,          totalUnctrlTarget));
+  rows.push(mk(29, "EBITDA (OPERATIONAL)",                   ebitda,               ebitdaTarget,       true));
 
   return { rows: rows, sales: sales, hasTargets: hasTargets, recordCount: records.length };
 }
@@ -5638,58 +5670,44 @@ async function fetchPlanForPeriod(scopeDesc, periodStart, periodType){
    ============================================================ */
 function fmtPnlMoney(v){
   if(v == null || isNaN(v)) return "—";
-  return new Intl.NumberFormat("en-SA",{minimumFractionDigits:0,maximumFractionDigits:0}).format(v);
+  return new Intl.NumberFormat("en-SA",{
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(v);
 }
 function fmtPnlPct(v){
   if(v == null || isNaN(v)) return "—";
   return round(v,1).toFixed(1) + "%";
 }
-function pnlRowClass(row){
-  if(row.variance == null) return "";
-  if(row.isRevenue){
-    return row.variance >= 0 ? "good" : (row.variance >= -Math.abs(row.targetSar*0.02) ? "warn" : "bad");
-  }
-  return row.variance <= 0 ? "good" : (row.variance <= Math.abs(row.targetSar*0.05) ? "warn" : "bad");
-}
+
 
 /* ---------- P&L CSV ---------- */
 async function exportPnlCsv(){
   var from = q("pnlFrom").value;
   var to   = q("pnlTo").value;
   if(!from || !to){ showToast("Set the date range first."); return; }
-  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1) ? topFilter.storeIds[0] : state.selectedStore;
-  var result = await calculatePnl(storeId, from, to);
+  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
+              ? topFilter.storeIds[0] : state.selectedStore;
+  if(!storeId){ showToast("Pick a store first."); return; }
+  var result;
+  try { result = await calculatePnl(storeId, from, to); }
+  catch(e){ showToast("Could not load P&L: " + (e.message || "")); return; }
   if(!result.rows.length){ showToast("Nothing to export."); return; }
 
-var remarks = {
-  1:"Take from target file (Sales row)",
-  2:"Take from target file (COST OF GOODS SOLD row)",
-  3:"Take from target file (Wastage row)",
-  4:"( Gross Margin = Sales - Cost of goods sold - Wastage )",
-  5:"Take From Daily Input Employee Cost",
-  21:"Sum from S.No ( 5 to 20 )",
-  22:"This is GROSS MARGIN - Total Controllable Exp",
-  28:"Royalty is fixed 3 % of sales",
-  29:"Sum from S.No ( 23 to 28 )",
-  30:"This is Net Margin After Controllable exp - Total Uncontrollable exp"
-};
+  /* 8 columns exactly matching the Excel: SL, DESCRIPTION, Target SAR, %,
+     Actual/Estimated, %, Variance, % */
+  var csv = [["SL NO","DESCRIPTION","Target SAR","% (fraction)","Actual / Estimated","% (fraction)","Variance","% (fraction)"]];
 
-  var csv = [["SL NO","DESCRIPTION","Contribution","Contribution %","Target SAR","Target %","Variance","Remarks"]];
   result.rows.forEach(function(r){
-    var rem = remarks[r.sl];
-    if(!rem && ((r.sl >= 6 && r.sl <= 20) || (r.sl >= 23 && r.sl <= 27))){
-      rem = "Target for that store divided by no of days in the month * no of days selected";
-    }
-    rem = rem || "";
     csv.push([
       r.sl,
       r.description,
-      round(r.contribution, 2),
-      r.contributionPct == null ? "" : round(r.contributionPct, 2),
-      r.targetSar == null ? "" : round(r.targetSar, 2),
-      r.targetPct == null ? "" : round(r.targetPct, 2),
-      (r.variance == null || PNL_BUDGET_ONLY_SL[r.sl]) ? "" : round(r.variance, 2),
-      rem
+      r.targetSar   == null ? "" : round(r.targetSar, 2),
+      r.targetPct   == null ? "" : round(r.targetPct / 100, 6),   // fraction (Excel cell format = %)
+      round(r.actual, 2),
+      round(r.actualPct / 100, 6),                                 // fraction
+      r.variance    == null ? "" : round(r.variance, 2),
+      r.variancePct == null ? "" : round(r.variancePct / 100, 6)   // fraction
     ]);
   });
 
@@ -5705,23 +5723,36 @@ async function exportPnlPdf(){
   var from = q("pnlFrom").value;
   var to   = q("pnlTo").value;
   if(!from || !to){ showToast("Set the date range first."); return; }
-  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1) ? topFilter.storeIds[0] : state.selectedStore;
-  var result = await calculatePnl(storeId, from, to);
+   var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
+              ? topFilter.storeIds[0] : state.selectedStore;
+  if(!storeId){ showToast("Pick a store first."); return; }
+  var result;
+  try { result = await calculatePnl(storeId, from, to); }
+  catch(e){ showToast("Could not load P&L: " + (e.message || "")); return; }
   if(!result.rows.length){ showToast("Nothing to export."); return; }
-
   var subtitle = "Store: " + storeId + " · " + dateLabel(from) + " – " + dateLabel(to);
   var doc = getPdfContext("Live P&L", subtitle);
 
-  var head = [["SL","DESCRIPTION","Contribution","Contrib %","Target SAR","Tgt %","Variance"]];
+  var head = [["SL NO","DESCRIPTION","Target SAR","%","Actual / Estimated","%","Variance","%"]];
+
   var body = result.rows.map(function(r){
+    var varText = "—";
+    if(r.variance != null){
+      varText = (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance);
+    }
+    var varPctText = "—";
+    if(r.variancePct != null){
+      varPctText = (r.variancePct >= 0 ? "+" : "") + fmtPnlPct(r.variancePct);
+    }
     return [
       String(r.sl),
       r.description,
-      fmtPnlMoney(r.contribution),
-      r.contributionPct == null ? "—" : fmtPnlPct(r.contributionPct),
       r.targetSar == null ? "—" : fmtPnlMoney(r.targetSar),
       r.targetPct == null ? "—" : fmtPnlPct(r.targetPct),
-      (r.variance == null || PNL_BUDGET_ONLY_SL[r.sl]) ? "—" : (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance)
+      fmtPnlMoney(r.actual),
+      fmtPnlPct(r.actualPct),
+      varText,
+      varPctText
     ];
   });
 
@@ -5730,22 +5761,23 @@ async function exportPnlPdf(){
     head: head,
     body: body,
     theme: "grid",
-    styles: { fontSize:8, cellPadding:2 },
-    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:9 },
+    styles: { fontSize:7.5, cellPadding:1.8, overflow:"linebreak" },
+    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:8 },
     alternateRowStyles: { fillColor:[244,248,247] },
     columnStyles: {
-      0:{ cellWidth:12, halign:"center" },
-      1:{ cellWidth:70 },
-      2:{ halign:"right", cellWidth:30 },
-      3:{ halign:"right", cellWidth:24 },
-      4:{ halign:"right", cellWidth:30 },
-      5:{ halign:"right", cellWidth:24 },
-      6:{ halign:"right", cellWidth:30 }
+      0:{ cellWidth:12, halign:"center", fontStyle:"bold" },
+      1:{ cellWidth:72, halign:"left" },
+      2:{ cellWidth:28, halign:"right" },
+      3:{ cellWidth:16, halign:"right" },
+      4:{ cellWidth:30, halign:"right" },
+      5:{ cellWidth:16, halign:"right" },
+      6:{ cellWidth:28, halign:"right" },
+      7:{ cellWidth:16, halign:"right" }
     },
     didParseCell: function(data){
       if(data.section === "body"){
         var sl = parseInt(data.row.raw[0], 10);
-        if(sl === 4 || sl === 21 || sl === 22 || sl === 29 || sl === 30){
+        if(sl === 3 || sl === 20 || sl === 21 || sl === 28 || sl === 29){
           data.cell.styles.fontStyle = "bold";
           data.cell.styles.fillColor = [230,240,245];
         }
@@ -5754,8 +5786,7 @@ async function exportPnlPdf(){
     didDrawPage: function(){
       var pageW = doc.internal.pageSize.getWidth();
       var pageH = doc.internal.pageSize.getHeight();
-      doc.setFontSize(7.5);
-      doc.setTextColor(120);
+      doc.setFontSize(7.5); doc.setTextColor(120);
       doc.text("SGM Operations Control", 10, pageH - 5);
       doc.text("Page " + doc.internal.getNumberOfPages(), pageW - 10, pageH - 5, { align:"right" });
     }
@@ -5780,78 +5811,84 @@ async function renderPnl(){
   }
 
   if(rangeChip) rangeChip.textContent = dateLabel(from) + " → " + dateLabel(to) + " · " + scopeLabel();
-
   table.innerHTML = '<tbody><tr><td class="empty">Loading P&L…</td></tr></tbody>';
 
-  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1) ? topFilter.storeIds[0]
-              : state.selectedStore;
+  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
+              ? topFilter.storeIds[0] : state.selectedStore;
+    if(!storeId){
+    table.innerHTML = '<tbody><tr><td class="empty">Pick a store using the top-bar Store filter.</td></tr></tbody>';
+    return;
+  }
 
   var result;
-  try {
-    result = await calculatePnl(storeId, from, to);
-  } catch(e){
+  try { result = await calculatePnl(storeId, from, to); }
+  catch(e){
     table.innerHTML = '<tbody><tr><td class="empty">Error: ' + escapeHtml(e.message||"") + '</td></tr></tbody>';
     return;
   }
 
   if(chip){
     if(!result.recordCount){
-      chip.style.display = "block";
-      chip.style.background = "#fee2e2";
-      chip.style.color = "#b91c1c";
+      chip.style.display = "block"; chip.style.background = "#fee2e2"; chip.style.color = "#b91c1c";
       chip.textContent = "⚠ No daily entries for " + storeId + " in this range. P&L is empty.";
     } else if(!result.hasTargets){
-      chip.style.display = "block";
-      chip.style.background = "#fef3c7";
-      chip.style.color = "#b45309";
+      chip.style.display = "block"; chip.style.background = "#fef3c7"; chip.style.color = "#b45309";
       chip.textContent = "⚠ No P&L targets uploaded for this period. Showing actuals only.";
     } else {
       chip.style.display = "none";
     }
   }
 
-  /* Build table */
+  /* Summary rows use the Excel's exact SL numbers */
+  var SUMMARY_SL = { 3:1, 20:1, 21:1, 28:1, 29:1 };
+
+  /* 8-column header exactly matching the Excel */
   var thead = '<thead><tr>' +
-    '<th style="width:60px; text-align:center">SL</th>' +
-    '<th style="width:auto;text-align:left">DESCRIPTION</th>' +
-    '<th style="width:140px">Contribution</th>' +
-    '<th style="width:120px">Contrib %</th>' +
-    '<th style="width:140px">Target SAR</th>' +
-    '<th style="width:120px">Tgt %</th>' +
+    '<th style="width:60px; text-align:center">SL NO</th>' +
+    '<th style="text-align:left">DESCRIPTION</th>' +
+    '<th style="width:130px">Target SAR</th>' +
+    '<th style="width:90px">%</th>' +
+    '<th style="width:140px">Actual / Estimated</th>' +
+    '<th style="width:90px">%</th>' +
     '<th style="width:130px">Variance</th>' +
+    '<th style="width:90px">%</th>' +
     '</tr></thead>';
 
   var tbody = '<tbody>';
-  
   result.rows.forEach(function(r){
-    // Determine if this is a summary row to highlight
-    var isSummary = (r.sl === 4 || r.sl === 21 || r.sl === 22 || r.sl === 29 || r.sl === 30);
-    
-    // Determine variance color class
-    var cls = pnlRowClass(r);
-    
+    var isSummary = !!SUMMARY_SL[r.sl];
+    var rowStyle = isSummary
+      ? 'background-color:#f1f5f9;font-weight:700;border-top:2px solid #94a3b8;border-bottom:2px solid #94a3b8;'
+      : '';
+
     var varText = "—";
-    if(r.variance != null && !PNL_BUDGET_ONLY_SL[r.sl]){
-      var sign = r.variance >= 0 ? "+" : "";
-      varText = sign + fmtPnlMoney(r.variance);
+    if(r.variance != null){
+      varText = (r.variance >= 0 ? "+" : "") + fmtPnlMoney(r.variance);
+    }
+    var varPctText = "—";
+    if(r.variancePct != null){
+      varPctText = (r.variancePct >= 0 ? "+" : "") + fmtPnlPct(r.variancePct);
     }
 
-    // Apply inline styles for summary rows
-    var rowStyle = isSummary ? 'background-color: #f1f5f9; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;' : '';
-    var textStyle = isSummary ? 'color: #0f172a;' : '';
+    /* Revenue rows green when positive, cost rows green when negative */
+    var cls = "";
+    if(r.variance != null){
+      if(r.isRevenue) cls = r.variance >= 0 ? "good" : "bad";
+      else            cls = r.variance <= 0 ? "good" : "bad";
+    }
 
     tbody += '<tr style="' + rowStyle + '">' +
       '<td style="text-align:center;color:#64748b;font-weight:700">' + r.sl + '</td>' +
-      '<td style="text-align:left;' + textStyle + '">' + escapeHtml(r.description) + '</td>' +
-      '<td class="num" style="' + textStyle + '">' + fmtPnlMoney(r.contribution) + '</td>' +
-      '<td class="num" style="' + textStyle + '">' + fmtPnlPct(r.contributionPct) + '</td>' +
-      '<td class="num" style="color:#64748b;font-weight:600">' + (r.targetSar != null ? fmtPnlMoney(r.targetSar) : "—") + '</td>' +
-      '<td class="num" style="color:#64748b;font-weight:600">' + (r.targetPct != null ? fmtPnlPct(r.targetPct) : "—") + '</td>' +
+      '<td style="text-align:left">' + escapeHtml(r.description) + '</td>' +
+      '<td class="num">' + (r.targetSar != null ? fmtPnlMoney(r.targetSar) : "—") + '</td>' +
+      '<td class="num">' + (r.targetPct != null ? fmtPnlPct(r.targetPct) : "—") + '</td>' +
+      '<td class="num">' + fmtPnlMoney(r.actual) + '</td>' +
+      '<td class="num">' + fmtPnlPct(r.actualPct) + '</td>' +
       '<td class="num ' + cls + '" style="font-weight:700">' + varText + '</td>' +
+      '<td class="num ' + cls + '">' + varPctText + '</td>' +
       '</tr>';
   });
   tbody += '</tbody>';
-
   table.innerHTML = thead + tbody;
 }
 
