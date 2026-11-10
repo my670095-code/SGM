@@ -1610,7 +1610,7 @@ details.group>summary::-webkit-details-marker{display:none}
       <p>Store-wise profit &amp; loss — actuals from daily entries vs. admin-uploaded monthly targets.</p>
     </div>
     <div class="toolbar">
-      <button class="btn" id="pnlExportCsvBtn" type="button">Export CSV</button>
+      <button class="btn" id="pnlExportCsvBtn" type="button">Export Excel</button>
       <button class="btn" id="pnlExportPdfBtn" type="button">Export PDF</button>
     </div>
   </div>
@@ -5681,7 +5681,7 @@ function fmtPnlPct(v){
 }
 
 
-/* ---------- P&L CSV ---------- */
+/* ---------- P&L EXCEL EXPORT (Formatted) ---------- */
 async function exportPnlCsv(){
   var from = q("pnlFrom").value;
   var to   = q("pnlTo").value;
@@ -5689,32 +5689,103 @@ async function exportPnlCsv(){
   var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
               ? topFilter.storeIds[0] : state.selectedStore;
   if(!storeId){ showToast("Pick a store first."); return; }
+  
   var result;
   try { result = await calculatePnl(storeId, from, to); }
   catch(e){ showToast("Could not load P&L: " + (e.message || "")); return; }
   if(!result.rows.length){ showToast("Nothing to export."); return; }
 
-  /* 8 columns exactly matching the Excel: SL, DESCRIPTION, Target SAR, %,
-     Actual/Estimated, %, Variance, % */
-  var csv = [["SL NO","DESCRIPTION","Target SAR","% (fraction)","Actual / Estimated","% (fraction)","Variance","% (fraction)"]];
+  // 1. Build the raw data array (keep raw numbers, let Excel format them)
+  var aoa = [
+    ["SL NO", "DESCRIPTION", "Target SAR", "%", "Actual / Estimated", "%", "Variance", "%"]
+  ];
 
   result.rows.forEach(function(r){
-    csv.push([
+    aoa.push([
       r.sl,
       r.description,
-      r.targetSar   == null ? "" : round(r.targetSar, 2),
-      r.targetPct   == null ? "" : round(r.targetPct / 100, 6),   // fraction (Excel cell format = %)
-      round(r.actual, 2),
-      round(r.actualPct / 100, 6),                                 // fraction
-      r.variance    == null ? "" : round(r.variance, 2),
-      r.variancePct == null ? "" : round(r.variancePct / 100, 6)   // fraction
+      r.targetSar,
+      r.targetPct != null ? (r.targetPct / 100) : null,
+      r.actual,
+      r.actualPct != null ? (r.actualPct / 100) : null,
+      r.variance,
+      r.variancePct != null ? (r.variancePct / 100) : null
     ]);
   });
 
-  download("SGM_PnL_" + storeId + "_" + from + "_to_" + to + ".csv",
-    "\ufeff" + csv.map(function(row){ return row.map(csvEscape).join(","); }).join("\r\n"),
-    "text/csv;charset=utf-8");
-  showToast("CSV downloaded.", "success");
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // 2. Apply Excel Styles (Colors, Bold, Number Formats)
+  var range = XLSX.utils.decode_range(ws['!ref']);
+  
+  for (var R = range.s.r; R <= range.e.r; ++R) {
+    for (var C = range.s.c; C <= range.e.c; ++C) {
+      var cellAddress = { c: C, r: R };
+      var cellRef = XLSX.utils.encode_cell(cellAddress);
+      if (!ws[cellRef]) continue; // skip empty cells
+      
+      var cell = ws[cellRef];
+      var sl = R === 0 ? 0 : aoa[R][0]; // Get SL NO
+
+      // Header Row Styling
+      if (R === 0) {
+        cell.s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "0F172A" } }, // Dark Navy
+          alignment: { horizontal: "center" }
+        };
+        continue;
+      }
+
+      // Data Row Styling
+      cell.s = { alignment: { horizontal: (C === 0 || C === 1) ? "left" : "right" } };
+      
+      // Format Numbers
+      if (C === 2 || C === 4) cell.z = '#,##0'; // Money (Target & Actual)
+      if (C === 6) cell.z = '+#,##0;-#,##0;0';  // Variance Money
+      if (C === 3 || C === 5 || C === 7) cell.z = '0.0%'; // Percentages
+      
+      // Format Variance & % Colors based on your logic
+      if (C === 6 || C === 7) { // Only Variance and Variance %
+        var isProfitRow = (sl === 3 || sl === 21 || sl === 29);
+        var val = cell.v;
+        
+        if (val > 0) {
+          if (isProfitRow) cell.s.font = { color: { rgb: "047857" } }; // Green
+          else cell.s.font = { color: { rgb: "B91C1C" } }; // Red
+        } else if (val < 0) {
+          if (isProfitRow) cell.s.font = { color: { rgb: "B91C1C" } }; // Red
+          else cell.s.font = { color: { rgb: "047857" } }; // Green
+        }
+      }
+
+      // Highlight Profit Rows (Gross Margin, Net Margin, EBITDA)
+      if (sl === 3 || sl === 21 || sl === 29) {
+        cell.s.font = cell.s.font || {};
+        cell.s.font.bold = true;
+        cell.s.fill = { fgColor: { rgb: "F1F5F9" } }; // Light gray background
+      }
+    }
+  }
+
+  // 3. Set Column Widths
+  ws['!cols'] = [
+    { wch: 8 },  // SL NO
+    { wch: 40 }, // DESCRIPTION
+    { wch: 15 }, // Target SAR
+    { wch: 10 }, // %
+    { wch: 18 }, // Actual
+    { wch: 10 }, // %
+    { wch: 15 }, // Variance
+    { wch: 10 }  // %
+  ];
+
+  // 4. Generate and Download
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "P&L");
+  XLSX.writeFile(wb, "SGM_PnL_" + storeId + "_" + from + "_to_" + to + ".xlsx");
+  
+  showToast("Excel downloaded.", "success");
 }
 
 /* ---------- P&L PDF ---------- */
@@ -5723,13 +5794,15 @@ async function exportPnlPdf(){
   var from = q("pnlFrom").value;
   var to   = q("pnlTo").value;
   if(!from || !to){ showToast("Set the date range first."); return; }
-   var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
+  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
               ? topFilter.storeIds[0] : state.selectedStore;
   if(!storeId){ showToast("Pick a store first."); return; }
+  
   var result;
   try { result = await calculatePnl(storeId, from, to); }
   catch(e){ showToast("Could not load P&L: " + (e.message || "")); return; }
   if(!result.rows.length){ showToast("Nothing to export."); return; }
+
   var subtitle = "Store: " + storeId + " · " + dateLabel(from) + " – " + dateLabel(to);
   var doc = getPdfContext("Live P&L", subtitle);
 
@@ -5761,12 +5834,12 @@ async function exportPnlPdf(){
     head: head,
     body: body,
     theme: "grid",
-    styles: { fontSize:7.5, cellPadding:1.8, overflow:"linebreak" },
-    headStyles: { fillColor:[11,51,64], textColor:[255,255,255], fontStyle:"bold", fontSize:8 },
-    alternateRowStyles: { fillColor:[244,248,247] },
+    styles: { fontSize:8, cellPadding:2, textColor: [15,23,42] }, // Default dark text
+    headStyles: { fillColor:[15,23,42], textColor:[255,255,255], fontStyle:"bold", fontSize:9 },
+    alternateRowStyles: { fillColor:[248,250,252] },
     columnStyles: {
       0:{ cellWidth:12, halign:"center", fontStyle:"bold" },
-      1:{ cellWidth:72, halign:"left" },
+      1:{ cellWidth:70, halign:"left" },
       2:{ cellWidth:28, halign:"right" },
       3:{ cellWidth:16, halign:"right" },
       4:{ cellWidth:30, halign:"right" },
@@ -5777,16 +5850,37 @@ async function exportPnlPdf(){
     didParseCell: function(data){
       if(data.section === "body"){
         var sl = parseInt(data.row.raw[0], 10);
-        if(sl === 3 || sl === 20 || sl === 21 || sl === 28 || sl === 29){
+        var isProfitRow = (sl === 3 || sl === 21 || sl === 29);
+        
+        // 1. Highlight the Profit Rows (Gross Margin, Net Margin, EBITDA)
+        if(isProfitRow){
           data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [230,240,245];
+          data.cell.styles.fillColor = [241, 245, 249]; // Light gray bg
+        }
+
+        // 2. Color the Variance columns (Column index 6 and 7)
+        if(data.column.index === 6 || data.column.index === 7){
+          var rawValStr = data.cell.raw.replace(/[+%]/g, "").replace(/,/g, "");
+          var val = parseFloat(rawValStr);
+          
+          if(!isNaN(val) && val !== 0){
+            if(isProfitRow){
+              // Profit rows: Positive = Green, Negative = Red
+              if(val > 0) data.cell.styles.textColor = [4, 120, 87]; // Green
+              if(val < 0) data.cell.styles.textColor = [185, 28, 28]; // Red
+            } else {
+              // Other rows: Positive = Red, Negative = Green
+              if(val > 0) data.cell.styles.textColor = [185, 28, 28]; // Red
+              if(val < 0) data.cell.styles.textColor = [4, 120, 87]; // Green
+            }
+          }
         }
       }
     },
     didDrawPage: function(){
       var pageW = doc.internal.pageSize.getWidth();
       var pageH = doc.internal.pageSize.getHeight();
-      doc.setFontSize(7.5); doc.setTextColor(120);
+      doc.setFontSize(7.5); doc.setTextColor(148, 163, 184);
       doc.text("SGM Operations Control", 10, pageH - 5);
       doc.text("Page " + doc.internal.getNumberOfPages(), pageW - 10, pageH - 5, { align:"right" });
     }
