@@ -1292,6 +1292,457 @@ details.group>summary::-webkit-details-marker{display:none}
 }
 
 </style>
+<style id="sgm-theme-refresh">
+/* ==========================================================================
+   SGM OPERATIONS CONTROL — THEME REFRESH
+   Pure CSS overrides. No markup or JavaScript is changed.
+   To go back to the previous look, delete this whole <style> block.
+   ========================================================================== */
+:root{
+  --brand-900:#0b1220;
+  --brand-800:#151d2e;
+  --brand-700:#232d42;
+
+  --bg:#f3f4f8;
+  --surface:#ffffff;
+  --surface-2:#f8f9fc;
+  --surface-3:#eef0f5;
+  --border:#e6e8ef;
+  --border-strong:#d3d7e2;
+
+  --text:#0b1220;
+  --text-muted:#566074;
+  --text-subtle:#7f889b;
+
+  --shadow-xs:0 1px 2px rgba(11,18,32,.04);
+  --shadow-sm:0 1px 2px rgba(11,18,32,.04), 0 10px 24px -18px rgba(11,18,32,.18);
+  --shadow-md:0 2px 4px rgba(11,18,32,.04), 0 16px 32px -18px rgba(11,18,32,.22);
+  --shadow-lg:0 4px 8px rgba(11,18,32,.04), 0 24px 48px -20px rgba(11,18,32,.28);
+  --shadow-xl:0 32px 64px -24px rgba(11,18,32,.35);
+
+  --r-sm:8px;
+  --r-md:10px;
+  --r-lg:16px;
+  --r-xl:20px;
+  --r-2xl:26px;
+
+  --ring:0 0 0 4px rgba(245,158,11,.18);
+  --accent-ink:#8a4b06;
+}
+
+*{scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+::selection{background:#fde68a;color:#0b1220}
+
+body{
+  background:
+    radial-gradient(1100px 520px at 6% -10%, rgba(251,191,36,.11), transparent 60%),
+    radial-gradient(900px 480px at 100% -6%, rgba(99,102,241,.07), transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+  letter-spacing:-.003em;
+}
+code{
+  background:var(--surface-3);padding:1px 6px;border-radius:6px;
+  font-size:.92em;color:var(--text);
+}
+button:focus-visible,
+.btn:focus-visible,
+.nav-btn:focus-visible{outline:2px solid var(--accent-500);outline-offset:2px}
+
+/* ---------------------------- TOP BAR (light, frosted) ---------------------------- */
+.topbar{
+  color:var(--text);
+  background:rgba(255,255,255,.80);
+  -webkit-backdrop-filter:saturate(180%) blur(16px);
+  backdrop-filter:saturate(180%) blur(16px);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 8px 24px -18px rgba(11,18,32,.25);
+}
+.topbar-main{padding:10px 24px 6px;min-height:66px;max-height:66px}
+.brand-mark,
+.login-card .brand-mark{
+  color:#fbbf24;
+  background:var(--brand-900);
+  border-radius:13px;
+  letter-spacing:-.3px;font-weight:800;
+  box-shadow:0 6px 16px -6px rgba(11,18,32,.45), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.brand h1{font-size:15.5px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.brand p{color:var(--text-subtle);font-size:11.5px}
+
+.store-control label,
+.am-multiselect label{color:var(--text-subtle);letter-spacing:.07em;font-size:10px;font-weight:700}
+
+.am-ms-shell{
+  border:1px solid transparent;
+  background:var(--surface-3);
+  min-height:36px;max-height:36px;
+  border-radius:var(--r-md);
+}
+.am-ms-shell:hover{background:#e7eaf1;border-color:transparent}
+.am-ms-shell.open{background:#fff;border-color:var(--accent-400);box-shadow:var(--ring)}
+.am-ms-search{color:var(--text)}
+.am-ms-search::placeholder{color:var(--text-subtle)}
+.am-ms-tag{background:var(--accent-soft);color:var(--accent-ink);box-shadow:inset 0 0 0 1px #fde68a}
+.am-ms-tag.more{background:#dfe3ec;color:var(--text);box-shadow:none}
+.am-ms-dropdown{
+  border-radius:var(--r-lg);border-color:var(--border);
+  box-shadow:var(--shadow-lg);padding:6px;
+}
+.am-ms-item{border-bottom:0;border-radius:var(--r-sm);padding:8px 10px}
+.am-ms-item:hover{background:var(--surface-3)}
+.am-ms-clear{margin:6px -6px -6px;background:#fff;border-top:1px solid var(--border)}
+
+/* Option rows are <label> elements, so the small uppercase picker-label style
+   leaked into them. Reset it so options read as normal, clickable rows. */
+.am-multiselect label.am-ms-item{
+  text-transform:none;letter-spacing:0;
+  font-size:13px;font-weight:500;color:var(--text);
+  white-space:normal;cursor:pointer;
+  min-height:36px;
+}
+.am-ms-item .lbl{font-weight:600}
+.am-ms-item input[type="checkbox"]{width:17px;height:17px;accent-color:var(--brand-900)}
+.am-ms-item:has(input:checked){background:var(--accent-soft)}
+.am-ms-item:has(input:checked):hover{background:#fdecb5}
+.am-ms-shell{max-width:300px;cursor:pointer}
+.am-ms-search{min-width:72px;cursor:text}
+.am-ms-dropdown{min-width:300px;max-width:min(520px, calc(100vw - 24px));z-index:1000}
+.am-ms-dropdown.open{animation:none}
+
+/* Below ~1280px the one-line top bar no longer fits and pushed the pickers
+   and Logout off-screen. Let it wrap onto a second line instead. */
+@media (min-width:761px) and (max-width:1280px){
+  .topbar-main{flex-wrap:wrap;min-height:0;max-height:none;row-gap:8px;padding:10px 24px 6px}
+  .brand{min-width:0;flex:0 1 auto}
+  .store-control{flex:1 1 460px;flex-wrap:wrap;justify-content:flex-end;row-gap:8px}
+  .user-cluster{margin-left:0}
+}
+
+.user-pill{
+  color:var(--text);
+  background:var(--surface-3);
+  border-color:transparent;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+  padding:5px 6px 5px 12px;
+}
+.user-pill .role-tag{background:var(--brand-900);color:#fff;font-weight:700;padding:3px 9px}
+.logout-btn{
+  color:var(--text-muted);
+  border-color:var(--border-strong);
+  background:#fff;
+}
+.logout-btn:hover{background:var(--danger-soft);border-color:#fecaca;color:var(--danger-600)}
+.local-pill{color:var(--success-600);background:var(--success-soft);border-color:#a7f3d0}
+.local-dot{background:var(--success-500);box-shadow:0 0 0 3px rgba(5,150,105,.18)}
+
+/* ---------------------------- NAV (pills) ---------------------------- */
+.nav-wrap{border-top:0;background:transparent}
+nav{max-width:100%;padding:2px 24px 10px;gap:4px}
+.nav-btn{
+  color:var(--text-muted);
+  border:0;border-radius:999px;
+  padding:7px 14px;
+  font-size:12.5px;font-weight:600;
+  transition:color .15s, background-color .15s, box-shadow .15s;
+}
+.nav-btn:hover{color:var(--text);background:var(--surface-3)}
+.nav-btn.active{
+  color:#fff;background:var(--brand-900);
+  box-shadow:0 6px 14px -6px rgba(11,18,32,.5);
+}
+
+/* ---------------------------- PAGE ---------------------------- */
+main{padding:24px}
+.page-head{margin-bottom:20px}
+.page-head h2{font-size:24px;font-weight:750;letter-spacing:-.03em}
+.page-head p{color:var(--text-muted);font-size:13px}
+
+/* ---------------------------- BUTTONS ---------------------------- */
+.btn{
+  border-color:var(--border-strong);
+  padding:8px 14px;
+  transition:background-color .15s, border-color .15s, box-shadow .15s, color .15s;
+}
+.btn:hover{
+  border-color:#b9bfce;background:var(--surface-2);
+  transform:none;box-shadow:var(--shadow-xs);
+}
+.btn:active{transform:scale(.985)}
+.btn.primary{
+  background:var(--brand-900);
+  box-shadow:0 8px 16px -10px rgba(11,18,32,.6);
+}
+.btn.primary:hover{background:#1b2540;filter:none;box-shadow:0 10px 20px -10px rgba(11,18,32,.65)}
+.btn.gold{
+  color:#1a1305;
+  background:var(--accent-400);
+  box-shadow:0 8px 16px -10px rgba(217,119,6,.7);
+}
+.btn.gold:hover{background:#fbbf24;box-shadow:0 10px 20px -10px rgba(217,119,6,.75)}
+.btn.danger:hover{background:var(--danger-soft);border-color:#fca5a5}
+.btn[disabled],.btn[disabled]:hover{opacity:.45;box-shadow:none}
+
+/* ---------------------------- SECTIONS (Daily Entry) ---------------------------- */
+.section{margin-bottom:14px}
+.section:hover{box-shadow:var(--shadow-sm);border-color:var(--border-strong)}
+.section-head{background:#fff;padding:13px 18px;border-bottom:1px solid var(--border)}
+.section-head .num{
+  width:24px;height:24px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent-ink);
+  box-shadow:inset 0 0 0 1px #fde68a;
+}
+.section-head h4{font-size:13.5px;letter-spacing:-.01em}
+.section-body{padding:16px 18px}
+
+.entry-hero{
+  padding:16px 20px;
+  background:linear-gradient(115deg,#fff 0%,#fff 58%,#fff7e0 100%);
+  border-radius:var(--r-xl);
+}
+.entry-hero::before{display:none}
+.entry-hero .hero-mark{
+  background:var(--brand-900);color:#fbbf24;border-radius:14px;
+  box-shadow:0 8px 18px -8px rgba(11,18,32,.5);
+}
+.entry-hero .hero-text h3{font-size:17px;letter-spacing:-.02em}
+.entry-store-chip{background:var(--surface-3);border-color:transparent;box-shadow:none}
+.entry-date-input,.entry-icon-btn{border-color:var(--border-strong);box-shadow:none}
+.entry-date-input:focus{box-shadow:var(--ring)}
+.entry-submit-btn{
+  background:var(--brand-900);color:#fff;
+  box-shadow:0 10px 20px -10px rgba(11,18,32,.6);
+}
+.entry-submit-btn:hover{background:#1b2540;filter:none;transform:none;box-shadow:0 12px 24px -10px rgba(11,18,32,.65)}
+.entry-submit-btn .entry-submit-pill{background:rgba(255,255,255,.14);color:#fbbf24}
+
+/* ---------------------------- FORM FIELDS ---------------------------- */
+.field label{font-size:11px;color:var(--text-muted);letter-spacing:0}
+.field input,
+.field select,
+.field textarea,
+.control-input{border-color:var(--border-strong);height:34px}
+.field textarea{height:auto}
+.field input:hover,
+.field select:hover,
+.field textarea:hover,
+.control-input:hover{border-color:#b3bacb}
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.control-input:focus,
+.login-card input:focus,
+.login-card select:focus,
+.report-shell .report-top .field input:focus,
+.report-shell .report-top .field select:focus,
+.salary-table input:focus,
+.bd-row input:focus{
+  border-color:var(--accent-500);
+  box-shadow:var(--ring);
+  background:#fff;
+}
+.field input.filled{border-color:#a7f3d0;background:#f7fefb}
+.field input[type=file]{height:auto;padding:8px;border-style:dashed;background:var(--surface-2)}
+
+/* ---------------------------- CALC SIDEBAR ---------------------------- */
+.calc-sidebar{padding:18px;box-shadow:var(--shadow-sm)}
+.calc-group{border-bottom:1px solid var(--border)}
+.calc-group .grp-title{letter-spacing:.08em;color:var(--text-subtle)}
+.calc-row{padding:5px 0}
+
+/* ---------------------------- KPI CARDS ---------------------------- */
+.kpi-card,
+.kpi-card.good,
+.kpi-card.bad,
+.kpi-card.warn{border-top:1px solid var(--border)}
+.kpi-card{position:relative;padding:18px 18px 16px}
+.kpi-card::after{
+  content:"";position:absolute;top:19px;right:16px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--border-strong);
+}
+.kpi-card.good::after{background:var(--success-500);box-shadow:0 0 0 4px var(--success-soft)}
+.kpi-card.warn::after{background:var(--accent-500);box-shadow:0 0 0 4px var(--accent-soft)}
+.kpi-card.bad::after{background:var(--danger-500);box-shadow:0 0 0 4px var(--danger-soft)}
+.kpi-card .name{padding-right:20px;color:var(--text-muted)}
+.kpi-card .value{font-size:25px;font-weight:750;letter-spacing:-.03em}
+
+/* ---------------------------- TABLES (light headers) ---------------------------- */
+th,td{border-bottom:1px solid var(--border)}
+th{
+  color:var(--text-muted);
+  background:var(--surface-2);
+  font-size:10.5px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+  box-shadow:inset 0 -1px 0 var(--border-strong);
+}
+th .btn,th button{text-transform:none;letter-spacing:0}
+tbody tr:hover td{background:#f6f7fb}
+tbody tr:last-child td{border-bottom:0}
+.empty{font-style:normal;color:var(--text-subtle)}
+
+table.report-2col thead th{
+  background:var(--surface-2);color:var(--text-muted);
+  box-shadow:inset 0 -1px 0 var(--border-strong);
+  font-size:10.5px;letter-spacing:.06em;
+}
+table.report-2col th,
+table.report-2col td{border:0;border-bottom:1px solid var(--border)}
+table.report-2col td.cat-col{
+  background:var(--surface-2);
+  color:#2b3447;
+  border-right:1px solid var(--border);
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+}
+table.report-2col tbody tr:hover td.cat-col{background:var(--surface-2)}
+table.report-2col tr.auto-summary-row td.cat-col,
+table.report-2col tbody tr.auto-summary-row:hover td.cat-col{background:var(--info-soft);color:var(--info-600)}
+table.report-2col tbody tr.auto-summary-row:hover td.section-col{background:#d6eefc}
+table.report-2col td.val-col.good{background:#ecfdf5}
+table.report-2col td.val-col.warn{background:#fffbeb}
+table.report-2col td.val-col.bad{background:#fef2f2}
+
+/* Daily Report grid */
+.tx-grid-wrap{background:#fff}
+.tx-grid-wrap table.sgm-grid thead th{
+  background:var(--surface-2);color:var(--text);
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border-strong);
+  box-shadow:none;text-transform:none;letter-spacing:0;
+}
+.tx-grid-wrap table.sgm-grid thead th.sticky-col{background:var(--surface-2)}
+.tx-grid-wrap table.sgm-grid thead th.current-date{
+  background:var(--accent-soft) !important;
+  color:var(--accent-ink) !important;
+  box-shadow:inset 0 -2px 0 var(--accent-400);
+}
+.tx-grid-wrap table.sgm-grid td{border-right:1px solid #f0f2f6}
+.tx-grid-wrap table.sgm-grid th.sticky-col,
+.tx-grid-wrap table.sgm-grid td.sticky-col{border-right:1px solid var(--border-strong)}
+.tx-grid-wrap table.sgm-grid tr.category-row td{
+  background:var(--surface-3);color:var(--text-muted);
+  border-top:0;border-bottom:1px solid var(--border);
+  letter-spacing:.08em;
+}
+.tx-grid-wrap table.sgm-grid tr.metric-row:nth-child(even) td,
+.tx-grid-wrap table.sgm-grid tr.metric-row:nth-child(even) td.sticky-col{background:#fcfcfe}
+.tx-grid-wrap table.sgm-grid tr.metric-row:hover td,
+.tx-grid-wrap table.sgm-grid tr.metric-row:hover td.sticky-col{background:#f3f5fa}
+.tx-count{background:transparent;border-top:0;padding:10px 4px}
+.tx-store-chip{background:var(--surface-3)}
+
+/* Dashboard table */
+#dashboardTable thead th,
+#dashboardTable thead th:first-child{
+  background:var(--surface-2) !important;
+  color:var(--text-muted) !important;
+  box-shadow:inset 0 -1px 0 var(--border-strong);
+}
+#dashboardTable th:first-child,
+#dashboardTable td:first-child{border-right:1px solid var(--border)}
+
+/* ---------------------------- SEGMENTED CONTROLS ---------------------------- */
+.tx-view-toggle{
+  border:0;padding:3px;gap:2px;
+  background:var(--surface-3);box-shadow:none;
+  overflow:visible;
+}
+.tx-view-toggle button{border-radius:8px;padding:6px 13px}
+.tx-view-toggle button.active{
+  background:#fff;color:var(--text);
+  box-shadow:0 1px 2px rgba(11,18,32,.10), 0 0 0 1px rgba(11,18,32,.04);
+}
+.tx-view-toggle button:not(.active):hover{background:transparent;color:var(--text)}
+.tabs-line button.active,
+.login-tabs button.active{box-shadow:0 1px 2px rgba(11,18,32,.10), 0 0 0 1px rgba(11,18,32,.04)}
+
+/* ---------------------------- FILTER BARS / CHIPS ---------------------------- */
+.report-shell{padding:16px 18px}
+.report-shell .report-top{margin-bottom:0}
+.report-shell .report-count{border-bottom:0;border-top:1px solid var(--border);margin-top:14px;padding:12px 0 0}
+.report-shell .report-top .range-chip{
+  background:var(--accent-soft);border-color:#fde68a;color:var(--accent-ink);
+  border-radius:999px;font-variant-numeric:tabular-nums;
+}
+.storage-stat{background:var(--surface-2);border-color:var(--border)}
+
+/* ---------------------------- CHART CARDS ---------------------------- */
+.chart-card{padding:18px 20px 20px}
+.chart-card::before{display:none}
+.chart-card h4{border-bottom:0;padding-bottom:0;margin-bottom:12px;font-size:13.5px;letter-spacing:-.01em}
+.chart-card h4::before{width:8px;height:8px;border-radius:50%;background:var(--accent-400);box-shadow:0 0 0 4px var(--accent-soft)}
+
+/* ---------------------------- ROW ACTIONS / CHIPS ---------------------------- */
+.tx-table-card .row-btn,
+.stores-table .row-btn,
+.users-table .row-btn{border-radius:8px;padding:5px 10px;border-color:var(--border-strong)}
+.dash-status,.role-chip,.stores-table .mini-status{letter-spacing:.05em}
+
+/* ---------------------------- BACKUP ---------------------------- */
+.backup-card{padding:20px}
+.backup-card h3{font-size:14.5px;letter-spacing:-.01em}
+.salary-table th{box-shadow:none;border-bottom:1px solid var(--border)}
+
+/* ---------------------------- MODALS ---------------------------- */
+.modal-backdrop{
+  background:rgba(11,18,32,.42);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+}
+.modal{box-shadow:var(--shadow-xl), 0 0 0 1px rgba(11,18,32,.06)}
+.modal-head{padding:18px 22px}
+.modal-head h3{font-size:16px;letter-spacing:-.02em}
+.modal-body{padding:20px 22px}
+.modal-foot{padding:14px 22px;background:var(--surface-2)}
+.modal-x{border-radius:10px}
+.confirm-icon{box-shadow:0 0 0 8px rgba(5,150,105,.08)}
+
+/* ---------------------------- LOGIN ---------------------------- */
+.login-screen{
+  background:
+    radial-gradient(760px 460px at 14% 12%, rgba(251,191,36,.26), transparent 60%),
+    radial-gradient(720px 480px at 88% 88%, rgba(99,102,241,.16), transparent 58%),
+    radial-gradient(520px 360px at 82% 10%, rgba(16,185,129,.10), transparent 60%),
+    #f3f4f8;
+}
+.login-card{
+  padding:34px 32px;
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 40px 80px -32px rgba(11,18,32,.35), 0 0 0 1px rgba(11,18,32,.05);
+}
+.login-card h2{font-size:20px;letter-spacing:-.03em}
+.login-card input,.login-card select{
+  background:var(--surface-2);border-color:var(--border);
+  padding:12px 14px;border-radius:12px;
+}
+.login-card input:hover,.login-card select:hover{border-color:var(--border-strong)}
+.login-card button.primary{
+  background:var(--brand-900);border-radius:12px;padding:13px;
+  box-shadow:0 12px 24px -12px rgba(11,18,32,.65);
+}
+.login-card button.primary:hover{background:#1b2540;filter:none;transform:none}
+.login-tabs{border-radius:12px;margin-bottom:8px}
+.login-tabs button{border-radius:9px}
+
+/* ---------------------------- TOAST / FOOTER ---------------------------- */
+.toast{
+  background:var(--brand-900);
+  border-radius:14px;padding:13px 18px;
+  box-shadow:0 20px 40px -16px rgba(11,18,32,.55), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.toast.success{background:#047857}
+.footer{max-width:100%;color:var(--text-subtle)}
+
+/* ---------------------------- SMALL SCREENS / MOTION ---------------------------- */
+@media (max-width:760px){
+  .topbar-main{padding:10px 14px;min-height:auto;max-height:none}
+  nav{padding:2px 10px 10px}
+  main{padding:14px 12px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  html{scroll-behavior:auto}
+}
+</style>
 </head>
 <body>
 
@@ -1725,6 +2176,17 @@ details.group>summary::-webkit-details-marker{display:none}
 </div>
       </div>
       <div id="bulkProgress" style="margin:10px 0;color:#66787e;font-size:12px;min-height:18px"></div> 
+      <div class="dash-controls">
+        <div class="field" style="min-width:180px">
+          <label for="userFilterStatus">Status</label>
+          <select class="control-input" id="userFilterStatus">
+            <option value="">All users</option>
+            <option value="enabled">Enabled</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+        <div id="usersSummary" class="storage-stat" style="margin:0;flex:1;min-width:200px"></div>
+      </div>
       <div class="table-card"><table id="usersTable" class="users-table"></table></div>
     </section>
 
@@ -2406,20 +2868,41 @@ Object.keys(PNL_HEAD_MAP).forEach(function(excelName){
 });
 
 /* Fetch targets for one store across a date range of months */
-async function sbFetchPnlTargets(storeId, fromMonth, toMonth){
-  const { data, error } = await sb
-    .from("pnl_targets")
-    .select("month,cost_head,target_amount")
-    .eq("store_id", storeId)
-    .gte("month", fromMonth)
-    .lte("month", toMonth);
-  if(error) throw error;
+/* Supabase returns at most 1,000 rows per request. Read every page so
+   multi-store totals are not silently cut short. buildQuery must return
+   a fresh, consistently ordered query each time it is called. */
+async function sbFetchAllPages(buildQuery){
+  var PAGE = 1000, all = [], offset = 0;
+  while(true){
+    const { data, error } = await buildQuery().range(offset, offset + PAGE - 1);
+    if(error) throw error;
+    all = all.concat(data || []);
+    if(!data || data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all;
+}
 
-  /* Group as { "2026-11-01": { advertisement: 21867.8, rent: 29135.9, … } } */
+/* Fetch targets for one store, or several stores summed together,
+   across a date range of months */
+async function sbFetchPnlTargets(storeId, fromMonth, toMonth){
+  var ids = Array.isArray(storeId) ? storeId : [storeId];
+  var data = await sbFetchAllPages(function(){
+    return sb
+      .from("pnl_targets")
+      .select("store_id,month,cost_head,target_amount")
+      .in("store_id", ids)
+      .gte("month", fromMonth)
+      .lte("month", toMonth)
+      .order("month").order("store_id").order("cost_head");
+  });
+
+  /* Group as { "2026-11-01": { advertisement: 21867.8, rent: 29135.9, … } },
+     adding the selected stores' targets together */
   var out = {};
   data.forEach(function(r){
     if(!out[r.month]) out[r.month] = {};
-    out[r.month][r.cost_head] = Number(r.target_amount) || 0;
+    out[r.month][r.cost_head] = (out[r.month][r.cost_head] || 0) + (Number(r.target_amount) || 0);
   });
   return out;
 }
@@ -2589,8 +3072,12 @@ async function uploadPnlTargets(){
 
 /* Fetch the profile of the logged-in user */
 async function sbFetchProfile(userId){
-  const { data, error } = await sb.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await sb.from("profiles").select("*").eq("id", userId).maybeSingle();
   if(error) throw error;
+  if(!data){
+    try { await sb.auth.signOut(); } catch(ignore){}
+    throw new Error("This login has no user profile. Ask the administrator to check the account in Supabase.");
+  }
   return {
     id: data.id,
     username: data.username,
@@ -2618,12 +3105,13 @@ async function sbSaveDailyRecord(record){
 
 /* Load daily records in a date range for a set of stores */
 async function sbLoadRecords(storeIds, fromDate, toDate){
-  let query = sb.from("daily_records").select("*");
-  if(storeIds && storeIds.length) query = query.in("store_id", storeIds);
-  if(fromDate) query = query.gte("date", fromDate);
-  if(toDate)   query = query.lte("date", toDate);
-  const { data, error } = await query.order("date");
-  if(error) throw error;
+  const data = await sbFetchAllPages(function(){
+    let query = sb.from("daily_records").select("*");
+    if(storeIds && storeIds.length) query = query.in("store_id", storeIds);
+    if(fromDate) query = query.gte("date", fromDate);
+    if(toDate)   query = query.lte("date", toDate);
+    return query.order("date").order("store_id");
+  });
   /* Convert back to the record shape the app expects */
   return data.map(function(row){
     var rec = Object.assign({}, row.data);
@@ -3717,9 +4205,22 @@ function addMonths(monthIso, delta){
 
 
 /* Returns { rows: [...29 items (SL 1-29)...], sales, hasTargets, recordCount } */
+/* Stores the P&L covers: the same scope the top-bar filter describes
+   (picked stores, else picked area managers' stores, else all visible). */
+function pnlStoreScope(){
+  var ids = resolveStoreScope();
+  if(!ids.length && state.selectedStore) ids = [state.selectedStore];
+  return ids;
+}
+function pnlScopeText(ids){
+  return ids.length === 1 ? ids[0] : scopeLabel();
+}
+
+/* storeId may be one store id or an array of ids (consolidated P&L) */
 async function calculatePnl(storeId, fromIso, toIso){
+  var storeIdList = Array.isArray(storeId) ? storeId : [storeId];
 /* ---- 1) Pull daily records in range ---- */
-  var records = await sbLoadRecords([storeId], fromIso, toIso);
+  var records = await sbLoadRecords(storeIdList, fromIso, toIso);
   var sales = 0, cogs = 0, employeeCost = 0, dailyInputTarget = 0;
   records.forEach(function(r){
     var c = calculate(r);
@@ -3737,7 +4238,7 @@ async function calculatePnl(storeId, fromIso, toIso){
   var toMonth   = monthKeyOf(toIso);
   var targets = {};
   try {
-    targets = await sbFetchPnlTargets(storeId, fromMonth, toMonth);
+    targets = await sbFetchPnlTargets(storeIdList, fromMonth, toMonth);
   } catch(e){ console.warn("P&L targets fetch:", e); }
 
   /* ---- 3) Prorate each cost head across months in range ---- */
@@ -5689,9 +6190,8 @@ async function exportPnlCsv(){
   var from = q("pnlFrom").value;
   var to   = q("pnlTo").value;
   if(!from || !to){ showToast("Set the date range first."); return; }
-  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
-              ? topFilter.storeIds[0] : state.selectedStore;
-  if(!storeId){ showToast("Pick a store first."); return; }
+  var storeId = pnlStoreScope();
+  if(!storeId.length){ showToast("Pick a store first."); return; }
   
   var result;
   try { result = await calculatePnl(storeId, from, to); }
@@ -5786,7 +6286,7 @@ async function exportPnlCsv(){
   // 4. Generate and Download
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "P&L");
-  XLSX.writeFile(wb, "SGM_PnL_" + storeId + "_" + from + "_to_" + to + ".xlsx");
+  XLSX.writeFile(wb, "SGM_PnL_" + (storeId.length === 1 ? storeId[0] : storeId.length + "_stores") + "_" + from + "_to_" + to + ".xlsx");
   
   showToast("Excel downloaded.", "success");
 }
@@ -5797,16 +6297,15 @@ async function exportPnlPdf(){
   var from = q("pnlFrom").value;
   var to   = q("pnlTo").value;
   if(!from || !to){ showToast("Set the date range first."); return; }
-  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
-              ? topFilter.storeIds[0] : state.selectedStore;
-  if(!storeId){ showToast("Pick a store first."); return; }
+  var storeId = pnlStoreScope();
+  if(!storeId.length){ showToast("Pick a store first."); return; }
   
   var result;
   try { result = await calculatePnl(storeId, from, to); }
   catch(e){ showToast("Could not load P&L: " + (e.message || "")); return; }
   if(!result.rows.length){ showToast("Nothing to export."); return; }
 
-  var subtitle = "Store: " + storeId + " · " + dateLabel(from) + " – " + dateLabel(to);
+  var subtitle = "Store: " + pnlScopeText(storeId) + " · " + dateLabel(from) + " – " + dateLabel(to);
   var doc = getPdfContext("Live P&L", subtitle);
 
   var head = [["SL NO","DESCRIPTION","Target SAR","%","Actual / Estimated","%","Variance","%"]];
@@ -5889,7 +6388,7 @@ async function exportPnlPdf(){
     }
   });
 
-  savePdfDoc(doc, "SGM_PnL_" + storeId + "_" + from + ".pdf");
+  savePdfDoc(doc, "SGM_PnL_" + (storeId.length === 1 ? storeId[0] : storeId.length + "_stores") + "_" + from + ".pdf");
 }
 
 /* ---------- P&L Renderer ---------- */
@@ -5910,9 +6409,8 @@ async function renderPnl(){
   if(rangeChip) rangeChip.textContent = dateLabel(from) + " → " + dateLabel(to) + " · " + scopeLabel();
   table.innerHTML = '<tbody><tr><td class="empty">Loading P&L…</td></tr></tbody>';
 
-  var storeId = (topFilter.storeIds && topFilter.storeIds.length === 1)
-              ? topFilter.storeIds[0] : state.selectedStore;
-    if(!storeId){
+  var storeId = pnlStoreScope();
+    if(!storeId.length){
     table.innerHTML = '<tbody><tr><td class="empty">Pick a store using the top-bar Store filter.</td></tr></tbody>';
     return;
   }
@@ -5927,7 +6425,7 @@ async function renderPnl(){
   if(chip){
     if(!result.recordCount){
       chip.style.display = "block"; chip.style.background = "#fee2e2"; chip.style.color = "#b91c1c";
-      chip.textContent = "⚠ No daily entries for " + storeId + " in this range. P&L is empty.";
+      chip.textContent = "⚠ No daily entries for " + pnlScopeText(storeId) + " in this range. P&L is empty.";
     } else if(!result.hasTargets){
       chip.style.display = "block"; chip.style.background = "#fef3c7"; chip.style.color = "#b45309";
       chip.textContent = "⚠ No P&L targets uploaded for this period. Showing actuals only.";
@@ -7194,12 +7692,24 @@ function fillModalDatalists(){
   }
   fillList("smAreaList", allAreas());
   fillList("smTypeList", allTypes());
-  fillList("smAMList",   allAreaManagers());
-  fillList("smOMList",   allOpManagers());
+  /* Also offer the names of active user accounts with the matching role,
+     so a newly created Area / Operation Manager can be picked for a store */
+  function userNamesByRole(role){
+    return (state.users || [])
+      .filter(function(u){ return u.role === role && u.is_active !== false; })
+      .map(function(u){ return u.display || u.username; })
+      .filter(Boolean);
+  }
+  fillList("smAMList",   uniqueSorted(allAreaManagers().concat(userNamesByRole("am"))));
+  fillList("smOMList",   uniqueSorted(allOpManagers().concat(userNamesByRole("op"))));
 }
 function openStoreModal(storeId){
   editingStoreId = storeId || null;
   fillModalDatalists();
+  /* Pick up users created since the last load, then refresh the suggestions */
+  if(currentUser && currentUser.role === "admin"){
+    reloadProfiles().then(fillModalDatalists);
+  }
   var title = q("storeModalTitle");
   var s = null;
   if(editingStoreId){ s = state.stores.find(function(x){return x.id === editingStoreId;}); }
@@ -7500,10 +8010,25 @@ function renderUsers(){
   if(!table) return;
   var thead = "<thead><tr><th>Status</th><th>Username</th><th>Display name</th><th>Role</th><th>Assigned stores</th><th>Actions</th></tr></thead>";
   var tbody = "<tbody>";
-  if(!state.users.length){
-    tbody += '<tr><td colspan="6" class="empty">No users.</td></tr>';
+  /* Status filter: "" = all, "enabled", "disabled" */
+  var statusSel = q("userFilterStatus");
+  var statusFilter = statusSel ? statusSel.value : "";
+  var shownUsers = state.users.filter(function(u){
+    if(statusFilter === "enabled")  return !!u.is_active;
+    if(statusFilter === "disabled") return !u.is_active;
+    return true;
+  });
+  var summary = q("usersSummary");
+  if(summary){
+    var enabledCount = state.users.filter(function(u){ return !!u.is_active; }).length;
+    summary.textContent = "Showing " + shownUsers.length + " of " + state.users.length +
+      " users · " + enabledCount + " enabled · " + (state.users.length - enabledCount) + " disabled";
   }
-  state.users.forEach(function(u){
+  if(!shownUsers.length){
+    tbody += '<tr><td colspan="6" class="empty">' +
+      (state.users.length ? "No " + statusFilter + " users." : "No users.") + '</td></tr>';
+  }
+  shownUsers.forEach(function(u){
     var roleClass = u.role === "admin" ? "admin" : u.role === "op" ? "op" : u.role === "am" ? "am" : u.role === "viewer" ? "viewer" : "sm";
     var roleLabel = u.role === "admin" ? "Admin" : u.role === "op" ? "Operation Manager" : u.role === "am" ? "Area Manager" : u.role === "viewer" ? "Viewer" : "Store";
     var scope = (u.role === "admin") ? "All stores" : (u.storeIds||[]).join(", ") || "—";
@@ -7534,11 +8059,42 @@ function renderUsers(){
     b.addEventListener("click", function(){ openUserModal(b.dataset.username); });
   });
   table.querySelectorAll(".delete-user").forEach(function(b){
-    b.addEventListener("click", function(){
-      if(!window.confirm("Delete user "+b.dataset.username+"?")) return;
-      state.users = state.users.filter(function(u){ return u.username !== b.dataset.username; });
-      saveState("User removed.");
-      renderUsers();
+    b.addEventListener("click", async function(){
+      var uname = b.dataset.username;
+      if(!(currentUser && currentUser.role === "admin")){ showToast("Only admin can manage users."); return; }
+      if(currentUser.username === uname){ showToast("You cannot delete the account you are signed in with."); return; }
+      if(!window.confirm(
+        "Delete user " + uname + "?\n\n" +
+        "This removes the user and their sign-in from Supabase. It cannot be undone."
+      )) return;
+      b.disabled = true;
+      try {
+        var delSession = (await sb.auth.getSession()).data.session;
+        if(!delSession) throw new Error("Your session has expired. Sign in again.");
+        var delRes = await fetch("https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + delSession.access_token
+          },
+          body: JSON.stringify({ action: "delete", username: uname })
+        });
+        var delBody = {};
+        try { delBody = await delRes.json(); } catch(ignore){}
+        if(!delRes.ok) throw new Error(delBody.error || delBody.message || ("Delete failed (" + delRes.status + ")."));
+        /* The old version of the function ignores "delete", so only
+           trust an explicit confirmation. */
+        if(!delBody.deleted){
+          throw new Error("The create-user function in Supabase has not been updated yet, so the user was not deleted.");
+        }
+        showToast("User " + uname + " deleted.", "success");
+        await reloadProfiles();
+        renderUsers();
+        renderAmMultiSelect();
+      } catch(e){
+        showToast("Delete failed: " + (e.message || e));
+        b.disabled = false;
+      }
     });
   });
 
@@ -7561,6 +8117,7 @@ function renderUsers(){
         showToast("User " + (newStatus ? "enabled" : "disabled") + ".", "success");
         await reloadProfiles();
         renderUsers();
+        renderAmMultiSelect();
       } catch(e) {
         showToast("Failed to update user: " + e.message);
       }
@@ -7596,7 +8153,7 @@ function openUserModal(username){
   if(u){
     q("userModalTitle").textContent = "Edit User — "+u.username;
     q("umUsername").value = u.username;
-    q("umUsername").disabled = true;
+    q("umUsername").disabled = false;
     q("umDisplay").value = u.display || u.username;
     q("umRole").value = u.role || "am";
     q("umPassword").value = u.password || "";
@@ -8155,8 +8712,51 @@ async function saveUserModal(){
 
   /* ========== EDIT EXISTING USER ========== */
   if(editingUserUsername){
+    var oldUname = editingUserUsername;
+    var renaming = uname !== oldUname;
+    if(renaming){
+      if(!/^[a-z0-9._-]+$/.test(uname)){
+        showToast("Username can only use letters, numbers, dot, dash and underscore.");
+        return;
+      }
+      if(state.users.some(function(x){ return String(x.username||"").toLowerCase() === uname; })){
+        showToast("Username " + uname + " is already taken.");
+        return;
+      }
+      if(!window.confirm(
+        "Change username from " + oldUname + " to " + uname + "?\n\n" +
+        "They will sign in as " + uname + " from now on. Their password stays the same."
+      )) return;
+    }
     try {
       if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = "Updating…"; }
+
+      /* Rename = username in profiles + sign-in email together, done by the
+         rename-user function. If it fails nothing is changed. */
+      if(renaming){
+        var renSession = (await sb.auth.getSession()).data.session;
+        if(!renSession) throw new Error("Your session has expired. Sign in again.");
+        var renRes = await fetch("https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + renSession.access_token
+          },
+          body: JSON.stringify({ action: "rename", old_username: oldUname, new_username: uname })
+        });
+        var renBody = {};
+        try { renBody = await renRes.json(); } catch(ignore){}
+        if(!renRes.ok){
+          throw new Error(renBody.error || renBody.message || ("Rename failed (" + renRes.status + ")."));
+        }
+        /* The old version of the function ignores "rename" and answers
+           with something else, so only trust an explicit confirmation. */
+        if(!renBody.renamed){
+          throw new Error("The create-user function in Supabase has not been updated yet, so the username was not changed.");
+        }
+        if(currentUser && currentUser.username === oldUname) currentUser.username = uname;
+        editingUserUsername = uname;
+      }
 
       var { error: profileError } = await sb.from("profiles")
         .update({
@@ -8168,7 +8768,10 @@ async function saveUserModal(){
 
       if(profileError) throw profileError;
 
-      try {
+      /* Only change the password when one was typed in. A blank field (or a
+         save that renames the user) leaves the password untouched. */
+      var typedPassword = (q("umPassword").value||"").trim();
+      if(!renaming && typedPassword) try {
         var session = (await sb.auth.getSession()).data.session;
         if(session) {
           await fetch("https://zbbojjgvryhsqzpuwcyq.supabase.co/functions/v1/create-user", {
@@ -8222,6 +8825,7 @@ async function saveUserModal(){
           "Authorization": "Bearer " + validToken
         },
         body: JSON.stringify({
+          action: "create",
           email: email,
           password: password,
           username: uname,
@@ -8235,6 +8839,12 @@ async function saveUserModal(){
     var result = await resp.json();
     if(!resp.ok || !result.success){
       showToast("Create failed: " + (result.error || resp.statusText));
+      return;
+    }
+    /* The function answers "Password updated" when the sign-in already
+       existed, which means no new user was made. */
+    if(result.message === "Password updated"){
+      showToast("A user with the sign-in name " + uname + " already exists. No new user was created.");
       return;
     }
 
@@ -8269,12 +8879,29 @@ function amListForUser(){
   /* Return the list of AM names the current user may choose */
   var seen = {};
   visibleStores.forEach(function(s){
-    if(s.areaManager) seen[s.areaManager] = true;
+    /* Only managers who have at least one active store */
+    if(s.areaManager && (s.status||"Active") === "Active") seen[s.areaManager] = true;
   });
-  return Object.keys(seen).sort();
+  /* Leave out names whose user account is disabled (and has no enabled
+     account under the same name). Names with no account stay listed. */
+  var disabled = {}, enabled = {};
+  (state.users || []).forEach(function(u){
+    var bucket = u.is_active === false ? disabled : enabled;
+    [u.display, u.username].forEach(function(n){
+      n = String(n || "").trim().toLowerCase();
+      if(n) bucket[n] = true;
+    });
+  });
+  return Object.keys(seen).filter(function(a){
+    var k = a.trim().toLowerCase();
+    return !(disabled[k] && !enabled[k]);
+  }).sort();
 }
 function amStoreCount(amName){
-  return visibleStores.filter(function(s){ return s.areaManager === amName; }).length;
+  /* Active stores only, to match the Store picker */
+  return visibleStores.filter(function(s){
+    return s.areaManager === amName && (s.status||"Active") === "Active";
+  }).length;
 }
 function renderAmMultiSelect(){
   var host = q("amMsTags");
@@ -8863,6 +9490,7 @@ if(bulkStoresBtn) bulkStoresBtn.addEventListener("click", function(){ bulkCreate
 var bulkMgrsBtn = q("bulkCreateManagersBtn");
 if(bulkMgrsBtn) bulkMgrsBtn.addEventListener("click", function(){ bulkCreateManagers().catch(function(e){ console.error(e); }); });
   q("usersExportBtn").addEventListener("click", exportUsersCsv);
+  if(q("userFilterStatus")) q("userFilterStatus").addEventListener("change", renderUsers);
   var userImpBtn = q("userImportBtn");
 if(userImpBtn) userImpBtn.addEventListener("click", openUserImportModal);
 
