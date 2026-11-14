@@ -1723,6 +1723,60 @@ table.report-2col td.val-col.bad{background:#fef2f2}
 .login-tabs{border-radius:12px;margin-bottom:8px}
 .login-tabs button{border-radius:9px}
 
+/* ----- Split sign-in: blue welcome panel on the left, form on the right ----- */
+.login-screen{padding:0;align-items:stretch;justify-content:stretch;background:#f4f5fd;overflow:auto}
+.login-hero{
+  flex:1.55;min-width:0;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:clamp(32px,6vh,72px) clamp(32px,5.5vw,84px);
+  color:#fff;
+  background:
+    repeating-radial-gradient(circle at 78% 62%, rgba(255,255,255,.13) 0 1.5px, transparent 1.5px 20px),
+    linear-gradient(135deg,#1535d6 0%,#0f2ab8 55%,#0a1f96 100%);
+}
+.login-hero-brand{display:flex;align-items:center;gap:14px;font-size:20px;font-weight:800;line-height:1.1;letter-spacing:.02em;text-transform:uppercase}
+.login-hero-brand .brand-mark{
+  width:58px;height:58px;border-radius:14px;flex:none;display:grid;place-items:center;
+  background:#fff;color:#1535d6;font-weight:900;font-size:16px;letter-spacing:0;box-shadow:none;
+}
+.login-hero-brand span{padding-left:14px;border-left:3px solid #fff}
+.login-hero-body{max-width:720px}
+.login-hero-body h1{margin:0 0 18px;font-size:clamp(40px,5vw,60px);font-weight:800;letter-spacing:-.03em;line-height:1.05;color:#fff}
+.login-hero-body p{margin:0;font-size:15px;line-height:1.6;color:rgba(255,255,255,.94)}
+.login-hero-foot{font-size:13.5px;color:rgba(255,255,255,.85)}
+
+.login-card{
+  flex:1;min-width:340px;max-width:none;width:auto;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:40px clamp(28px,5vw,80px);
+  background:transparent;border:0;border-radius:0;box-shadow:none;
+}
+.login-card > *{width:100%;max-width:460px}
+.login-card .brand-row{margin-bottom:18px}
+.login-card .brand-row .brand-mark{display:none}
+.login-card h2{font-size:28px;font-weight:700;letter-spacing:-.03em}
+.login-card p.sub{font-size:13.5px;margin-top:6px}
+.login-card input,.login-card select{
+  background:#e8f0fe;border:0;border-bottom:1px solid #cdd8f0;border-radius:4px;
+  padding:13px 14px;font-size:14px;
+}
+.login-card input:hover,.login-card select:hover{border-color:#9db2e6}
+.login-card input:focus,.login-card select:focus{border-color:#1535d6;box-shadow:0 0 0 3px rgba(21,53,214,.16)}
+.login-card button.primary{
+  margin-top:26px;background:#111317;border-radius:4px;padding:13px;box-shadow:none;
+}
+.login-card button.primary:hover{background:#1535d6}
+.login-tabs{border-radius:6px;background:#e3e8f6}
+.login-tabs button{border-radius:4px}
+@media (max-width:900px){
+  .login-screen{flex-direction:column}
+  .login-hero{flex:none;padding:26px 24px;gap:20px}
+  .login-hero-body h1{font-size:34px;margin-bottom:10px}
+  .login-hero-body p{font-size:13.5px}
+  .login-hero-foot{display:none}
+  .login-card{flex:none;min-width:0;padding:28px 24px 40px;align-items:center}
+}
+
 /* ---------------------------- TOAST / FOOTER ---------------------------- */
 .toast{
   background:var(--brand-900);
@@ -1844,12 +1898,23 @@ button.kd-hero-card:hover,.kd-tile:hover{border-color:var(--border-strong);box-s
 
 <!-- ============ LOGIN SCREEN ============ -->
 <div class="login-screen show" id="loginScreen">
+  <div class="login-hero">
+    <div class="login-hero-brand">
+      <div class="brand-mark">SGM</div>
+      <span>SGM<br>Operations Control</span>
+    </div>
+    <div class="login-hero-body">
+      <h1>Hello! <span aria-hidden="true">👋</span></h1>
+      <p>SGM Operations Control is where every store records its day and the whole team follows the numbers. Daily entries, weekly and monthly reports, the KPI dashboard and the live P&amp;L are all in one place, so stores, area managers and operations work from the same figures.</p>
+    </div>
+    <div class="login-hero-foot">SGM Operations Control · Daily input, automatic weekly and monthly control</div>
+  </div>
   <div class="login-card">
     <div class="brand-row">
       <div class="brand-mark">SGM</div>
       <div>
-        <h2>SGM Operations Control</h2>
-        <p class="sub">Sign in to continue</p>
+        <h2>Welcome back!</h2>
+        <p class="sub">Please enter your login details.</p>
       </div>
     </div>
 
