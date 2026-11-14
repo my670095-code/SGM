@@ -1742,6 +1742,102 @@ table.report-2col td.val-col.bad{background:#fef2f2}
   *,*::before,*::after{animation:none !important;transition:none !important}
   html{scroll-behavior:auto}
 }
+/* ===== KPI Dashboard — Overview ===== */
+#dashCharts.hidden{display:none}
+.kd{display:flex;flex-direction:column;gap:16px;margin-bottom:18px}
+.kd .good{color:#15803d}.kd .warn{color:#b45309}.kd .bad{color:#b91c1c}
+.kd-hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kd-hero-card,.kd-tile,.kd-att-row{font:inherit;text-align:left;cursor:pointer;color:var(--text)}
+.kd-hero-card{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-xs);transition:border-color .15s, box-shadow .15s}
+.kd-hero-card.kd-score{cursor:default}
+button.kd-hero-card:hover,.kd-tile:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.kd-hero-card.sel,.kd-tile.sel{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.14)}
+.kd-lbl{font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:.01em}
+.kd-big{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15;color:var(--text)}
+.kd-big small{font-size:14px;font-weight:600;color:var(--text-subtle)}
+.kd-sub{font-size:12px;color:var(--text-muted)}
+.kd-sub b{font-weight:700}
+.kd-delta{font-size:11.5px;font-weight:600;color:var(--text-muted)}
+.kd-delta em{font-style:normal;font-weight:400;color:var(--text-subtle)}
+.kd-bar,.kd-stack{display:flex;height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.kd-bar i,.kd-stack i{display:block;height:100%;background:#1d4ed8}
+.kd-bar i.good,.kd-stack i.good,.kd-legend i.good{background:#16a34a}
+.kd-bar i.warn,.kd-stack i.warn,.kd-legend i.warn{background:#d97706}
+.kd-bar i.bad,.kd-stack i.bad,.kd-legend i.bad{background:#dc2626}
+.kd-legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-muted)}
+.kd-legend span{display:inline-flex;align-items:center;gap:5px}
+.kd-legend i{width:8px;height:8px;border-radius:50%}
+.kd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow-xs)}
+.kd-card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.kd-card-head h4{margin:0;font-size:14px;font-weight:700}
+.kd-card-head span{font-size:12px;color:var(--text-muted)}
+.kd-att-row{display:grid;grid-template-columns:92px minmax(0,1.4fr) minmax(0,1.6fr) auto;align-items:center;gap:12px;width:100%;background:transparent;border:0;border-top:1px solid var(--border);padding:9px 6px;border-radius:8px}
+.kd-att-row:hover,.kd-att-row.sel{background:var(--surface-2)}
+.kd-att-name{font-weight:600;font-size:13.5px}
+.kd-att-name em{font-style:normal;font-weight:400;font-size:12px;color:var(--text-subtle);margin-left:6px}
+.kd-att-num{font-size:13px;color:var(--text-muted)}
+.kd-att-gap{font-weight:700;font-size:13.5px;text-align:right;white-space:nowrap}
+.kd-empty{padding:14px 6px;font-size:13.5px;color:var(--text-muted)}
+.kd-cat{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-subtle);margin:6px 2px 8px}
+.kd-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:6px}
+.kd-tile{display:flex;flex-direction:column;gap:5px;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border-strong);border-radius:var(--r-md);padding:12px 14px;transition:border-color .15s, box-shadow .15s}
+.kd-tile.good{border-left-color:#16a34a}.kd-tile.warn{border-left-color:#d97706}.kd-tile.bad{border-left-color:#dc2626}
+.kd-tile.sel{border-left-color:#1d4ed8}
+.kd-tile .kd-big{font-size:21px}
+.kd-tile-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kd-detail-head{scroll-margin-top:170px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-top:6px;padding-top:14px;border-top:1px solid var(--border)}
+.kd-detail-head h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.kd-big-inline{font-size:17px;font-weight:700}
+.kd-hint{margin-left:auto;font-size:12px;color:var(--text-subtle)}
+.kd-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.kd-note{font-size:12px;color:var(--text-muted);margin:-6px 0 10px}
+@media (max-width:1100px){.kd-hero{grid-template-columns:repeat(2,minmax(0,1fr))}.kd-detail{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .kd-hero{grid-template-columns:1fr}
+  .kd-att-row{grid-template-columns:auto 1fr;row-gap:4px}
+  .kd-att-gap{text-align:left}
+  .kd-hint{margin-left:0;width:100%}
+}
+/* P&L Guide */
+.pg-intro{margin:0 0 12px;font-size:13.5px;line-height:1.55;color:var(--text-muted)}
+.pg-group{margin:18px 0 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1d4ed8}
+.pg-group:first-child{margin-top:4px}
+.pg-line{border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;background:var(--surface)}
+.pg-name{display:flex;align-items:center;gap:10px;font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:8px}
+.pg-sl{flex:none;min-width:26px;height:22px;padding:0 6px;border-radius:6px;background:#1d4ed8;color:#fff;font-size:11.5px;font-weight:700;display:inline-grid;place-items:center}
+.pg-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:4px 0}
+.pg-row > span{font-size:12px;font-weight:600;color:var(--text-subtle);padding-top:2px}
+.pg-row p{margin:0;font-size:13.5px;line-height:1.55;color:var(--text)}
+.pg-row p.pg-how{background:var(--surface-2);border-radius:8px;padding:6px 10px;font-weight:500}
+@media (max-width:640px){.pg-row{grid-template-columns:1fr;gap:2px}}
+/* Live P&L: graph view */
+.pnl-graphs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:18px}
+.pnl-graphs .pnl-graph-wide{grid-column:1 / -1}
+.pnl-graphs .good{color:#15803d}.pnl-graphs .bad{color:#b91c1c}
+.pnl-graphs .kd-big{font-size:22px}
+.pnl-graphs .warn{color:#b45309}
+.pnl-sg-tag{font-size:11px !important;font-weight:600;color:#1d4ed8 !important;background:#dbeafe;border-radius:99px;padding:2px 9px}
+.pnl-sg-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.pnl-sg{border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;background:var(--surface-2)}
+.pnl-sg-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pnl-sg-top strong{font-size:14px}
+.pnl-sg-save{margin-left:auto;font-size:12.5px;font-weight:700;color:#15803d;white-space:nowrap}
+.pnl-sg p{margin:8px 0 6px;font-size:13px;color:var(--text-muted);line-height:1.5}
+.pnl-sg ul{margin:0;padding-left:18px;font-size:13px;line-height:1.55;color:var(--text)}
+.pnl-sg-foot{margin-top:10px;font-size:12px;color:var(--text-subtle)}
+@media (max-width:1100px){.pnl-graphs{grid-template-columns:1fr}}
+/* Live P&L: blue header row and blue EBITDA row, white text */
+#pnlTable thead th{background:#1d4ed8 !important;color:#fff !important;border-color:#1e40af !important}
+#pnlTable tr.pnl-ebitda td{background:#1d4ed8 !important;color:#fff !important;border-color:#1e40af !important}
+#pnlTable tr.pnl-ebitda td.good{color:#bbf7d0 !important}
+#pnlTable tr.pnl-ebitda td.bad{color:#fecaca !important}
+/* Margin rows (Gross Margin, Net Margin): mid blue tint.
+   Expense total rows: lighter blue tint. Dark blue text on both. */
+#pnlTable tr.pnl-margin,#pnlTable tr.pnl-total{border-top-color:#93c5fd !important;border-bottom-color:#93c5fd !important}
+#pnlTable tr.pnl-margin td{background:#bfdbfe !important;color:#1e3a8a !important}
+#pnlTable tr.pnl-total td{background:#e0ecff !important;color:#1e3a8a !important}
+#pnlTable tr.pnl-margin td.good,#pnlTable tr.pnl-total td.good{color:#166534 !important}
+#pnlTable tr.pnl-margin td.bad,#pnlTable tr.pnl-total td.bad{color:#b91c1c !important}
 </style>
 </head>
 <body>
@@ -2061,6 +2157,7 @@ table.report-2col td.val-col.bad{background:#fef2f2}
       <p>Store-wise profit &amp; loss — actuals from daily entries vs. admin-uploaded monthly targets.</p>
     </div>
     <div class="toolbar">
+      <button class="btn" id="pnlGuideBtn" type="button">P&amp;L Guide</button>
       <button class="btn" id="pnlExportCsvBtn" type="button">Export Excel</button>
       <button class="btn" id="pnlExportPdfBtn" type="button">Export PDF</button>
     </div>
@@ -2077,18 +2174,49 @@ table.report-2col td.val-col.bad{background:#fef2f2}
         <input class="control-input" type="date" id="pnlTo">
       </div>
       <div class="range-chip" id="pnlRangeChip" style="font-size:13px">—</div>
+      <div class="tx-view-toggle" id="pnlViewToggle" style="margin-left:auto">
+        <button type="button" data-view="table" class="active">Table</button>
+        <button type="button" data-view="graph">Graph</button>
+      </div>
     </div>
     <div id="pnlStatusChip" style="display:none;padding:10px 14px;margin:10px 0;border-radius:10px;font-size:12.5px;font-weight:600;"></div>
   </div>
 
-  <div class="table-card" style="max-height:75vh;overflow:auto">
+  <!-- Graph view of the same P&L -->
+  <div id="pnlCharts" class="pnl-graphs" style="display:none">
+    <div class="kd-hero pnl-graph-wide" id="pnlCards"></div>
+    <div class="kd-card pnl-graph-wide" id="pnlSuggest"></div>
+    <div class="chart-card pnl-graph-wide">
+      <h4>From Sales to EBITDA</h4>
+      <div class="kd-note">Blue = what is left at each step, orange = what is taken off. Each bar shows SAR and % of sales.</div>
+      <div class="chart-wrap" style="height:340px"><canvas id="pnlChartFlow"></canvas></div>
+    </div>
+    <div class="chart-card pnl-graph-wide">
+      <h4>Day by day — Sales and EBITDA</h4>
+      <div class="kd-note" id="pnlChartDailyNote"></div>
+      <div class="chart-wrap" style="height:300px"><canvas id="pnlChartDaily"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h4>Actual vs Target</h4>
+      <div class="kd-note" id="pnlChartTargetNote"></div>
+      <div class="chart-wrap" style="height:320px"><canvas id="pnlChartTarget"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h4>Where the money goes — % of sales</h4>
+      <div class="kd-note">Largest costs first. Red = above its target share, green = at or below, grey = no target.</div>
+      <div class="chart-wrap" id="pnlChartCostsWrap" style="height:320px"><canvas id="pnlChartCosts"></canvas></div>
+    </div>
+  </div>
+  <div id="pnlChartsEmpty" class="kd-card kd-empty" style="display:none"></div>
+
+  <div class="table-card" id="pnlTableCard" style="max-height:75vh;overflow:auto">
     <table id="pnlTable" class="report-2col"></table>
   </div>
 </section>
     <!-- ============ KPI DASHBOARD ============ -->
     <section id="view-dashboard" class="view">
       <div class="page-head">
-        <div><h2>KPI Dashboard</h2><p>Current month vs target, last month and same month last year.</p></div>
+        <div><h2>KPI Dashboard</h2><p>How the month is going against target, what needs attention, and which stores and days drive it.</p></div>
     <div class="toolbar">
   <button class="btn" data-export="dashboard">Export CSV</button>
   <button class="btn" id="dashPdfBtn" type="button">Export PDF</button>
@@ -2097,8 +2225,8 @@ table.report-2col td.val-col.bad{background:#fef2f2}
       <div class="report-shell">
               <div class="report-top">
           <div class="field" style="min-width:170px"><label for="dashMonth">Reporting month</label><input class="control-input" type="month" id="dashMonth"></div>
-          <div class="field" style="min-width:220px"><label for="dashKpi">Focus KPI</label><select class="control-input" id="dashKpi"></select></div>
-          <div class="range-chip" id="dashFocusValue" style="font-size:14px">—</div>
+          <div class="field" style="display:none"><label for="dashKpi">Focus KPI</label><select class="control-input" id="dashKpi"></select></div>
+          <div class="range-chip" id="dashFocusValue" style="display:none">—</div>
           <div class="field search-field"><label for="dashSearch">Search KPIs</label><input class="control-input" type="text" id="dashSearch" placeholder="Filter by category or KPI name…"></div>
           <button class="btn small" id="dashClearBtn" type="button">Clear search</button>
         </div>
@@ -2106,27 +2234,31 @@ table.report-2col td.val-col.bad{background:#fef2f2}
   <span>Showing <strong id="dashCount">0</strong> KPIs</span>
   <span id="dashScope"></span>
   <div class="tx-view-toggle" id="dashViewToggle" style="margin-left:auto">
-    <button type="button" data-view="chart" class="active">📊 Chart</button>
-    <button type="button" data-view="table">📋 Table</button>
+    <button type="button" data-view="chart" class="active">Overview</button>
+    <button type="button" data-view="table">Table</button>
   </div>
 </div>
       </div>
-      <div class="chart-panel" id="dashCharts">
-        <div class="chart-card">
-          <h4>Actual vs Target</h4>
-          <div class="chart-wrap"><canvas id="chartActualTarget"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <h4>Status Breakdown</h4>
-          <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
-        </div>
-        <div class="chart-card chart-card-wide">
-          <h4>Sales Mix % — Actual vs Target</h4>
-          <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <h4>Store Comparison — Focus KPI</h4>
-          <div class="chart-wrap"><canvas id="chartStores"></canvas></div>
+      <div id="dashCharts" class="kd">
+        <!-- 1) Headline numbers -->
+        <div class="kd-hero" id="dashHero"></div>
+        <!-- 2) What needs attention -->
+        <div class="kd-card" id="dashAttention"></div>
+        <!-- 3) Every KPI as a tile, grouped by category -->
+        <div id="dashTiles"></div>
+        <!-- 4) The selected KPI by store and by day -->
+        <div class="kd-detail-head" id="dashDetailHead"></div>
+        <div class="kd-detail">
+          <div class="chart-card">
+            <h4 id="dashStoresTitle">By store</h4>
+            <div class="kd-note" id="dashStoresNote"></div>
+            <div class="chart-wrap"><canvas id="chartStores"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h4 id="dashTrendTitle">Day by day</h4>
+            <div class="kd-note" id="dashTrendNote"></div>
+            <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+          </div>
         </div>
       </div>
 <div class="table-card" style="max-height:75vh;overflow:auto"><table id="dashboardTable"></table></div>
@@ -2358,6 +2490,21 @@ table.report-2col td.val-col.bad{background:#fef2f2}
     <div class="modal-foot">
       <button class="btn" id="importModalCancel" type="button">Cancel</button>
       <button class="btn primary" id="importConfirmBtn" type="button" disabled>Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ P&L GUIDE MODAL ============ -->
+<div class="modal-backdrop" id="pnlGuideModal">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-head">
+      <h3>P&amp;L Guide — what each line means</h3>
+      <button class="modal-x" id="pnlGuideClose" type="button">×</button>
+    </div>
+    <div class="modal-body" style="display:block">
+      <p class="pg-intro">A plain-language reference to every line of a store profit &amp; loss statement: what the line is, and how it is normally worked out. These are general definitions, not the rules of any one report.</p>
+      <input class="control-input" type="text" id="pnlGuideSearch" placeholder="Search a line, for example COGS, rent, margin…" style="width:100%;margin-bottom:12px">
+      <div id="pnlGuideBody"></div>
     </div>
   </div>
 </div>
@@ -2744,7 +2891,7 @@ var KPI_DEFS = [
   { cat:"Cost Efficiency", name:"COGS %",key:"COGSPct",target:TARGETS.inventory, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cancelled Bill Value %", key:"cancelledBillPct", target:TARGETS.cancelledBill, fmt:"pct", lower:true },
   { cat:"Controls", name:"Cash Deposited Variance %", key:"cashVariancePct", target:TARGETS.cashVariance, fmt:"pct", lower:true },
-    { cat:"Smart Brew", name:"Completion %", key:"smartCompleted", target:TARGETS.smartCompleted, fmt:"pct" },
+    { cat:"Smart Brew", name:"Completion %", key:"smartCompletedPct", target:TARGETS.smartCompleted, fmt:"pct" },
   { cat:"QA & Guest", name:"QA Score %",       key:"qaScore",          target:TARGETS.qa,              fmt:"pct" },
   { cat:"QA & Guest", name:"Google Rating",    key:"googleRating",     target:TARGETS.googleRating,    fmt:"rating" },
   { cat:"QA & Guest", name:"DC App Rating",    key:"dcAppRating",      target:TARGETS.dcAppRating,     fmt:"rating" }
@@ -3793,6 +3940,7 @@ function buildCalcText(){
   lines.push("Wastage: " + pct(c.wastagePct) + " (Tgt 1%)");
   lines.push("Employee: " + pct(c.employeePct) + " (Tgt 17%)");
   lines.push("Inventory Var: " + pct(c.COGSPct));
+  lines.push("EBITDA: " + ebitdaLine(dayEbitda(rec, c)));
   lines.push("");
   lines.push("*Controls*");
   lines.push("Cancelled Bill: " + pct(c.cancelledBillPct));
@@ -3899,6 +4047,25 @@ if(!anyValue) return;
                 '<span class="v '+cls+'">'+escapeHtml(fmtSidebarValue(k, v))+'</span>'+
               '</div>';
     });
+    /* EBITDA for the day, shown right below COGS % */
+    if(g.title === "Cost"){
+      var eb = dayEbitda(rec, c);
+      if(!eb && rec.storeId && rec.date){
+        /* Budget not loaded yet for this store/month: fetch it, then redraw */
+        loadEbitdaTargets(rec.storeId, rec.date).then(function(){
+          if(q("calcSidebarBody")) recalcAllCalcFields();
+        });
+      }
+      var ebCls = eb ? (eb.value >= 0 ? "good" : "bad") : "";
+      html += '<div class="calc-row">'+
+                '<span class="k">EBITDA' + (eb && !eb.hasTargets ? ' <span style="font-weight:400;opacity:.7">(no budget)</span>' : '') + '</span>'+
+                '<span class="v '+ebCls+'">'+escapeHtml(eb ? "SAR " + money(round(eb.value, 0)) : "…")+'</span>'+
+              '</div>'+
+              '<div class="calc-row">'+
+                '<span class="k">EBITDA %</span>'+
+                '<span class="v '+ebCls+'">'+escapeHtml(eb && eb.pct != null ? pct(eb.pct) : "—")+'</span>'+
+              '</div>';
+    }
     html += '</div>';
   });
 
@@ -4222,15 +4389,25 @@ async function calculatePnl(storeId, fromIso, toIso){
 /* ---- 1) Pull daily records in range ---- */
   var records = await sbLoadRecords(storeIdList, fromIso, toIso);
   var sales = 0, cogs = 0, employeeCost = 0, dailyInputTarget = 0;
+  var dayMap = {};   /* per-date totals, used by the graph view */
+  var wastageTotal = 0;
   records.forEach(function(r){
     var c = calculate(r);
     sales           += n(c.salesWithoutTax);
-    
+
     // NEW: Add COGS and Wastage together for the actual COGS value
-    cogs            += Math.abs(n(r.COGS)) + Math.abs(n(r.wastage)); 
-    
+    cogs            += Math.abs(n(r.COGS)) + Math.abs(n(r.wastage));
+
     employeeCost    += n(c.employeeCost);
     dailyInputTarget += n(r.targetSales);
+
+    wastageTotal += Math.abs(n(r.wastage));
+    var dk = String(r.date);
+    var dm = dayMap[dk] || (dayMap[dk] = { sales:0, cogs:0, emp:0, target:0 });
+    dm.sales  += n(c.salesWithoutTax);
+    dm.cogs   += Math.abs(n(r.COGS)) + Math.abs(n(r.wastage));
+    dm.emp    += n(c.employeeCost);
+    dm.target += n(r.targetSales);
   });
 
   /* ---- 2) Fetch targets for every month in range ---- */
@@ -4414,8 +4591,68 @@ async function calculatePnl(storeId, fromIso, toIso){
   rows.push(mk(28, "TOTAL UNCONTROLLABLE EXP",               totalUnctrl,          totalUnctrlTarget));
   rows.push(mk(29, "EBITDA (OPERATIONAL)",                   ebitda,               ebitdaTarget,       true));
 
-  return { rows: rows, sales: sales, hasTargets: hasTargets, recordCount: records.length };
+  /* Day-by-day figures for the graph view. Each day carries one day's share
+     of the budgeted (non-daily) costs, so the day EBITDA uses the P&L formula. */
+  var rangeDays = Math.round((new Date(toIso + "T12:00:00") - new Date(fromIso + "T12:00:00")) / 86400000) + 1;
+  var budgetedCosts = 0;
+  ctrlRows.forEach(function(r){ if(r.sl !== 4) budgetedCosts += n(r.actual); });
+  unctrlRows.forEach(function(r){ if(r.sl !== 27) budgetedCosts += n(r.actual); });
+  var fixedPerDay = rangeDays > 0 ? budgetedCosts / rangeDays : 0;
+  var daily = Object.keys(dayMap).sort().map(function(d){
+    var x = dayMap[d];
+    return {
+      date: d, sales: x.sales, target: x.target,
+      ebitda: x.sales - x.cogs - x.emp - fixedPerDay - x.sales * 0.03
+    };
+  });
+
+  return { rows: rows, sales: sales, hasTargets: hasTargets, recordCount: records.length, daily: daily, rangeDays: rangeDays, wastage: wastageTotal };
 }
+/* ============================================================
+   DAY EBITDA — same formula as the Live P&L, for one store and one day
+   EBITDA = Sales − (COGS + Wastage) − Employee Cost
+            − one day's share of the monthly budget for the other cost heads
+            − 3% royalty on sales
+   ============================================================ */
+var ebitdaTargetCache = {};   /* "storeId|2026-11-01" → { ready, heads, promise } */
+var EBITDA_NON_FIXED_HEADS = { sales:1, cogs:1, employee_cost:1, royalty:1 };
+
+function loadEbitdaTargets(storeId, dateIso){
+  var month = monthKeyOf(dateIso || todayIso());
+  var key = storeId + "|" + month;
+  var entry = ebitdaTargetCache[key];
+  if(entry) return entry.promise;
+  entry = ebitdaTargetCache[key] = { ready:false, heads:{} };
+  entry.promise = sbFetchPnlTargets([storeId], month, month)
+    .then(function(t){ entry.heads = (t && t[month]) || {}; })
+    .catch(function(e){ console.warn("EBITDA targets fetch:", e); entry.heads = {}; })
+    .then(function(){ entry.ready = true; return entry.heads; });
+  return entry.promise;
+}
+
+/* Returns null while the store's budget is still loading */
+function dayEbitda(rec, c){
+  if(!rec || !rec.storeId || !rec.date) return null;
+  var entry = ebitdaTargetCache[rec.storeId + "|" + monthKeyOf(rec.date)];
+  if(!entry || !entry.ready) return null;
+  var dim = daysInMonth(rec.date);
+  var fixedDay = 0, hasTargets = false;
+  Object.keys(entry.heads).forEach(function(h){
+    if(EBITDA_NON_FIXED_HEADS[h]) return;
+    var amt = n(entry.heads[h]);
+    if(amt > 0) hasTargets = true;
+    fixedDay += amt / dim;
+  });
+  var sales = n(c.salesWithoutTax);
+  var cogs  = Math.abs(n(rec.COGS)) + Math.abs(n(rec.wastage));
+  var value = sales - cogs - n(c.employeeCost) - fixedDay - sales * 0.03;
+  return { value: value, pct: sales ? (value / sales) * 100 : null, hasTargets: hasTargets };
+}
+function ebitdaLine(e){
+  if(!e) return "—";
+  return "SAR " + money(round(e.value, 0)) + (e.pct != null ? " (" + pct(e.pct) + ")" : "");
+}
+
 function calculateBreakdown(b, targetSales){
   if(!b.start || !b.end) return {hours:0, loss:0};
   var s = new Date(b.start), e = new Date(b.end);
@@ -4634,6 +4871,7 @@ function submitDailyRecord(){
       '<div class="row"><span>ADT</span><strong>'+escapeHtml(integer(c.adt))+'</strong></div>'+
       '<div class="row"><span>AT</span><strong>SAR '+escapeHtml(money(c.at))+'</strong></div>'+
       '<div class="row"><span>Sales vs Target</span><strong>'+escapeHtml(pct(c.salesVsTargetPct))+'</strong></div>'+
+      '<div class="row"><span>EBITDA</span><strong id="confirmEbitda">…</strong></div>'+
     '</div>'+
     '<div class="summary-section">'+
       'Food '+escapeHtml(pct(c.foodMix))+' · G&amp;G '+escapeHtml(pct(c.grabGoMix))+' · Merch '+escapeHtml(pct(c.merchandiseMix))+
@@ -4641,6 +4879,18 @@ function submitDailyRecord(){
       (currentBreakdowns.length ? '<br>Breakdowns: '+currentBreakdowns.length+' event(s) · '+round(c.breakdownHours,2)+' hrs · Lost sales SAR '+escapeHtml(money(c.estimatedLostSales)) : '')+
     '</div>';
   q("confirmSummary").innerHTML = html;
+  /* EBITDA for the day: fill in now, or as soon as the store's budget has loaded */
+  function showConfirmEbitda(){
+    var el = q("confirmEbitda");
+    var eb = dayEbitda(rec, c);
+    if(!el || !eb) return false;
+    el.textContent = ebitdaLine(eb);
+    el.style.color = eb.value >= 0 ? "#15803d" : "#b91c1c";
+    return true;
+  }
+  if(!showConfirmEbitda() && rec.storeId && rec.date){
+    loadEbitdaTargets(rec.storeId, rec.date).then(showConfirmEbitda);
+  }
   q("confirmModal").classList.add("show");
 }
   /* Build the WhatsApp text for a specific saved record (not the live form) */
@@ -4671,6 +4921,7 @@ function buildSubmittedText(rec, c){
   lines.push("Wastage: " + pct(c.wastagePct) + " (Tgt 1%)");
   lines.push("Employee: " + pct(c.employeePct) + " (Tgt 17%)");
   lines.push("Inventory Var: " + pct(c.COGSPct));
+  lines.push("EBITDA: " + ebitdaLine(dayEbitda(rec, c)));
   lines.push("");
   lines.push("*Controls*");
   lines.push("Cancelled Bill: " + pct(c.cancelledBillPct));
@@ -4759,6 +5010,9 @@ function closeConfirmModal(){
   closeConfirmModal();
 
   var c = calculate(rec);
+  /* EBITDA for the submitted day (waits for the store's budget if needed) */
+  try { await loadEbitdaTargets(rec.storeId, rec.date); } catch(ignore){}
+  var subEb = dayEbitda(rec, c);
   var store = state.stores.find(function(x){ return x.id === rec.storeId; });
   var storeLabel = rec.storeId + (store && store.area ? " · " + store.area : "");
   var summaryHtml =
@@ -4771,6 +5025,7 @@ function closeConfirmModal(){
       '<div class="row"><span>ADT</span><strong>'+escapeHtml(integer(c.adt))+'</strong></div>'+
       '<div class="row"><span>AT</span><strong>SAR '+escapeHtml(money(c.at))+'</strong></div>'+
       '<div class="row"><span>Sales vs Target</span><strong>'+escapeHtml(pct(c.salesVsTargetPct))+'</strong></div>'+
+      '<div class="row"><span>EBITDA</span><strong style="color:'+(subEb ? (subEb.value >= 0 ? '#15803d' : '#b91c1c') : 'inherit')+'">'+escapeHtml(ebitdaLine(subEb))+'</strong></div>'+
     '</div>'+
     '<div class="summary-section">'+
       'Food '+escapeHtml(pct(c.foodMix))+' · G&amp;G '+escapeHtml(pct(c.grabGoMix))+' · Merch '+escapeHtml(pct(c.merchandiseMix))+
@@ -5406,6 +5661,384 @@ function applyDashView(){
   });
 }
 
+/* ============================================================
+   KPI DASHBOARD — OVERVIEW
+   1) headline cards  2) needs-attention list  3) KPI tiles
+   4) the selected KPI by store and day by day
+   Clicking any card / row / tile selects that KPI for part 4.
+   ============================================================ */
+var DASH_COLORS = { good:"#16a34a", warn:"#d97706", bad:"#dc2626", none:"#1d4ed8" };
+
+/* ---- COGS % on the dashboard follows the Live P&L ----
+   Actual = (COGS + Wastage) ÷ Sales W/O Tax, summed over the period.
+   Target = P&L COGS target ÷ P&L Sales target for the month and stores in view. */
+var dashCogsCache = {};   /* "2026-11|<store ids>" → { ready, byStore, promise } */
+function dashCogsKey(month){
+  return month + "|" + visibleStores.map(function(s){ return s.id; }).join(",");
+}
+function loadDashCogsTargets(month){
+  var key = dashCogsKey(month);
+  var e = dashCogsCache[key];
+  if(e) return e.promise;
+  e = dashCogsCache[key] = { ready:false, byStore:{} };
+  var storeIds = visibleStores.map(function(s){ return s.id; });
+  var fetching = !storeIds.length ? Promise.resolve([]) : sbFetchAllPages(function(){
+    return sb.from("pnl_targets")
+      .select("store_id,cost_head,target_amount")
+      .in("store_id", storeIds)
+      .eq("month", month + "-01")
+      .in("cost_head", ["cogs", "sales"])
+      .order("store_id").order("cost_head");
+  });
+  e.promise = fetching
+    .then(function(data){
+      (data || []).forEach(function(r){
+        var sid = normalizeStoreId(r.store_id);
+        var s = e.byStore[sid] || (e.byStore[sid] = { cogs:0, sales:0 });
+        if(s[r.cost_head] != null) s[r.cost_head] += Number(r.target_amount) || 0;
+      });
+    })
+    .catch(function(err){ console.warn("Dashboard COGS targets fetch:", err); })
+    .then(function(){ e.ready = true; });
+  return e.promise;
+}
+function dashCogsTargetPct(month, ids){
+  var e = dashCogsCache[dashCogsKey(month)];
+  if(!e || !e.ready) return null;
+  var cogs = 0, sales = 0;
+  ids.forEach(function(id){
+    var s = e.byStore[normalizeStoreId(id)];
+    if(s){ cogs += s.cogs; sales += s.sales; }
+  });
+  return (cogs > 0 && sales > 0) ? (cogs / sales) * 100 : null;
+}
+function dashFixCogs(aggObj, month, ids){
+  var sales = n(aggObj._calc.salesWithoutTax), cogs = 0;
+  (aggObj._records || []).forEach(function(r){
+    cogs += Math.abs(n(r.COGS)) + Math.abs(n(r.wastage));
+  });
+  aggObj._calc.COGSPct = sales ? (cogs / sales) * 100 : 0;
+  aggObj._cogsTargetPct = dashCogsTargetPct(month, ids);
+  return aggObj;
+}
+
+function dashTargetFor(k, agg){
+  var t = k.target;
+  if(k.key === "COGSPct") return agg._cogsTargetPct != null ? agg._cogsTargetPct : null;
+  if(k.key === "salesWithoutTax") t = n(agg.targetSales);
+  else if(k.key === "adt") t = n(agg.targetAdt);
+  else if(k.key === "at") t = n(agg.targetAt);
+  if(t === 0 || t == null || isNaN(t)) return null;
+  return t;
+}
+function dashVarianceText(k, v, t){
+  if(t == null) return "";
+  var diff = v - t, sign = diff >= 0 ? "+" : "−", a = Math.abs(diff);
+  if(k.fmt === "pct")    return sign + round(a, 1).toFixed(1) + " pts";
+  if(k.fmt === "money")  return sign + "SAR " + money(a);
+  if(k.fmt === "rating") return sign + round(a, 2).toFixed(2);
+  return sign + integer(a);
+}
+function dashDeltaHtml(k, v, pv, label){
+  if(pv == null) return "";
+  var diff = v - pv;
+  if(!isFinite(diff)) return "";
+  var txt;
+  if(k.fmt === "pct") txt = round(Math.abs(diff), 1).toFixed(1) + " pts";
+  else if(k.fmt === "rating") txt = round(Math.abs(diff), 2).toFixed(2);
+  else { if(!pv) return ""; txt = round(Math.abs(diff / pv) * 100, 1).toFixed(1) + "%"; }
+  var flat = !(parseFloat(txt) > 0);   /* rounds to zero → no change */
+  var better = k.lower ? diff < 0 : diff > 0;
+  return '<span class="kd-delta ' + (flat ? "" : (better ? "good" : "bad")) + '">' +
+         (flat ? "＝" : (diff > 0 ? "▲" : "▼")) + " " + txt + ' <em>' + escapeHtml(label || "vs same days last month") + '</em></span>';
+}
+
+function renderDashOverview(agg, rows, mv, start, end, ids){
+  var hero = q("dashHero"), att = q("dashAttention"), tiles = q("dashTiles"), head = q("dashDetailHead");
+  var detail = document.querySelector("#dashCharts .kd-detail");
+  if(!hero || !att || !tiles || !head || !detail) return;
+  destroyDashCharts();
+
+  if(!agg._records.length){
+    hero.innerHTML = ""; tiles.innerHTML = ""; head.innerHTML = "";
+    att.innerHTML = '<div class="kd-empty">No saved daily entries for ' + escapeHtml(mv) + ' · ' + escapeHtml(scopeLabel()) + '.</div>';
+    detail.style.display = "none";
+    return;
+  }
+  detail.style.display = "";
+
+  var c = agg._calc;
+
+  /* Same day range of the previous month, for a fair "vs last month" */
+  var lastDate = agg._records.reduce(function(m, r){ return r.date > m ? r.date : m; }, start);
+  var dayNo = Number(lastDate.slice(8, 10)) || 1;
+  var pS = parseDate(start); pS.setMonth(pS.getMonth() - 1);
+  var pLast = parseDate(start); pLast.setDate(0);
+  var pE = new Date(pS); pE.setDate(Math.min(dayNo, pLast.getDate()));
+  var prevAgg = dashFixCogs(aggregate(recordsBetweenStores(ids, isoDate(pS), isoDate(pE))), mv, ids);
+  var pc = prevAgg._records.length ? prevAgg._calc : null;
+
+  var info = KPI_DEFS.map(function(k, i){
+    var v = n(c[k.key]);
+    var t = dashTargetFor(k, agg);
+    return {
+      k:k, i:i, v:v, t:t,
+      cls: t != null ? statusClass(v, t, !!k.lower) : "",
+      lbl: t != null ? statusLabel(v, t, !!k.lower) : "",
+      pv: pc ? n(pc[k.key]) : null
+    };
+  });
+
+  var sel = q("dashKpi");
+  var focusIdx = (sel && sel.value !== "" && KPI_DEFS[sel.value]) ? Number(sel.value) : 0;
+  var focus = info[focusIdx];
+
+  /* ---------- 1) Headline cards ---------- */
+  var heroHtml = "";
+  info.filter(function(x){ return x.k.cat === "Revenue"; }).forEach(function(x){
+    var pctOfTarget = x.t ? (x.v / x.t) * 100 : null;
+    heroHtml +=
+      '<button type="button" class="kd-hero-card' + (x.i === focusIdx ? " sel" : "") + '" data-kpi-idx="' + x.i + '">' +
+        '<span class="kd-lbl">' + escapeHtml(x.k.name) + '</span>' +
+        '<span class="kd-big ' + x.cls + '">' + escapeHtml(fmtVal(x.v, x.k.fmt)) + '</span>' +
+        (x.t != null
+          ? '<span class="kd-sub">Target ' + escapeHtml(fmtVal(x.t, x.k.fmt)) + ' · <b class="' + x.cls + '">' + escapeHtml(dashVarianceText(x.k, x.v, x.t)) + '</b></span>' +
+            '<span class="kd-bar"><i class="' + x.cls + '" style="width:' + Math.max(0, Math.min(100, pctOfTarget)).toFixed(0) + '%"></i></span>' +
+            '<span class="kd-sub">' + round(pctOfTarget, 0) + '% of target</span>'
+          : '<span class="kd-sub">No target set</span>') +
+        dashDeltaHtml(x.k, x.v, x.pv) +
+      '</button>';
+  });
+  var scored = info.filter(function(x){ return x.t != null; });
+  var cnt = { good:0, warn:0, bad:0 };
+  scored.forEach(function(x){ if(cnt[x.cls] != null) cnt[x.cls]++; });
+  var tot = scored.length || 1;
+  heroHtml +=
+    '<div class="kd-hero-card kd-score">' +
+      '<span class="kd-lbl">KPIs on target</span>' +
+      '<span class="kd-big">' + cnt.good + ' <small>of ' + scored.length + '</small></span>' +
+      '<span class="kd-stack">' +
+        '<i class="good" style="width:' + (cnt.good / tot * 100) + '%"></i>' +
+        '<i class="warn" style="width:' + (cnt.warn / tot * 100) + '%"></i>' +
+        '<i class="bad" style="width:'  + (cnt.bad  / tot * 100) + '%"></i>' +
+      '</span>' +
+      '<span class="kd-legend">' +
+        '<span><i class="good"></i>' + cnt.good + ' achieved</span>' +
+        '<span><i class="warn"></i>' + cnt.warn + ' watch</span>' +
+        '<span><i class="bad"></i>'  + cnt.bad  + ' action</span>' +
+      '</span>' +
+      '<span class="kd-sub">' + agg._records.length + ' daily entries · up to ' + escapeHtml(dateLabel(lastDate)) + '</span>' +
+    '</div>';
+  hero.innerHTML = heroHtml;
+
+  /* ---------- 2) Needs attention ---------- */
+  var problems = scored.filter(function(x){ return x.cls === "bad" || x.cls === "warn"; });
+  problems.sort(function(a, b){
+    if(a.cls !== b.cls) return a.cls === "bad" ? -1 : 1;
+    return Math.abs((b.v - b.t) / b.t) - Math.abs((a.v - a.t) / a.t);
+  });
+  var attHtml = '<div class="kd-card-head"><h4>Needs attention</h4><span>' +
+    (problems.length ? problems.length + ' KPI' + (problems.length > 1 ? 's' : '') + ' off target, worst first' : '') + '</span></div>';
+  if(!problems.length){
+    attHtml += '<div class="kd-empty good">Every KPI that has a target is on track.</div>';
+  } else {
+    problems.forEach(function(x){
+      attHtml +=
+        '<button type="button" class="kd-att-row' + (x.i === focusIdx ? " sel" : "") + '" data-kpi-idx="' + x.i + '">' +
+          '<span class="dash-status ' + x.cls + '">' + escapeHtml(x.lbl) + '</span>' +
+          '<span class="kd-att-name">' + escapeHtml(x.k.name) + ' <em>' + escapeHtml(x.k.cat) + '</em></span>' +
+          '<span class="kd-att-num"><b class="' + x.cls + '">' + escapeHtml(fmtVal(x.v, x.k.fmt)) + '</b> vs target ' + escapeHtml(fmtVal(x.t, x.k.fmt)) + '</span>' +
+          '<span class="kd-att-gap ' + x.cls + '">' + escapeHtml(dashVarianceText(x.k, x.v, x.t)) + '</span>' +
+        '</button>';
+    });
+  }
+  att.innerHTML = attHtml;
+
+  /* ---------- 3) KPI tiles by category ---------- */
+  var shown = {}; rows.forEach(function(k){ shown[k.key] = true; });
+  var cats = [];
+  info.forEach(function(x){
+    if(x.k.cat === "Revenue" || !shown[x.k.key]) return;
+    var g = cats.filter(function(cg){ return cg.cat === x.k.cat; })[0];
+    if(!g){ g = { cat:x.k.cat, items:[] }; cats.push(g); }
+    g.items.push(x);
+  });
+  var tilesHtml = "";
+  cats.forEach(function(g){
+    tilesHtml += '<div class="kd-cat">' + escapeHtml(g.cat) + '</div><div class="kd-tiles">';
+    g.items.forEach(function(x){
+      tilesHtml +=
+        '<button type="button" class="kd-tile ' + x.cls + (x.i === focusIdx ? " sel" : "") + '" data-kpi-idx="' + x.i + '">' +
+          '<span class="kd-tile-top"><span class="kd-lbl">' + escapeHtml(x.k.name) + '</span>' +
+            (x.lbl ? '<span class="dash-status ' + x.cls + '">' + escapeHtml(x.lbl) + '</span>' : '') + '</span>' +
+          '<span class="kd-big ' + x.cls + '">' + escapeHtml(fmtVal(x.v, x.k.fmt)) + '</span>' +
+          '<span class="kd-sub">' + (x.t != null
+            ? 'Target ' + escapeHtml(fmtVal(x.t, x.k.fmt)) + (x.k.lower ? ' or lower' : '') + ' · <b class="' + x.cls + '">' + escapeHtml(dashVarianceText(x.k, x.v, x.t)) + '</b>'
+            : 'No target set') + '</span>' +
+          dashDeltaHtml(x.k, x.v, x.pv) +
+        '</button>';
+    });
+    tilesHtml += '</div>';
+  });
+  tiles.innerHTML = tilesHtml;
+
+  /* Clicking any card, row or tile selects that KPI for the charts below */
+  document.querySelectorAll("#dashCharts [data-kpi-idx]").forEach(function(b){
+    b.addEventListener("click", function(){
+      if(sel) sel.value = b.dataset.kpiIdx;
+      renderDashboard();
+      var h = q("dashDetailHead");
+      if(h && h.scrollIntoView) h.scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+  });
+
+  /* ---------- 4) Selected KPI: by store and day by day ---------- */
+  var fk = focus.k;
+  head.innerHTML =
+    '<h3>' + escapeHtml(fk.name) + '</h3>' +
+    '<span class="kd-big-inline ' + focus.cls + '">' + escapeHtml(fmtVal(focus.v, fk.fmt)) + '</span>' +
+    (focus.t != null ? '<span class="kd-sub">Target ' + escapeHtml(fmtVal(focus.t, fk.fmt)) + (fk.lower ? ' or lower' : '') + '</span>' : '') +
+    '<span class="kd-hint">Click any KPI above to see it here by store and by day.</span>';
+
+  if(typeof window.Chart === "undefined"){ detail.style.display = "none"; return; }
+  Chart.defaults.font.family = "Inter, Aptos, 'Segoe UI', Arial, sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = "#566074";
+  function tip(v){ return fk.name + ": " + fmtVal(v, fk.fmt); }
+  function tick(v){
+    if(fk.fmt === "pct") return v + "%";
+    if(fk.fmt === "money") return new Intl.NumberFormat("en-SA", { notation:"compact", maximumFractionDigits:1 }).format(v);
+    return v;
+  }
+
+  /* Value labels drawn on the charts (first dataset only): the % for
+     percentage KPIs, a short number for the others */
+  function shortVal(v){
+    if(fk.fmt === "pct") return round(v, 1).toFixed(1) + "%";
+    if(fk.fmt === "rating") return round(v, 2).toFixed(2);
+    if(fk.fmt === "money" && Math.abs(v) >= 1000) return new Intl.NumberFormat("en-SA", { notation:"compact", maximumFractionDigits:1 }).format(v);
+    if(fk.fmt === "money") return String(round(v, 1));
+    return integer(v);
+  }
+  var valueLabels = {
+    id: "kdValueLabels",
+    afterDatasetsDraw: function(chart){
+      var meta = chart.getDatasetMeta(0);
+      if(!meta || meta.hidden) return;
+      var ctx = chart.ctx, horizontal = chart.options.indexAxis === "y";
+      var isLine = chart.config.type === "line";
+      var every = isLine ? Math.ceil(meta.data.length / 16) : 1;   /* thin out crowded days */
+      ctx.save();
+      ctx.font = "600 11px Inter, 'Segoe UI', Arial, sans-serif";
+      ctx.fillStyle = "#0b1220";
+      meta.data.forEach(function(el, i){
+        if(i % every !== 0) return;
+        var v = chart.data.datasets[0].data[i];
+        if(v == null || isNaN(v)) return;
+        var txt = shortVal(v);
+        if(horizontal){
+          ctx.textAlign = "left"; ctx.textBaseline = "middle";
+          ctx.fillText(txt, el.x + 6, el.y);
+        } else {
+          ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+          /* white outline keeps the number readable where the line crosses it */
+          ctx.lineWidth = 4; ctx.strokeStyle = "#ffffff"; ctx.lineJoin = "round";
+          ctx.strokeText(txt, el.x, el.y - 8);
+          ctx.fillText(txt, el.x, el.y - 8);
+        }
+      });
+      ctx.restore();
+    }
+  };
+
+  /* --- By store --- */
+  var perStore = [];
+  ids.forEach(function(sid){
+    var recs = recordsBetweenStores([sid], start, end);
+    if(!recs.length) return;
+    var sa = dashFixCogs(aggregate(recs), mv, [sid]);
+    var sv = n(sa._calc[fk.key]);
+    var st = dashTargetFor(fk, sa);
+    perStore.push({ store:sid, value:round(sv, 2), cls: st != null ? statusClass(sv, st, !!fk.lower) : "" });
+  });
+  perStore.sort(function(a, b){ return fk.lower ? a.value - b.value : b.value - a.value; });
+  var totalStores = perStore.length;
+  var topStores = perStore.slice(0, 15);
+  q("dashStoresTitle").textContent = fk.name + " — by store";
+  q("dashStoresNote").textContent =
+    totalStores <= 1 ? "Only one store is in view. Clear the Store picker in the top bar to compare stores."
+    : (totalStores > 15 ? "Best 15 of " + totalStores + " stores, best first." : totalStores + " stores, best first.") +
+      " Green = on target, amber = close, red = off target.";
+  var elS = q("chartStores");
+  if(elS && topStores.length){
+    elS.parentNode.style.height = Math.max(200, topStores.length * 26 + 50) + "px";
+    dashCharts.stores = new Chart(elS, {
+      type: "bar",
+      data: {
+        labels: topStores.map(function(x){ return x.store; }),
+        datasets: [{
+          label: fk.name,
+          data: topStores.map(function(x){ return x.value; }),
+          backgroundColor: topStores.map(function(x){ return DASH_COLORS[x.cls] || DASH_COLORS.none; }),
+          borderRadius: 4, maxBarThickness: 18
+        }]
+      },
+      plugins: [valueLabels],
+      options: {
+        indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 56 } },   /* room for the value labels */
+        plugins: { legend: { display:false }, tooltip: { callbacks: { label: function(ctx){ return tip(ctx.parsed.x); } } } },
+        scales: { x: { beginAtZero:true, ticks: { callback: tick }, grid: { color:"#eef0f5" } }, y: { grid: { display:false } } }
+      }
+    });
+  }
+
+  /* --- Day by day --- */
+  var byDate = {};
+  agg._records.forEach(function(r){ (byDate[r.date] = byDate[r.date] || []).push(r); });
+  var dates = Object.keys(byDate).sort();
+  var dayVals = [], dayTargets = [], anyTarget = false;
+  dates.forEach(function(d){
+    var da = dashFixCogs(aggregate(byDate[d]), mv, ids);
+    dayVals.push(round(n(da._calc[fk.key]), 2));
+    var dt = dashTargetFor(fk, da);
+    if(dt != null) anyTarget = true;
+    dayTargets.push(dt != null ? round(dt, 2) : null);
+  });
+  q("dashTrendTitle").textContent = fk.name + " — day by day";
+  q("dashTrendNote").textContent = dates.length + " days with entries in " + mv + "." + (anyTarget ? " Dashed line = target." : "");
+  var elT = q("chartTrend");
+  if(elT && dates.length){
+    var sets = [{
+      label: fk.name, data: dayVals,
+      borderColor: DASH_COLORS.none, backgroundColor: "rgba(29,78,216,.10)",
+      fill: true, tension: .3, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2
+    }];
+    if(anyTarget) sets.push({
+      label: "Target", data: dayTargets,
+      borderColor: "#7f889b", borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: true
+    });
+    dashCharts.trend = new Chart(elT, {
+      type: "line",
+      data: { labels: dates.map(function(d){ return d.slice(8, 10); }), datasets: sets },
+      plugins: [valueLabels],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 22, right: 18, left: 6 } },   /* room for the value labels */
+        interaction: { mode:"index", intersect:false },
+        plugins: {
+          legend: { display: anyTarget, position:"bottom", labels: { boxWidth:14 } },
+          tooltip: { callbacks: {
+            title: function(items){ return dateLabel(dates[items[0].dataIndex]); },
+            label: function(ctx){ return ctx.dataset.label + ": " + fmtVal(ctx.parsed.y, fk.fmt); }
+          } }
+        },
+        scales: { y: { ticks: { callback: tick }, grid: { color:"#eef0f5" } }, x: { grid: { display:false }, title: { display:true, text:"Day of month" } } }
+      }
+    });
+  }
+}
+
 /* ---------- KPI Dashboard ---------- */
 function renderDashboard(){
     applyDashView();
@@ -5423,6 +6056,17 @@ function renderDashboard(){
     agg._dashStart = start;
   agg._dashEnd = end;
 
+  /* COGS % follows the Live P&L (actual and target). The P&L targets are
+     fetched once per month; redraw when they arrive. */
+  dashFixCogs(agg, mv, ids);
+  var cogsEntry = dashCogsCache[dashCogsKey(mv)];
+  if(!cogsEntry || !cogsEntry.ready){
+    loadDashCogsTargets(mv).then(function(){
+      var dv = q("view-dashboard");
+      if(dv && dv.classList.contains("active")) renderDashboard();
+    });
+  }
+
   var scope = q("dashScope");
   if(scope) scope.textContent = scopeLabel()+" · "+mv+" · "+agg._records.length+" daily entries";
 
@@ -5438,6 +6082,9 @@ function renderDashboard(){
     if(!search) return true;
     return (k.cat+" "+k.name).toLowerCase().indexOf(search) >= 0;
   });
+
+  /* Overview: headline cards, attention list, KPI tiles, store + daily charts */
+  renderDashOverview(agg, rows, mv, start, end, ids);
 
   var countEl = q("dashCount");
   if(countEl) countEl.textContent = String(rows.length);
@@ -5471,8 +6118,6 @@ var thead = "<thead><tr>"+
     table.innerHTML = thead + '<tbody><tr><td colspan="6" class="empty">No saved daily entries for '+escapeHtml(mv)+'.</td></tr></tbody>';
     return;
   }
-    /* Draw the charts */
-  renderDashboardCharts(agg, rows);
 
 
   var spans = {}; rows.forEach(function(r){ spans[r.cat] = (spans[r.cat]||0)+1; });
@@ -5490,6 +6135,7 @@ else if(k.key === "adt"){
   dynamicTarget = n(agg.targetAdt);   /* agg.targetAdt is already averaged in aggregate() */
 }
 else if(k.key === "at") dynamicTarget = n(agg.targetAt);
+else if(k.key === "COGSPct") dynamicTarget = agg._cogsTargetPct;   /* from the P&L targets */
 
 /* Only show target if it is a meaningful number */
 if(dynamicTarget === 0 || dynamicTarget === null || isNaN(dynamicTarget)) dynamicTarget = null;
@@ -5754,7 +6400,7 @@ function renderWeekly(){
 
   var periods = buildWeeklyPeriods();
   var range = periods.map(function(p){ return dateLabel(p.start)+" — "+dateLabel(p.end); }).join("  |  ");
-  
+
   renderReportTable2Col(q("weeklyTable"), periods, q("weeklySearch")?q("weeklySearch").value:"", "weeklyCount", "inlineActionPlanHost");
   
 }
@@ -6416,11 +7062,14 @@ async function renderPnl(){
   }
 
   var result;
+  pnlLastResult = null;
   try { result = await calculatePnl(storeId, from, to); }
   catch(e){
     table.innerHTML = '<tbody><tr><td class="empty">Error: ' + escapeHtml(e.message||"") + '</td></tr></tbody>';
+    applyPnlView();
     return;
   }
+  pnlLastResult = result;
 
   if(chip){
     if(!result.recordCount){
@@ -6482,7 +7131,11 @@ async function renderPnl(){
       }
     }
 
-    tbody += '<tr style="' + rowStyle + '">' +
+    var pnlRowClass = r.sl === 29 ? "pnl-ebitda"
+                    : (r.sl === 3 || r.sl === 21) ? "pnl-margin"
+                    : (r.sl === 20 || r.sl === 28) ? "pnl-total"
+                    : "";
+    tbody += '<tr' + (pnlRowClass ? ' class="' + pnlRowClass + '"' : '') + ' style="' + rowStyle + '">' +
       '<td style="text-align:center;color:#64748b;font-weight:700">' + r.sl + '</td>' +
       '<td style="text-align:left">' + escapeHtml(r.description) + '</td>' +
       '<td class="num">' + (r.targetSar != null ? fmtPnlMoney(r.targetSar) : "—") + '</td>' +
@@ -6495,6 +7148,633 @@ async function renderPnl(){
   });
   tbody += '</tbody>';
   table.innerHTML = thead + tbody;
+  applyPnlView();
+}
+
+/* ============================================================
+   P&L GRAPH VIEW — the same numbers as the table, as three charts
+   ============================================================ */
+var pnlViewMode = "table";      /* "table" or "graph" */
+var pnlLastResult = null;
+var pnlCharts = {};
+
+function destroyPnlCharts(){
+  Object.keys(pnlCharts).forEach(function(k){
+    if(pnlCharts[k]){ try{ pnlCharts[k].destroy(); }catch(e){} pnlCharts[k] = null; }
+  });
+}
+function applyPnlView(){
+  var charts = q("pnlCharts"), empty = q("pnlChartsEmpty"), tableCard = q("pnlTableCard");
+  if(!charts || !tableCard) return;
+  document.querySelectorAll("#pnlViewToggle button").forEach(function(b){
+    b.classList.toggle("active", b.dataset.view === pnlViewMode);
+  });
+  var graph = pnlViewMode === "graph";
+  var hasData = !!(pnlLastResult && pnlLastResult.recordCount && typeof window.Chart !== "undefined");
+  tableCard.style.display = graph ? "none" : "";
+  charts.style.display = (graph && hasData) ? "" : "none";
+  if(empty){
+    empty.style.display = (graph && !hasData) ? "" : "none";
+    empty.textContent = "There is nothing to draw for this range yet. Pick a range and stores that have daily entries.";
+  }
+  destroyPnlCharts();
+  if(graph && hasData) renderPnlCharts(pnlLastResult);
+}
+
+/* ============================================================
+   P&L GUIDE — a general, line-by-line reference
+   (what each line is and how it is normally calculated)
+   ============================================================ */
+var PNL_GUIDE = [
+  { group:"Sales and gross margin", lines:[
+    { sl:1, name:"Sales",
+      what:"The money earned from selling products to customers in the period, before any costs are taken off. It is shown without VAT, because VAT is collected for the government and is not income.",
+      how:"Gross sales − VAT − discounts, voids and refunds = Net sales.",
+      ex:"Gross sales 115,000 − VAT 15,000 − discounts 2,000 = Sales 98,000." },
+    { sl:2, name:"Cost of Goods Sold (COGS)",
+      what:"The cost of the ingredients and products that were actually used to make what was sold: coffee beans, milk, syrups, food, cups, lids and packaging. Stock still on the shelf is not COGS until it is used. Wastage and spoilage are part of it, because that stock was consumed without a sale.",
+      how:"Opening stock + Purchases − Closing stock = COGS.  COGS % = COGS ÷ Sales × 100.",
+      ex:"Opening stock 20,000 + purchases 30,000 − closing stock 22,000 = COGS 28,000. On sales of 98,000 that is 28.6%." },
+    { sl:3, name:"Gross Margin",
+      what:"What is left from sales after paying for the goods sold. It shows how much each sale contributes towards staff, rent and every other cost. Also called gross profit.",
+      how:"Sales − COGS = Gross Margin.  Gross Margin % = Gross Margin ÷ Sales × 100.",
+      ex:"Sales 98,000 − COGS 28,000 = Gross Margin 70,000, which is 71.4%." }
+  ]},
+  { group:"Controllable expenses — costs the store team can influence", lines:[
+    { sl:4, name:"Employee Cost",
+      what:"The full cost of the people working in the store: basic salaries, overtime, allowances, and benefits such as housing, medical insurance, annual leave and end-of-service provisions.",
+      how:"Salaries + overtime + allowances + benefits for the period.  Employee Cost % = Employee Cost ÷ Sales × 100." },
+    { sl:5, name:"Advertisements, Marketing & Promotions",
+      what:"Money spent to bring customers in and grow sales: advertising, social media, printed materials, sampling, campaigns and promotional giveaways.",
+      how:"The total of marketing and promotion invoices for the period, plus the cost of any free or promotional items given away." },
+    { sl:6, name:"Travel Expenses",
+      what:"The cost of business travel by staff: transport, flights, hotels and daily allowances for work trips, store visits or training away from the store.",
+      how:"The total of approved travel claims and bookings for the period." },
+    { sl:7, name:"Communication",
+      what:"Telephone, mobile and internet costs needed to run the store, including the lines used by the tills and ordering systems.",
+      how:"The total of telephone and internet bills for the period." },
+    { sl:8, name:"Water",
+      what:"The cost of the water the store uses, from the water utility or delivered by tanker.",
+      how:"Water bills or deliveries for the period. Often meter reading × rate." },
+    { sl:9, name:"Recruitment Expenses",
+      what:"The cost of hiring new staff: visas, agency fees, medical tests, work permits and job advertising.",
+      how:"The total of hiring-related costs paid in the period." },
+    { sl:10, name:"Sewage",
+      what:"The cost of removing waste water: sewage charges, tanker pump-outs and grease-trap cleaning.",
+      how:"Sewage bills and pump-out invoices for the period." },
+    { sl:11, name:"Vehicle Fuel",
+      what:"Fuel for vehicles used for the business, such as delivery or supply vehicles.",
+      how:"The total of fuel receipts for business vehicles in the period." },
+    { sl:12, name:"Gas & Electricity",
+      what:"Energy used by the store: electricity for lighting, air conditioning and equipment, and gas where it is used.",
+      how:"Units used × rate, taken from the electricity and gas bills for the period." },
+    { sl:13, name:"Cleaning & Cleaning Materials",
+      what:"Keeping the store clean and hygienic: detergents, sanitiser, tissues, bin bags, and any outside cleaning or pest-control service.",
+      how:"Cleaning supplies used in the period plus cleaning service invoices." },
+    { sl:14, name:"Repair & Maintenance",
+      what:"The cost of keeping equipment and the premises working: servicing coffee machines, fridges and air conditioning, spare parts, and small repairs. Buying a major new machine is an investment, not a repair.",
+      how:"Repair invoices + spare parts + maintenance contract fees for the period." },
+    { sl:15, name:"Printing & Stationery",
+      what:"Office and till supplies: receipt rolls, printer paper, labels, pens, forms and printed notices.",
+      how:"The total of stationery and printing purchases for the period." },
+    { sl:16, name:"Computer Expenses",
+      what:"The cost of the store's technology: till and software subscriptions, licences, IT support and small hardware items.",
+      how:"Software and licence fees + IT support costs + small IT purchases for the period." },
+    { sl:17, name:"Entertainment Expenses",
+      what:"Hospitality paid for by the business: hosting guests, staff gatherings and team meals.",
+      how:"The total of approved hospitality receipts for the period." },
+    { sl:18, name:"Warehouse & Distribution Charges",
+      what:"The cost of storing products centrally and delivering them to the store: warehouse handling, transport and delivery charges.",
+      how:"Delivery and handling charges for the period. Often a rate per delivery, or a percentage of the goods delivered." },
+    { sl:19, name:"Sales Expenses",
+      what:"Costs that arise directly from making sales through particular channels, such as commissions charged by delivery apps and aggregators.",
+      how:"Commission rate × the sales made through that channel, plus any related fees." },
+    { sl:20, name:"Total Controllable Expenses",
+      what:"All the running costs above added together. They are called controllable because the store and area team can influence them through scheduling, care and discipline.",
+      how:"Employee Cost + every other controllable line (lines 4 to 19)." },
+    { sl:21, name:"Net Margin After Controllable Expenses",
+      what:"The profit the store team is directly responsible for: what remains after the cost of goods and all controllable running costs. It is the fairest measure of how well a store is being run day to day.",
+      how:"Gross Margin − Total Controllable Expenses.  As a % of sales: ÷ Sales × 100.",
+      ex:"Gross Margin 70,000 − controllable expenses 32,000 = 38,000, which is 38.8% of sales of 98,000." }
+  ]},
+  { group:"Uncontrollable expenses — fixed by contracts and company decisions", lines:[
+    { sl:22, name:"Government Related Expenses",
+      what:"Fees paid to government bodies to operate legally: municipality and trade licences, civil defence, health cards, residency and labour fees, and inspections.",
+      how:"The fees due for the period. A yearly fee is usually spread evenly, so each month carries one twelfth." },
+    { sl:23, name:"Bank Charges & Commissions",
+      what:"What banks and payment companies charge for handling the store's money: card-machine fees, online payment commissions and bank service charges.",
+      how:"Card and online sales × the commission rate, plus fixed bank fees." },
+    { sl:24, name:"Rent Expenses",
+      what:"The cost of occupying the premises: the rent itself, plus service or common-area charges where the lease includes them.",
+      how:"Annual rent ÷ 12 for each month. Some leases add a percentage of sales on top." },
+    { sl:25, name:"Professional Fees",
+      what:"Payments to outside experts: auditors, lawyers, consultants and similar services.",
+      how:"The total of professional invoices for the period, or the store's share of a company-wide fee." },
+    { sl:26, name:"Training Expenses",
+      what:"The cost of developing staff: courses, certifications, trainers and training materials.",
+      how:"The total of training costs for the period." },
+    { sl:27, name:"Royalty — Franchise Fee",
+      what:"The fee paid to the brand owner for the right to trade under the brand and use its systems and recipes.",
+      how:"Sales × the royalty percentage set in the franchise agreement.",
+      ex:"Sales 98,000 × 3% = royalty 2,940." },
+    { sl:28, name:"Total Uncontrollable Expenses",
+      what:"All the fixed and contract-driven costs added together. The store team cannot change them in the short term; they are set by leases, agreements and head-office decisions.",
+      how:"Government fees + bank charges + rent + professional fees + training + royalty (lines 22 to 27)." }
+  ]},
+  { group:"The result", lines:[
+    { sl:29, name:"EBITDA (Operational)",
+      what:"Earnings Before Interest, Tax, Depreciation and Amortisation. It is the profit the store produces from its normal operations, before financing costs, taxes and the gradual write-off of equipment and fit-out. It is the usual figure for comparing how profitable one store is against another.",
+      how:"Net Margin After Controllable Expenses − Total Uncontrollable Expenses.  The same as: Sales − COGS − all operating expenses.  EBITDA % = EBITDA ÷ Sales × 100.",
+      ex:"Net margin 38,000 − uncontrollable expenses 21,000 = EBITDA 17,000, which is 17.3% of sales of 98,000." }
+  ]},
+  { group:"Reading the columns", lines:[
+    { sl:"", name:"Target",
+      what:"The budgeted amount for the line: what the business planned to earn or spend in the period.",
+      how:"Set in advance in the budget, usually per month." },
+    { sl:"", name:"% of sales",
+      what:"The line shown as a share of sales. It lets you compare stores and months of different sizes fairly.",
+      how:"The line's amount ÷ Sales × 100." },
+    { sl:"", name:"Variance",
+      what:"The difference between what happened and what was planned. For sales and margins, above target is good. For costs, above target is bad.",
+      how:"Actual − Target. As a percentage: (Actual − Target) ÷ Target × 100, or the difference between the two shares of sales." }
+  ]}
+];
+
+function renderPnlGuide(){
+  var host = q("pnlGuideBody");
+  if(!host) return;
+  var term = (q("pnlGuideSearch") ? q("pnlGuideSearch").value : "").trim().toLowerCase();
+  var html = "", count = 0;
+  PNL_GUIDE.forEach(function(g){
+    var lines = g.lines.filter(function(l){
+      return !term || (l.name + " " + l.what + " " + l.how).toLowerCase().indexOf(term) >= 0;
+    });
+    if(!lines.length) return;
+    html += '<div class="pg-group">' + escapeHtml(g.group) + '</div>';
+    lines.forEach(function(l){
+      count++;
+      html +=
+        '<div class="pg-line">' +
+          '<div class="pg-name">' + (l.sl !== "" ? '<span class="pg-sl">' + l.sl + '</span>' : '') + escapeHtml(l.name) + '</div>' +
+          '<div class="pg-row"><span>What it is</span><p>' + escapeHtml(l.what) + '</p></div>' +
+          '<div class="pg-row"><span>How it is calculated</span><p class="pg-how">' + escapeHtml(l.how) + '</p></div>' +
+          (l.ex ? '<div class="pg-row"><span>Example</span><p>' + escapeHtml(l.ex) + '</p></div>' : '') +
+        '</div>';
+    });
+  });
+  host.innerHTML = count ? html : '<div class="kd-empty">No line matches “' + escapeHtml(term) + '”.</div>';
+}
+function openPnlGuide(){
+  if(q("pnlGuideSearch")) q("pnlGuideSearch").value = "";
+  renderPnlGuide();
+  q("pnlGuideModal").classList.add("show");
+}
+function closePnlGuide(){ q("pnlGuideModal").classList.remove("show"); }
+
+/* ============================================================
+   P&L COST-SAVING SUGGESTIONS (PREVIEW)
+   Built by fixed rules from the P&L numbers on screen. Nothing is
+   sent anywhere. Only COGS, wastage and employee cost come from the
+   daily entries; the other cost lines mirror the budget.
+   ============================================================ */
+function buildPnlSuggestions(result){
+  var bySl = {};
+  result.rows.forEach(function(r){ bySl[r.sl] = r; });
+  var sales = n(bySl[1].actual);
+  var out = [];
+  if(!sales) return out;
+  function sar(v){ return "SAR " + fmtPnlMoney(Math.round(v)); }
+  function p1(v){ return round(v, 1).toFixed(1) + "%"; }
+
+  /* 1) COGS above its target share */
+  var cogs = bySl[2];
+  if(cogs.targetPct != null && cogs.actualPct > cogs.targetPct + 0.05){
+    var gapC = cogs.actualPct - cogs.targetPct;
+    out.push({
+      level: gapC >= 1 ? "High" : "Medium", saving: sales * gapC / 100,
+      title: "Bring COGS back to target",
+      text: "COGS is " + p1(cogs.actualPct) + " of sales against a target of " + p1(cogs.targetPct) +
+            " (" + round(gapC, 1).toFixed(1) + " points over).",
+      actions: [
+        "Check portion sizes and recipe cards on the highest-selling drinks and food items.",
+        "Compare the latest supplier prices with the prices the target was built on.",
+        "Recount stock on the days with the highest COGS to rule out counting errors."
+      ]
+    });
+  }
+
+  /* 2) Wastage above 1% of sales */
+  var wastePct = (n(result.wastage) / sales) * 100;
+  var wasteTarget = (typeof TARGETS !== "undefined" && TARGETS.wastage != null) ? n(TARGETS.wastage) : 1;
+  if(wastePct > wasteTarget + 0.05){
+    out.push({
+      level: wastePct >= wasteTarget * 1.5 ? "High" : "Medium", saving: sales * (wastePct - wasteTarget) / 100,
+      title: "Cut wastage",
+      text: "Wastage is " + p1(wastePct) + " of sales (" + sar(result.wastage) + ") against a target of " + p1(wasteTarget) + ".",
+      actions: [
+        "Lower the food and pastry order on the slowest days of the week.",
+        "Log wastage by item for two weeks and stop or reduce the top three items.",
+        "Mark down short-dated food in the last hours instead of writing it off."
+      ]
+    });
+  }
+
+  /* 3) Employee cost above its target share */
+  var emp = bySl[4];
+  if(emp.targetPct != null && emp.actualPct > emp.targetPct + 0.05){
+    var gapE = emp.actualPct - emp.targetPct;
+    var low = (result.daily || []).slice().sort(function(a, b){ return a.sales - b.sales; }).slice(0, 3)
+      .map(function(d){ return dateLabel(d.date); });
+    out.push({
+      level: gapE >= 2 ? "High" : "Medium", saving: sales * gapE / 100,
+      title: "Match staffing to sales",
+      text: "Employee cost is " + p1(emp.actualPct) + " of sales against a target of " + p1(emp.targetPct) +
+            " (" + round(gapE, 1).toFixed(1) + " points over).",
+      actions: [
+        low.length ? "Review the roster on the lowest-sales days: " + low.join(", ") + "." : "Review the roster on the lowest-sales days.",
+        "Move hours from quiet periods to peak hours instead of adding overtime.",
+        "Check overtime hours entered this period and approve them in advance."
+      ]
+    });
+  }
+
+  /* 4) Sales below target: growing sales dilutes every fixed cost */
+  var s = bySl[1];
+  var daily = result.daily || [];
+  var dayTarget = daily.reduce(function(t, d){ return t + n(d.target); }, 0);
+  var daySales  = daily.reduce(function(t, d){ return t + n(d.sales); }, 0);
+  if(dayTarget > 0 && daySales < dayTarget){
+    var keep = 1 - (cogs.actualPct / 100) - 0.03;   /* what stays after COGS and royalty */
+    out.push({
+      level: daySales < dayTarget * 0.9 ? "High" : "Medium", saving: (dayTarget - daySales) * keep,
+      title: "Close the sales gap",
+      text: "On the days entered, sales are " + sar(dayTarget - daySales) + " below the daily targets (" +
+            p1((daySales / dayTarget) * 100) + " achieved). Rent and the other fixed costs do not fall when sales fall, " +
+            "so every extra SAR 1,000 of sales adds about " + sar(1000 * keep) + " to EBITDA.",
+      actions: [
+        "Push food and grab-and-go attachment at the till on every order.",
+        "Run the upsize prompt consistently; it raises average ticket without extra staff.",
+        "Focus on the weakest days first, where the gap to target is largest."
+      ]
+    });
+  }
+
+  /* 5) The biggest budgeted lines (these mirror the budget, not real spend) */
+  var budgeted = result.rows.filter(function(r){
+    return !r.isRevenue && [2, 4, 20, 27, 28].indexOf(r.sl) < 0 && n(r.actual) > 0;
+  }).sort(function(a, b){ return n(b.actual) - n(a.actual); }).slice(0, 3);
+  if(budgeted.length){
+    out.push({
+      level: "Review", saving: null,
+      title: "Review the largest budgeted costs",
+      text: "The biggest budgeted lines are " + budgeted.map(function(r){
+              return r.description + " (" + sar(r.actual) + ")";
+            }).join(", ") + ". These figures come from the uploaded budget, not from actual bills, so the app cannot tell whether they were overspent.",
+      actions: [
+        "Compare each one with the actual invoices for the period.",
+        "Where the invoice is lower than budget, lower the budget so the P&L reflects it."
+      ]
+    });
+  }
+
+  out.sort(function(a, b){ return n(b.saving) - n(a.saving); });
+  return out;
+}
+
+function renderPnlSuggestions(result){
+  var host = q("pnlSuggest");
+  if(!host) return;
+  var list = buildPnlSuggestions(result);
+  var total = list.reduce(function(t, x){ return t + n(x.saving); }, 0);
+  var html =
+    '<div class="kd-card-head">' +
+      '<h4>Cost-saving suggestions</h4>' +
+      '<span class="pnl-sg-tag">Preview · rule-based</span>' +
+      (total > 0 ? '<span style="margin-left:auto">Possible gain if all are met: <b class="good">SAR ' + escapeHtml(fmtPnlMoney(Math.round(total))) + '</b> for this period</span>' : '') +
+    '</div>';
+  if(!list.length){
+    html += '<div class="kd-empty good">COGS, wastage and employee cost are all at or below target for this range.</div>';
+  } else {
+    html += '<div class="pnl-sg-list">';
+    list.forEach(function(x){
+      var cls = x.level === "High" ? "bad" : (x.level === "Medium" ? "warn" : "");
+      html +=
+        '<div class="pnl-sg">' +
+          '<div class="pnl-sg-top">' +
+            '<span class="dash-status ' + cls + '">' + escapeHtml(x.level.toUpperCase()) + '</span>' +
+            '<strong>' + escapeHtml(x.title) + '</strong>' +
+            (x.saving ? '<span class="pnl-sg-save">about SAR ' + escapeHtml(fmtPnlMoney(Math.round(x.saving))) + '</span>' : '') +
+          '</div>' +
+          '<p>' + escapeHtml(x.text) + '</p>' +
+          '<ul>' + x.actions.map(function(a){ return '<li>' + escapeHtml(a) + '</li>'; }).join("") + '</ul>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+  if((result.rangeDays || 0) > (result.daily || []).length){
+    html += '<div class="pnl-sg-foot">The range covers ' + result.rangeDays + ' days but only ' + (result.daily || []).length +
+            ' have entries, so shares of sales look higher than they will at month end.</div>';
+  }
+  host.innerHTML = html;
+}
+
+function renderPnlCharts(result){
+  var bySl = {};
+  result.rows.forEach(function(r){ bySl[r.sl] = r; });
+  var sales = n(bySl[1].actual);
+  function pctOfSales(v){ return sales ? (v / sales) * 100 : 0; }
+  function compact(v){
+    return new Intl.NumberFormat("en-SA", { notation:"compact", maximumFractionDigits:1 }).format(v);
+  }
+
+  Chart.defaults.font.family = "Inter, Aptos, 'Segoe UI', Arial, sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = "#566074";
+
+  /* Draws a text label beside / above each bar. opts.text(i, datasetIndex) → string */
+  function barLabels(opts){
+    return {
+      id: "pnlBarLabels",
+      afterDatasetsDraw: function(chart){
+        var ctx = chart.ctx, horizontal = chart.options.indexAxis === "y";
+        ctx.save();
+        ctx.font = "600 11px Inter, 'Segoe UI', Arial, sans-serif";
+        ctx.fillStyle = "#0b1220";
+        chart.data.datasets.forEach(function(ds, di){
+          var meta = chart.getDatasetMeta(di);
+          if(meta.hidden) return;
+          meta.data.forEach(function(el, i){
+            var txt = opts.text(i, di);
+            if(!txt) return;
+            if(horizontal){
+              ctx.textAlign = "left"; ctx.textBaseline = "middle";
+              ctx.fillText(txt, Math.max(el.x, el.base) + 6, el.y);
+            } else {
+              ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+              var lines = String(txt).split("\n");
+              var top = Math.min(el.y, el.base) - 4;
+              for(var li = lines.length - 1, off = 0; li >= 0; li--, off += 13){
+                ctx.fillText(lines[li], el.x, top - off);
+              }
+            }
+          });
+        });
+        ctx.restore();
+      }
+    };
+  }
+
+  /* ---------- 0) Summary cards ---------- */
+  var cardsHost = q("pnlCards");
+  if(cardsHost){
+    var cardDefs = [
+      { sl:1,  label:"Sales" },
+      { sl:3,  label:"Gross Margin" },
+      { sl:21, label:"Net Margin after Controllables" },
+      { sl:29, label:"EBITDA" }
+    ];
+    cardsHost.innerHTML = cardDefs.map(function(d){
+      var r = bySl[d.sl];
+      var valCls = (d.sl !== 1 && n(r.actual) < 0) ? "bad" : "";
+      var line1, line2, reach = null, vCls = "";
+      if(d.sl === 1){
+        /* Sales: money against the sales target */
+        line1 = result.recordCount + " daily entries";
+        if(r.targetSar != null && r.variance != null){
+          vCls = r.variance >= 0 ? "good" : "bad";
+          line2 = 'Target SAR ' + escapeHtml(fmtPnlMoney(r.targetSar)) +
+                  ' · <b class="' + vCls + '">' + (r.variance >= 0 ? "+" : "−") + escapeHtml(fmtPnlMoney(Math.abs(r.variance))) + '</b>';
+          if(r.targetSar > 0) reach = Math.max(0, Math.min(100, (n(r.actual) / r.targetSar) * 100));
+        } else {
+          line2 = "No target for this period";
+        }
+      } else {
+        /* Margins: share of sales against the target share, in points */
+        line1 = fmtPnlPct(r.actualPct) + " of sales";
+        if(r.targetPct != null && r.variancePct != null){
+          vCls = r.variancePct >= 0 ? "good" : "bad";
+          line2 = 'Target ' + escapeHtml(fmtPnlPct(r.targetPct)) + ' of sales' +
+                  ' · <b class="' + vCls + '">' + (r.variancePct >= 0 ? "+" : "−") + round(Math.abs(r.variancePct), 1).toFixed(1) + ' pts</b>';
+        } else {
+          line2 = "No target for this period";
+        }
+      }
+      return '<div class="kd-hero-card kd-score">' +
+        '<span class="kd-lbl">' + escapeHtml(d.label) + '</span>' +
+        '<span class="kd-big ' + valCls + '">SAR ' + escapeHtml(fmtPnlMoney(r.actual)) + '</span>' +
+        '<span class="kd-sub">' + escapeHtml(line1) + '</span>' +
+        (reach != null ? '<span class="kd-bar"><i class="' + vCls + '" style="width:' + reach.toFixed(0) + '%"></i></span>' : '') +
+        '<span class="kd-sub">' + line2 + '</span>' +
+      '</div>';
+    }).join("");
+  }
+
+  renderPnlSuggestions(result);
+
+  /* ---------- 1) From Sales to EBITDA (waterfall) ---------- */
+  var gm = n(bySl[3].actual), net = n(bySl[21].actual), ebitda = n(bySl[29].actual);
+  var steps = [
+    { label:"Sales",                value:sales,              range:[0, sales],     kind:"total" },
+    { label:"COGS",                 value:n(bySl[2].actual),  range:[gm, sales],    kind:"cost"  },
+    { label:"Gross Margin",         value:gm,                 range:[0, gm],        kind:"total" },
+    { label:"Controllable Exp",     value:n(bySl[20].actual), range:[net, gm],      kind:"cost"  },
+    { label:"Net Margin",           value:net,                range:[0, net],       kind:"total" },
+    { label:"Uncontrollable Exp",   value:n(bySl[28].actual), range:[ebitda, net],  kind:"cost"  },
+    { label:"EBITDA",               value:ebitda,             range:[0, ebitda],    kind:"final" }
+  ];
+  var elFlow = q("pnlChartFlow");
+  if(elFlow){
+    pnlCharts.flow = new Chart(elFlow, {
+      type: "bar",
+      data: {
+        labels: steps.map(function(s){ return s.label; }),
+        datasets: [{
+          data: steps.map(function(s){ return s.range; }),
+          backgroundColor: steps.map(function(s){
+            if(s.kind === "cost") return "#f59e0b";
+            if(s.kind === "final") return s.value >= 0 ? "#16a34a" : "#dc2626";
+            return s.value >= 0 ? "#1d4ed8" : "#dc2626";
+          }),
+          borderRadius: 4, maxBarThickness: 90
+        }]
+      },
+      plugins: [{
+        /* dashed connectors that carry each step's level to the next bar */
+        id: "pnlFlowLinks",
+        afterDatasetsDraw: function(chart){
+          var meta = chart.getDatasetMeta(0), ctx = chart.ctx, ys = chart.scales.y;
+          ctx.save();
+          ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+          for(var i = 0; i < steps.length - 1; i++){
+            var a = meta.data[i], b = meta.data[i + 1];
+            if(!a || !b) continue;
+            var level = steps[i].kind === "cost" ? steps[i].range[0] : steps[i].value;
+            var y = ys.getPixelForValue(level);
+            ctx.beginPath();
+            ctx.moveTo(a.x + a.width / 2, y);
+            ctx.lineTo(b.x - b.width / 2, y);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }, barLabels({ text: function(i){
+        var s = steps[i];
+        return (s.kind === "cost" ? "−" : "") + compact(s.value) + "\n" + round(pctOfSales(s.value), 1).toFixed(1) + "%";
+      } })],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 34 } },
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: { label: function(ctx){
+            var s = steps[ctx.dataIndex];
+            return s.label + ": SAR " + fmtPnlMoney(s.value) + " (" + fmtPnlPct(pctOfSales(s.value)) + " of sales)";
+          } } }
+        },
+        scales: {
+          y: { ticks: { callback: function(v){ return compact(v); } }, grid: { color:"#eef0f5" } },
+          x: { grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  /* ---------- 1b) Day by day: Sales bars + EBITDA line ---------- */
+  var daily = result.daily || [];
+  var elD = q("pnlChartDaily"), noteD = q("pnlChartDailyNote");
+  if(noteD){
+    var lossDays = daily.filter(function(d){ return d.ebitda < 0; }).length;
+    noteD.textContent = daily.length + " days with entries. " +
+      (lossDays ? lossDays + " of them ended below zero EBITDA. " : "Every day ended above zero EBITDA. ") +
+      "Each day carries one day's share of the budgeted costs." +
+      ((result.rangeDays || 0) > daily.length
+        ? " The range covers " + result.rangeDays + " days, so the totals above also carry the budgeted costs of the " +
+          (result.rangeDays - daily.length) + " days that have no entries."
+        : "");
+  }
+  if(elD && daily.length){
+    var anyDayTarget = daily.some(function(d){ return d.target > 0; });
+    var daySets = [
+      { type:"line", label:"EBITDA", data: daily.map(function(d){ return round(d.ebitda, 0); }),
+        borderColor:"#0b1220", backgroundColor:"#0b1220", borderWidth:2, tension:.3,
+        pointRadius:3.5, pointHoverRadius:5,
+        pointBackgroundColor: daily.map(function(d){ return d.ebitda >= 0 ? "#16a34a" : "#dc2626"; }),
+        pointBorderColor:"#ffffff", pointBorderWidth:1.5, order:0 },
+      { type:"bar", label:"Sales", data: daily.map(function(d){ return round(d.sales, 0); }),
+        backgroundColor:"rgba(29,78,216,.75)", borderRadius:3, maxBarThickness:28, order:2 }
+    ];
+    if(anyDayTarget) daySets.push({
+      type:"line", label:"Sales target", data: daily.map(function(d){ return d.target > 0 ? round(d.target, 0) : null; }),
+      borderColor:"#94a3b8", borderDash:[6, 4], borderWidth:1.5, pointRadius:0, spanGaps:true, order:1
+    });
+    pnlCharts.daily = new Chart(elD, {
+      data: { labels: daily.map(function(d){ return d.date.slice(8, 10) + "/" + d.date.slice(5, 7); }), datasets: daySets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode:"index", intersect:false },
+        plugins: {
+          legend: { position:"bottom", labels: { boxWidth:14 } },
+          tooltip: { callbacks: {
+            title: function(items){ return dateLabel(daily[items[0].dataIndex].date); },
+            label: function(ctx){ return ctx.dataset.label + ": SAR " + fmtPnlMoney(ctx.parsed.y); }
+          } }
+        },
+        scales: {
+          y: { ticks: { callback: function(v){ return compact(v); } }, grid: { color:"#eef0f5" } },
+          x: { grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  /* ---------- 2) Actual vs Target ---------- */
+  var keyRows = [1, 2, 3, 20, 21, 28, 29].map(function(sl){ return bySl[sl]; });
+  var shortNames = { 1:"Sales", 2:"COGS", 3:"Gross Margin", 20:"Controllable", 21:"Net Margin", 28:"Uncontrollable", 29:"EBITDA" };
+  var anyTarget = keyRows.some(function(r){ return r.targetSar != null; });
+  var note = q("pnlChartTargetNote");
+  if(note) note.textContent = anyTarget
+    ? "Target for the selected range next to what was actually achieved."
+    : "No P&L targets uploaded for this period, so only actuals are shown.";
+  var elT = q("pnlChartTarget");
+  if(elT){
+    var sets = [];
+    if(anyTarget) sets.push({
+      label: "Target", data: keyRows.map(function(r){ return r.targetSar != null ? round(r.targetSar, 0) : null; }),
+      backgroundColor: "#cbd5e1", borderRadius: 3, maxBarThickness: 26
+    });
+    sets.push({
+      label: "Actual", data: keyRows.map(function(r){ return round(r.actual, 0); }),
+      backgroundColor: "#1d4ed8", borderRadius: 3, maxBarThickness: 26
+    });
+    pnlCharts.target = new Chart(elT, {
+      type: "bar",
+      data: { labels: keyRows.map(function(r){ return shortNames[r.sl]; }), datasets: sets },
+      plugins: [barLabels({ text: function(i, di){
+        var v = sets[di].data[i];
+        return v == null ? "" : compact(v);
+      } })],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 20 } },
+        plugins: {
+          legend: { position:"bottom", labels: { boxWidth:14 } },
+          tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ": SAR " + fmtPnlMoney(ctx.parsed.y); } } }
+        },
+        scales: {
+          y: { ticks: { callback: function(v){ return compact(v); } }, grid: { color:"#eef0f5" } },
+          x: { grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  /* ---------- 3) Where the money goes — % of sales ---------- */
+  var costRows = result.rows.filter(function(r){
+    return !r.isRevenue && r.sl !== 20 && r.sl !== 28 && n(r.actual) > 0;
+  }).sort(function(a, b){ return n(b.actual) - n(a.actual); }).slice(0, 12);
+  var elC = q("pnlChartCosts"), wrapC = q("pnlChartCostsWrap");
+  if(elC && costRows.length){
+    if(wrapC) wrapC.style.height = Math.max(240, costRows.length * 28 + 50) + "px";
+    pnlCharts.costs = new Chart(elC, {
+      type: "bar",
+      data: {
+        labels: costRows.map(function(r){
+          var d = String(r.description);
+          return d.length > 26 ? d.slice(0, 25) + "…" : d;
+        }),
+        datasets: [{
+          data: costRows.map(function(r){ return round(r.actualPct, 2); }),
+          backgroundColor: costRows.map(function(r){
+            if(r.targetPct == null) return "#94a3b8";
+            return r.actualPct > r.targetPct + 0.05 ? "#dc2626" : "#16a34a";
+          }),
+          borderRadius: 4, maxBarThickness: 18
+        }]
+      },
+      plugins: [barLabels({ text: function(i){
+        var r = costRows[i];
+        return round(r.actualPct, 1).toFixed(1) + "%" + (r.targetPct != null ? "  (target " + round(r.targetPct, 1).toFixed(1) + "%)" : "");
+      } })],
+      options: {
+        indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 120 } },
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: {
+            title: function(items){ return costRows[items[0].dataIndex].description; },
+            label: function(ctx){
+              var r = costRows[ctx.dataIndex];
+              return "SAR " + fmtPnlMoney(r.actual) + " · " + fmtPnlPct(r.actualPct) + " of sales";
+            }
+          } }
+        },
+        scales: {
+          x: { beginAtZero:true, ticks: { callback: function(v){ return v + "%"; } }, grid: { color:"#eef0f5" } },
+          y: { grid: { display:false } }
+        }
+      }
+    });
+  }
 }
 
 
@@ -6516,6 +7796,7 @@ function renderMonthly(){
   }
 
   var periods = buildMonthlyPeriods();
+
   renderReportTable2Col(q("monthlyTable"), periods,
     q("monthlySearch")?q("monthlySearch").value:"",
     "monthlyCount", "inlineActionPlanHostMonthly");
@@ -9412,6 +10693,21 @@ if(fDateEl){
   q("customToDate3").addEventListener("change", renderMonthly);
 
 q("dashMonth").addEventListener("change", renderDashboard);
+
+/* P&L Guide */
+if(q("pnlGuideBtn")) q("pnlGuideBtn").addEventListener("click", openPnlGuide);
+if(q("pnlGuideClose")) q("pnlGuideClose").addEventListener("click", closePnlGuide);
+if(q("pnlGuideSearch")) q("pnlGuideSearch").addEventListener("input", renderPnlGuide);
+if(q("pnlGuideModal")) q("pnlGuideModal").addEventListener("click", function(e){
+  if(e.target === q("pnlGuideModal")) closePnlGuide();   /* click outside closes */
+});
+
+document.querySelectorAll("#pnlViewToggle button").forEach(function(b){
+  b.addEventListener("click", function(){
+    pnlViewMode = b.dataset.view;   // "table" or "graph"
+    applyPnlView();
+  });
+});
 
 document.querySelectorAll("#dashViewToggle button").forEach(function(b){
   b.addEventListener("click", function(){
